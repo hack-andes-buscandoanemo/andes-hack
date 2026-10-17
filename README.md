@@ -298,10 +298,10 @@ bun dev
 
 ### 5. URLs Públicas y Despliegue en Vivo (Cloudflare + Alchemy)
 
-- **Web pública (`apps/web`):** `https://andes-hack-web.<tu-subdominio>.workers.dev`
-- **API pública (`apps/server`):** `https://andes-hack-server.<tu-subdominio>.workers.dev`
-  - Healthcheck: `GET <API>/health` → `{ "status": "ok" }`
-  - Referencia OpenAPI: `GET <API>/docs`
+- **Web pública (`apps/web`):** [`https://andes-hack-web-diego.diegorafaelcisnerostafur.workers.dev`](https://andes-hack-web-diego.diegorafaelcisnerostafur.workers.dev)
+- **API pública (`apps/server`):** [`https://andes-hack-server-diego.diegorafaelcisnerostafur.workers.dev`](https://andes-hack-server-diego.diegorafaelcisnerostafur.workers.dev)
+  - Healthcheck: [`GET /health`](https://andes-hack-server-diego.diegorafaelcisnerostafur.workers.dev/health) → `{ "status": "ok" }`
+  - Referencia OpenAPI: [`GET /docs`](https://andes-hack-server-diego.diegorafaelcisnerostafur.workers.dev/docs)
 
 Para volver a desplegar la web y la API en producción:
 
@@ -313,7 +313,7 @@ bun --cwd packages/infra alchemy login cloudflare
 bun db:migrate
 
 # 3. Desplegar API (Cloudflare Worker) y Web (OpenNext Cloudflare)
-bun --cwd packages/infra run deploy
+bun --cwd packages/infra deploy
 ```
 
 <details>
