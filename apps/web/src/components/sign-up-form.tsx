@@ -28,7 +28,7 @@ export default function SignUpForm() {
       setFormError(null);
       await authClient.signUp.email(value, {
         // ponytail: US-011 will route to community selection instead of Inicio.
-        onSuccess: () => router.push("/dashboard"),
+        onSuccess: () => router.push("/inicio"),
         onError: ({ error }) =>
           setFormError(
             error.code?.startsWith("USER_ALREADY_EXISTS")

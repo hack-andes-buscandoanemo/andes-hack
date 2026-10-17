@@ -63,7 +63,7 @@ describe("welcome screen", () => {
 
     render(<Home />);
 
-    expect(replace).toHaveBeenCalledWith("/dashboard");
+    expect(replace).toHaveBeenCalledWith("/inicio");
   });
 
   it("hides the welcome while the session is loading", () => {
