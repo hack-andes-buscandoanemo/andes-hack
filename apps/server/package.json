@@ -24,6 +24,7 @@
     "@upstash/redis": "^1.39.0",
     "better-auth": "catalog:",
     "dotenv": "catalog:",
+    "drizzle-orm": "^0.45.3",
     "evlog": "^2.30.0",
     "hono": "catalog:",
     "react": "catalog:",

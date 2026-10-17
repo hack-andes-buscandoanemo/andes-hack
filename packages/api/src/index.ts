@@ -9,23 +9,6 @@ export const HealthResponseSchema = z
   })
   .openapi("HealthResponse");
 
-export const UnauthorizedResponseSchema = z
-  .object({
-    message: z.string(),
-  })
-  .openapi("UnauthorizedResponse");
-
-export const PrivateDataResponseSchema = z
-  .object({
-    message: z.string(),
-    user: z.object({
-      id: z.string(),
-      email: z.string(),
-      name: z.string().nullable(),
-    }),
-  })
-  .openapi("PrivateDataResponse");
-
 export function createOpenApiDocument() {
   return {
     openapi: "3.1.0",
@@ -55,30 +38,6 @@ export function createOpenApiDocument() {
           },
         },
       },
-      "/private": {
-        get: {
-          tags: ["Example"],
-          security: [{ bearerAuth: [] }],
-          responses: {
-            "200": {
-              description: "Private user data",
-              content: {
-                "application/json": {
-                  schema: { $ref: "#/components/schemas/PrivateDataResponse" },
-                },
-              },
-            },
-            "401": {
-              description: "Authentication required",
-              content: {
-                "application/json": {
-                  schema: { $ref: "#/components/schemas/UnauthorizedResponse" },
-                },
-              },
-            },
-          },
-        },
-      },
     },
     components: {
       schemas: {
@@ -91,36 +50,6 @@ export function createOpenApiDocument() {
               enum: ["ok"],
             },
           },
-        },
-        PrivateDataResponse: {
-          type: "object",
-          required: ["message", "user"],
-          properties: {
-            message: { type: "string" },
-            user: {
-              type: "object",
-              required: ["id", "email", "name"],
-              properties: {
-                id: { type: "string" },
-                email: { type: "string" },
-                name: { type: ["string", "null"] },
-              },
-            },
-          },
-        },
-        UnauthorizedResponse: {
-          type: "object",
-          required: ["message"],
-          properties: {
-            message: { type: "string" },
-          },
-        },
-      },
-      securitySchemes: {
-        bearerAuth: {
-          type: "http",
-          scheme: "bearer",
-          bearerFormat: "JWT",
         },
       },
     },
