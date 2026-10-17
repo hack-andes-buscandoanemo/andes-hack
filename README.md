@@ -325,7 +325,7 @@ bun --cwd packages/infra deploy
 | `bun dev:web`     | Inicia únicamente la aplicación frontend (`apps/web`)          |
 | `bun dev:server`  | Inicia únicamente el backend (`apps/server`)                   |
 | `bun build`       | Compila todas las aplicaciones y paquetes para producción      |
-| `bun test`        | Ejecuta la suite de pruebas unitarias e integración con Vitest |
+| `bun run test`    | Ejecuta la suite de pruebas unitarias e integración con Vitest |
 | `bun check`       | Ejecuta el linter (`oxlint`) y formateador (`oxfmt`)           |
 | `bun check-types` | Verifica los tipos de TypeScript en todo el monorepo           |
 | `bun db:push`     | Aplica los cambios del esquema Drizzle en la base de datos     |
@@ -346,7 +346,7 @@ Cada funcionalidad, algoritmo de _Smart Matching_ o endpoint de API se desarroll
 1. **Seams acordados:** Las pruebas viven únicamente en fronteras públicas (_seams_), verificando **QUÉ** hace el sistema y nunca detalles internos de implementación.
 2. **Vertical Slicing (_Tracer Bullets_):** Una rebanada vertical a la vez (`1 seam → 1 test en RED → 1 implementación mínima en GREEN → repetir`), evitando el _horizontal slicing_ y los tests tautológicos.
 3. **Mocking solo en Fronteras del Sistema:** Solo se mockean integraciones externas (APIs de terceros, reloj/aleatoriedad, correo) mediante inyección de dependencias estilo SDK ([`mocking.md`](./.agents/skills/tdd/mocking.md)).
-4. **Revisión y Refactoring:** La refactorización se ejecuta tras completar el ciclo usando la skill [`code-review`](./.agents/skills/code-review/SKILL.md) junto con los _Quality Gates_ (`bun test`, `bun check-types`, `bun check`).
+4. **Revisión y Refactoring:** La refactorización se ejecuta tras completar el ciclo usando la skill [`code-review`](./.agents/skills/code-review/SKILL.md) junto con los _Quality Gates_ (`bun run test`, `bun check-types`, `bun check`).
 
 ### 2. 🌿 Siempre PRs o Stacked PRs vía GitHub CLI (`gh`) ([`.agents/skills/pr/`](./.agents/skills/pr/SKILL.md))
 
