@@ -2,7 +2,7 @@
 
 # 🚗 Andes Hack — Movilidad Compartida Inteligente
 
-### *Conectando comunidades verificadas para transformar el transporte urbano en Lima*
+### _Conectando comunidades verificadas para transformar el transporte urbano en Lima_
 
 [![GitHub Repo stars](https://img.shields.io/github/stars/hack-andes-buscandoanemo/andes-hack?style=for-the-badge&logo=github&color=yellow)](https://github.com/hack-andes-buscandoanemo/andes-hack/stargazers)
 [![GitHub last commit](https://img.shields.io/github/last-commit/hack-andes-buscandoanemo/andes-hack?style=for-the-badge&logo=git&color=blue)](https://github.com/hack-andes-buscandoanemo/andes-hack/commits/main)
@@ -95,13 +95,13 @@ flowchart LR
 
 ## 💡 Comparativa de Alternativas
 
-| Criterio | 🚌 Transporte Público | 🚕 Apps de Taxi (Uber, etc.) | 🚗 Auto Propio (Solo) | ✨ **Andes Hack** |
-| :--- | :---: | :---: | :---: | :---: |
-| **Seguridad y Confianza** | 🔴 Baja | 🟡 Media | 🟢 Alta | 🟢 **Alta (Comunidad Verificada)** |
-| **Costo por Viaje** | 🟢 Bajo | 🔴 Alto | 🔴 Alto (Gasolina/Mant.) | 🟢 **Bajo (Gasto Compartido)** |
-| **Tiempo de Espera** | 🔴 Alto (Colas en hora punta) | 🟢 Bajo | 🟢 Nulo | 🟢 **Bajo (Horario Coordinado)** |
-| **Comodidad** | 🔴 Baja (Saturación) | 🟢 Alta | 🟢 Alta | 🟢 **Alta (Asiento Garantizado)** |
-| **Impacto en el Tráfico** | 🟢 Positivo | 🔴 Negativo | 🔴 Muy Negativo | 🟢 **Positivo (-3 autos por grupo)** |
+| Criterio                  |     🚌 Transporte Público     | 🚕 Apps de Taxi (Uber, etc.) |  🚗 Auto Propio (Solo)   |          ✨ **Andes Hack**           |
+| :------------------------ | :---------------------------: | :--------------------------: | :----------------------: | :----------------------------------: |
+| **Seguridad y Confianza** |            🔴 Baja            |           🟡 Media           |         🟢 Alta          |  🟢 **Alta (Comunidad Verificada)**  |
+| **Costo por Viaje**       |            🟢 Bajo            |           🔴 Alto            | 🔴 Alto (Gasolina/Mant.) |    🟢 **Bajo (Gasto Compartido)**    |
+| **Tiempo de Espera**      | 🔴 Alto (Colas en hora punta) |           🟢 Bajo            |         🟢 Nulo          |   🟢 **Bajo (Horario Coordinado)**   |
+| **Comodidad**             |     🔴 Baja (Saturación)      |           🟢 Alta            |         🟢 Alta          |  🟢 **Alta (Asiento Garantizado)**   |
+| **Impacto en el Tráfico** |          🟢 Positivo          |         🔴 Negativo          |     🔴 Muy Negativo      | 🟢 **Positivo (-3 autos por grupo)** |
 
 ---
 
@@ -222,43 +222,48 @@ bun dev
 <details>
 <summary><b>📋 Ver todos los comandos disponibles</b></summary>
 
-| Comando | Descripción |
-| :--- | :--- |
-| `bun dev` | Inicia todos los servicios (web + server) en modo desarrollo |
-| `bun dev:web` | Inicia únicamente la aplicación frontend (`apps/web`) |
-| `bun dev:server` | Inicia únicamente el backend (`apps/server`) |
-| `bun build` | Compila todas las aplicaciones y paquetes para producción |
-| `bun test` | Ejecuta la suite de pruebas unitarias e integración con Vitest |
-| `bun check` | Ejecuta el linter (`oxlint`) y formateador (`oxfmt`) |
-| `bun check-types` | Verifica los tipos de TypeScript en todo el monorepo |
-| `bun db:push` | Aplica los cambios del esquema Drizzle en la base de datos |
-| `bun db:studio` | Abre Drizzle Studio para explorar la base de datos visualmente |
-| `bun db:generate` | Genera archivos de migración SQL |
-| `bun db:migrate` | Ejecuta las migraciones pendientes |
+| Comando           | Descripción                                                    |
+| :---------------- | :------------------------------------------------------------- |
+| `bun dev`         | Inicia todos los servicios (web + server) en modo desarrollo   |
+| `bun dev:web`     | Inicia únicamente la aplicación frontend (`apps/web`)          |
+| `bun dev:server`  | Inicia únicamente el backend (`apps/server`)                   |
+| `bun build`       | Compila todas las aplicaciones y paquetes para producción      |
+| `bun test`        | Ejecuta la suite de pruebas unitarias e integración con Vitest |
+| `bun check`       | Ejecuta el linter (`oxlint`) y formateador (`oxfmt`)           |
+| `bun check-types` | Verifica los tipos de TypeScript en todo el monorepo           |
+| `bun db:push`     | Aplica los cambios del esquema Drizzle en la base de datos     |
+| `bun db:studio`   | Abre Drizzle Studio para explorar la base de datos visualmente |
+| `bun db:generate` | Genera archivos de migración SQL                               |
+| `bun db:migrate`  | Ejecuta las migraciones pendientes                             |
 
 </details>
 
 ## 🧪 Estándares de Ingeniería y Flujo de Trabajo
 
-Para garantizar la máxima calidad técnica y trazabilidad de nuestras decisiones arquitectónicas, este repositorio aplica dos reglas de ingeniería estrictas:
+Para garantizar la máxima calidad técnica y trazabilidad de nuestras decisiones arquitectónicas, este repositorio aplica reglas estrictas impulsadas por **[Agent Skills](./.agents/skills/)**:
 
-### 1. 🔴🟢🔵 Strict TDD (Test-Driven Development)
-Cada feature, algoritmo de *Smart Matching* o endpoint de API sigue el ciclo **Red → Green → Refactor** con **Vitest**:
-1. **Red:** Escribir primero la prueba automatizada (`*.test.ts`) que defina el contrato esperado y verificar que falle.
-2. **Green:** Implementar la lógica mínima necesaria para pasar la prueba (`bun test`).
-3. **Refactor:** Optimizar diseño, tipado estricto (`bun check-types`) y formato/linting (`bun check`).
+### 1. 🔴🟢 Strict TDD en Seams y Vertical Slices ([`.agents/skills/tdd/`](./.agents/skills/tdd/SKILL.md))
 
-### 2. 🌿 Siempre PRs o Stacked PRs vía GitHub CLI (`gh`)
-No se realizan *pushes* directos a `main` durante el desarrollo de funcionalidades. Todo cambio ingresa mediante **Pull Requests atómicos** o **Stacked PRs** (PRs apilados por capas: `DB Schema` → `Backend API` → `Frontend UI`) creados desde la terminal con `gh pr create`, documentando explícitamente las **decisiones técnicas y tradeoffs**.
+Cada funcionalidad, algoritmo de _Smart Matching_ o endpoint de API se desarrolla siguiendo el bucle **Red → Green** con **Vitest**:
+
+1. **Seams acordados:** Las pruebas viven únicamente en fronteras públicas (_seams_), verificando **QUÉ** hace el sistema y nunca detalles internos de implementación.
+2. **Vertical Slicing (_Tracer Bullets_):** Una rebanada vertical a la vez (`1 seam → 1 test en RED → 1 implementación mínima en GREEN → repetir`), evitando el _horizontal slicing_ y los tests tautológicos.
+3. **Mocking solo en Fronteras del Sistema:** Solo se mockean integraciones externas (APIs de terceros, reloj/aleatoriedad, correo) mediante inyección de dependencias estilo SDK ([`mocking.md`](./.agents/skills/tdd/mocking.md)).
+4. **Revisión y Refactoring:** La refactorización se ejecuta tras completar el ciclo usando la skill [`code-review`](./.agents/skills/code-review/SKILL.md) junto con los _Quality Gates_ (`bun test`, `bun check-types`, `bun check`).
+
+### 2. 🌿 Siempre PRs o Stacked PRs vía GitHub CLI (`gh`) ([`.agents/skills/pr/`](./.agents/skills/pr/SKILL.md))
+
+No se realizan _pushes_ directos a `main` durante el desarrollo de funcionalidades. Todo cambio ingresa mediante **Pull Requests atómicos** o **Stacked PRs** (PRs apilados por capas: `DB Schema` → `Backend API` → `Frontend UI`) creados desde la terminal con `gh pr create`, documentando diagramas/flujos, evidencia _Before/After_, **decisiones técnicas, tradeoffs y Merge Danger**.
 
 ---
 
 ## 🤖 Soporte para Agentes de IA (AI-First Repo)
 
-Este repositorio está preparado para desarrollo asistido por agentes de IA (Antigravity, Claude Code, Cursor, GitHub Copilot). Toda la especificación de dominio, **rúbrica de evaluación del hackathon**, reglas de negocio y grafo del stack se encuentran documentados en:
+Este repositorio está preparado para desarrollo asistido por agentes de IA (Antigravity, Claude Code, Cursor, GitHub Copilot). Toda la especificación de dominio, **rúbrica de evaluación del hackathon**, reglas de negocio y catálogo de skills se encuentran en:
 
 - 📄 [`AGENTS.md`](./AGENTS.md) — Contexto integral de producto, rúbrica de evaluación (75% Técnico / 25% Producto), arquitectura y reglas estrictas para agentes.
 - 📄 [`CLAUDE.md`](./CLAUDE.md) — Instrucciones específicas y convenciones de código del monorepo.
+- 🧠 [`.agents/skills/`](./.agents/skills/) — Suite de 36+ Agent Skills (`tdd`, `codebase-design`, `domain-modeling`, `code-review`, `pr`, `grill-me`, `diagnosing-bugs`, `ponytail`, etc.) bloqueadas en [`skills-lock.json`](./skills-lock.json).
 - 📄 [`bts.jsonc`](./bts.jsonc) — Definición declarativa del Stack Graph (Better Fullstack).
 
 ---

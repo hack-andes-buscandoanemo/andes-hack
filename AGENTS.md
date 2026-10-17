@@ -33,17 +33,17 @@ Al diseñar esquemas de base de datos (`packages/db`), endpoints (`apps/server`,
 
 ## 🏆 Rúbrica de Evaluación del Hackathon (Guía de Priorización)
 
-**Distribución Total:** **Técnico 75%** · **Producto 25%** · *Cada criterio se puntúa de 1 a 5.*
+**Distribución Total:** **Técnico 75%** · **Producto 25%** · _Cada criterio se puntúa de 1 a 5._
 
 Todo agente de IA o desarrollador debe tomar decisiones de arquitectura, implementación y documentación optimizando directamente estos 5 criterios:
 
-| Peso | Categoría | Criterio | Descripción Oficial | Cómo debe actuar el Agente de IA |
-| :---: | :---: | :--- | :--- | :--- |
-| **30%** | **Técnico** | **Complejidad técnica** | Integraciones, datos, modelos y arquitectura. | Diseñar una arquitectura robusta en el monorepo: algoritmo de *Smart Matching* geoespacial/temporal bien modelado, esquemas relacionales sólidos en Drizzle (`packages/db`), caché/ratelimit con Upstash Redis, contratos OpenAPI tipados de extremo a extremo y validación estricta con Zod. |
-| **25%** | **Técnico** | **Funciona** | Flujo completo en vivo desde la URL pública. | Priorizar flujos *End-to-End (E2E)* completamente operativos y desplegables sin errores en producción. Nunca dejar vistas rotas, mocks incompletos en rutas críticas ni migraciones pendientes. |
-| **20%** | **Técnico** | **Calidad técnica** | El jurado revisa tu repo en GitHub. | Mantener un historial de Git impecable mediante **Strict TDD**, **PRs / Stacked PRs**, commits semánticos, cero errores de tipos (`bun check-types`) y linter limpio (`bun check`). |
-| **15%** | **Producto** | **Problema e impacto** | Un usuario real de tu track. | Enfocar cada pantalla y flujo en resolver el dolor real del ciudadano en Lima: seguridad en comunidades verificadas, ahorro frente a taxis/gasolina, cero colas en hora punta y métrica visible de vehículos retirados de circulación. |
-| **10%** | **Producto** | **Claridad** | Explicas decisiones y tradeoffs. | Documentar explícitamente el *porqué* de las decisiones técnicas y los *tradeoffs* tanto en las descripciones de los Pull Requests como en la documentación del repositorio. |
+|  Peso   |  Categoría   | Criterio                | Descripción Oficial                           | Cómo debe actuar el Agente de IA                                                                                                                                                                                                                                                              |
+| :-----: | :----------: | :---------------------- | :-------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **30%** | **Técnico**  | **Complejidad técnica** | Integraciones, datos, modelos y arquitectura. | Diseñar una arquitectura robusta en el monorepo: algoritmo de _Smart Matching_ geoespacial/temporal bien modelado, esquemas relacionales sólidos en Drizzle (`packages/db`), caché/ratelimit con Upstash Redis, contratos OpenAPI tipados de extremo a extremo y validación estricta con Zod. |
+| **25%** | **Técnico**  | **Funciona**            | Flujo completo en vivo desde la URL pública.  | Priorizar flujos _End-to-End (E2E)_ completamente operativos y desplegables sin errores en producción. Nunca dejar vistas rotas, mocks incompletos en rutas críticas ni migraciones pendientes.                                                                                               |
+| **20%** | **Técnico**  | **Calidad técnica**     | El jurado revisa tu repo en GitHub.           | Mantener un historial de Git impecable mediante **Strict TDD**, **PRs / Stacked PRs**, commits semánticos, cero errores de tipos (`bun check-types`) y linter limpio (`bun check`).                                                                                                           |
+| **15%** | **Producto** | **Problema e impacto**  | Un usuario real de tu track.                  | Enfocar cada pantalla y flujo en resolver el dolor real del ciudadano en Lima: seguridad en comunidades verificadas, ahorro frente a taxis/gasolina, cero colas en hora punta y métrica visible de vehículos retirados de circulación.                                                        |
+| **10%** | **Producto** | **Claridad**            | Explicas decisiones y tradeoffs.              | Documentar explícitamente el _porqué_ de las decisiones técnicas y los _tradeoffs_ tanto en las descripciones de los Pull Requests como en la documentación del repositorio.                                                                                                                  |
 
 ---
 
@@ -51,31 +51,39 @@ Todo agente de IA o desarrollador debe tomar decisiones de arquitectura, impleme
 
 Estas reglas son **innegociables** para cualquier agente de IA o miembro del equipo que modifique el código:
 
-### 1. Strict TDD (Test-Driven Development Estricto)
+### 1. Strict TDD Basado en Seams y Vertical Slices (`.agents/skills/tdd/`)
 
-Ninguna funcionalidad de negocio, endpoint de API, lógica de emparejamiento o utilidad puede implementarse sin escribir primero su prueba automatizada con **Vitest**.
+Toda implementación debe seguir estrictamente la skill **[`tdd`](.agents/skills/tdd/SKILL.md)** ([`tests.md`](.agents/skills/tdd/tests.md) y [`mocking.md`](.agents/skills/tdd/mocking.md)):
 
-1. 🔴 **RED (Escribir prueba que falle)**:
-   - Antes de escribir código de producción, crea o actualiza el archivo `*.test.ts` / `*.spec.ts` correspondiente definiendo el comportamiento esperado y los casos borde.
-   - Ejecuta `bun test` y verifica que la prueba falle por la razón correcta.
-2. 🟢 **GREEN (Implementación mínima para pasar)**:
-   - Escribe únicamente el código de producción necesario para que la prueba pase.
-   - Ejecuta `bun test` y confirma que todas las pruebas estén en verde.
-3. 🔵 **REFACTOR (Limpieza y optimización)**:
-   - Refactoriza el código eliminando duplicación, mejorando nombres, tipado e integraciones manteniendo las pruebas en verde.
-   - Ejecuta `bun check` (`oxlint` + `oxfmt`) y `bun check-types`.
+1. **Qué es un buen test (Comportamiento sobre Implementación)**:
+   - Las pruebas verifican **comportamiento observable a través de interfaces públicas**, nunca detalles internos de implementación.
+   - Un buen test se lee como una especificación (describe **QUÉ** capacidad existe, no **CÓMO** está programada) y sobrevive a refactorizaciones internas sin romperse.
+2. **Seams (Fronteras donde viven los tests)**:
+   - Un **seam** es la frontera pública donde observas el comportamiento sin meterte dentro del módulo.
+   - **Prueba únicamente en _seams_ acordados previamente:** Antes de escribir cualquier test, propón los _seams_ al usuario (_"¿Cuál es la interfaz pública y qué seams debemos probar?"_, indicando en una línea qué atrapa y qué deja fuera cada seam). No se escribe ningún test en un seam no confirmado.
+   - Si el diseño de la interfaz o la profundidad del módulo está en duda, consulta la skill **[`codebase-design`](.agents/skills/codebase-design/SKILL.md)**.
+3. **Reglas del bucle Red → Green (Vertical Slicing)**:
+   - 🔴 **Red antes que Green:** Escribe primero **una** prueba que falle (`bun test`) y luego **únicamente** el código mínimo para pasarla. No anticipes pruebas futuras ni agregues código especulativo.
+   - 🍰 **Una rebanada vertical a la vez (_Vertical Slicing / Tracer Bullets_):** `1 seam → 1 test → 1 implementación mínima → repetir`. Cada test responde a lo aprendido en el ciclo anterior.
+   - 🔍 **El Refactoring pertenece a la etapa de revisión:** No mezcles refactorización arquitectónica durante el bucle Red → Green; aplícala en la fase posterior usando la skill **[`code-review`](.agents/skills/code-review/SKILL.md)**.
+4. **Anti-patrones Estrictamente Prohibidos**:
+   - ❌ **Acoplamiento a la implementación (_Implementation-coupled_):** Prohibido mockear colaboradores internos, probar métodos privados, asertar conteo/orden de llamadas internas o verificar por canales laterales (ej. hacer un `SELECT` directo a la DB en lugar de consultar mediante la interfaz pública).
+   - ❌ **Tests Tautológicos (_Tautological_):** Prohibido recalcular el valor esperado en el test usando la misma lógica del código de producción (`expect(add(a, b)).toBe(a + b)`). Los valores esperados deben ser literales conocidos e independientes derivados de la especificación.
+   - ❌ **Rebanado Horizontal (_Horizontal Slicing_):** Prohibido escribir todos los tests en lote primero y luego toda la implementación.
+   - ❌ **Mocking de módulos propios:** Solo se permite hacer mock en las **fronteras del sistema** (_system boundaries_: APIs externas, pasarelas, email, reloj/aleatoriedad) usando inyección de dependencias e interfaces estilo SDK (ver [`mocking.md`](.agents/skills/tdd/mocking.md)).
 
-### 2. Siempre PRs o Stacked PRs usando GitHub CLI (`gh`)
+### 2. Siempre PRs o Stacked PRs usando GitHub CLI (`gh`) y Skill `pr`
 
-**Está estrictamente prohibido hacer push directo a `main` para desarrollar features o fixes.** Todo cambio debe entrar mediante Pull Requests pequeños, atómicos y revisables usando `gh` CLI (recuerda que el jurado evalúa el **20% de Calidad Técnica** inspeccionando el repositorio en GitHub).
+**Está estrictamente prohibido hacer push directo a `main` para desarrollar features o fixes.** Todo cambio debe entrar mediante Pull Requests pequeños, atómicos y revisables usando `gh` CLI y siguiendo la estructura de la skill **[`pr`](.agents/skills/pr/SKILL.md)** (`Summary` con diagrama/diff-sketch, `Evidence` Before/After, `Decisiones y Tradeoffs` y `Merge Danger`: One-way/Two-way Door + Blast Radius).
 
 #### Flujo Estándar de PR Individual:
+
 ```bash
 # 1. Crear rama descriptiva desde main actualizado
 git checkout main && git pull origin main
 git checkout -b feat/matching-engine-core
 
-# 2. Desarrollar siguiendo el ciclo RED -> GREEN -> REFACTOR y validar gates
+# 2. Desarrollar en Vertical Slices (Red -> Green) y validar Quality Gates
 bun test && bun check-types && bun check
 
 # 3. Commit semántico (Conventional Commits) y push de la rama
@@ -83,40 +91,35 @@ git add .
 git commit -m "feat(matching): implement geospatial route compatibility scorer"
 git push -u origin feat/matching-engine-core
 
-# 4. Crear PR con GitHub CLI incluyendo Decisiones y Tradeoffs (10% Claridad)
+# 4. Crear PR con GitHub CLI siguiendo .agents/skills/pr/SKILL.md
 gh pr create \
   --base main \
   --head feat/matching-engine-core \
   --title "feat(matching): geospatial & schedule route compatibility engine" \
-  --body "## Resumen
-Implementa el motor de emparejamiento de rutas y horarios entre miembros verificados.
-
-## Evidencia TDD
-- Pruebas unitarias en \`apps/server/src/...\` cubriendo coincidencia espacial, ventana horaria y asientos disponibles.
-
-## Decisiones Técnicas y Tradeoffs
-- Se eligió cálculo de bounding-box + distancia Haversine en memoria previo al filtro SQL para reducir latencia en consultas recurrentes."
+  --body "## Summary
+..."
 ```
 
 #### Flujo de Stacked PRs (PRs Apilados para Features Complejas):
+
 Cuando una funcionalidad grande se divide en capas (ej. `1. Schema DB` → `2. Backend API` → `3. Frontend UI`), utiliza **Stacked PRs** apuntando cada rama a su rama padre con `--base`:
 
 ```bash
 # Capa 1: Base de datos (apunta a main)
 git checkout -b feat/01-trips-schema main
-# ... TDD + commit ...
+# ... Vertical Slices TDD + commit ...
 git push -u origin feat/01-trips-schema
 gh pr create --base main --head feat/01-trips-schema --title "feat(db): [1/3] add trips and routes schema" --body "..."
 
 # Capa 2: API Backend (nace de feat/01-trips-schema y apunta a feat/01-trips-schema)
 git checkout -b feat/02-trips-api feat/01-trips-schema
-# ... TDD + commit ...
+# ... Vertical Slices TDD + commit ...
 git push -u origin feat/02-trips-api
 gh pr create --base feat/01-trips-schema --head feat/02-trips-api --title "feat(api): [2/3] add trip matching endpoints" --body "..."
 
 # Capa 3: UI Frontend (nace de feat/02-trips-api y apunta a feat/02-trips-api)
 git checkout -b feat/03-trips-ui feat/02-trips-api
-# ... TDD + commit ...
+# ... Vertical Slices TDD + commit ...
 git push -u origin feat/03-trips-ui
 gh pr create --base feat/02-trips-api --head feat/03-trips-ui --title "feat(web): [3/3] add trip search and cost-sharing view" --body "..."
 ```
@@ -124,9 +127,29 @@ gh pr create --base feat/02-trips-api --head feat/03-trips-ui --title "feat(web)
 ### 3. Quality Gates Obligatorios antes de abrir o fusionar un PR
 
 Ningún PR puede abrirse ni darse por completado sin que estos 3 comandos terminen con código de salida `0`:
+
 - `bun test` (Suite de pruebas unitarias/integración en verde)
 - `bun check-types` (Cero errores de TypeScript en todo el monorepo)
 - `bun check` (Linter `oxlint` y formateador `oxfmt` sin errores)
+
+---
+
+## 🧠 Catálogo de Agent Skills del Repositorio (`.agents/skills/`)
+
+El repositorio incluye una suite curada de **Agent Skills** en `.agents/skills/` (bloqueadas en `skills-lock.json`) que los agentes de IA deben consultar y activar según la fase del desarrollo:
+
+| Fase                      | Skill                          | Ruta                                      | Cuándo usarla                                                                                                   |
+| :------------------------ | :----------------------------- | :---------------------------------------- | :-------------------------------------------------------------------------------------------------------------- |
+| **1. Diseño y Dominio**   | `domain-modeling`              | `.agents/skills/domain-modeling/SKILL.md` | Al definir vocabulario ubicuo (`GLOSSARY.md`), entidades de negocio o decisiones arquitectónicas (`ADR`).       |
+| **1. Diseño y Dominio**   | `codebase-design`              | `.agents/skills/codebase-design/SKILL.md` | Para diseñar módulos profundos (_deep modules_), definir interfaces simples y elegir dónde colocar los _seams_. |
+| **1. Diseño y Dominio**   | `grill-me` / `grilling`        | `.agents/skills/grill-me/SKILL.md`        | Para estresar un plan o arquitectura mediante preguntas incisivas antes de escribir código.                     |
+| **1. Diseño y Dominio**   | `prototype`                    | `.agents/skills/prototype/SKILL.md`       | Cuando se necesita validar rápidamente un modelo de estado o explorar una interfaz de usuario.                  |
+| **2. Especificación**     | `to-spec` / `to-tickets`       | `.agents/skills/to-spec/SKILL.md`         | Para transformar decisiones de diseño en especificaciones ejecutables y tickets verticales.                     |
+| **3. Implementación TDD** | **`tdd`**                      | `.agents/skills/tdd/SKILL.md`             | **Obligatoria al programar.** Ciclo Red → Green en _seams_ acordados mediante _vertical slices_.                |
+| **3. Implementación TDD** | `implement` / `implement-spec` | `.agents/skills/implement/SKILL.md`       | Para ejecutar planes e implementar especificaciones manteniendo simplicidad (YAGNI / `ponytail`).               |
+| **4. Revisión y PRs**     | `code-review`                  | `.agents/skills/code-review/SKILL.md`     | Etapa de revisión paralela (Standards + Spec) y refactorización posterior al ciclo Red → Green.                 |
+| **4. Revisión y PRs**     | **`pr`**                       | `.agents/skills/pr/SKILL.md`              | **Obligatoria al crear PRs.** Estructura visual de PR con diagramas, evidencia Before/After y Merge Danger.     |
+| **5. Diagnóstico**        | `diagnosing-bugs`              | `.agents/skills/diagnosing-bugs/SKILL.md` | Bucle sistemático de diagnóstico e hipótesis ante errores complejos o regresiones de rendimiento.               |
 
 ---
 

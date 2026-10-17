@@ -1,6 +1,6 @@
-## 📌 Resumen
+## Summary
 
-<!-- Describe brevemente qué problema resuelve este PR y qué parte del flujo o arquitectura implementa. -->
+<!-- Incluye un diagrama Mermaid, árbol de llamadas, árbol de componentes o diff-sketch (ver .agents/skills/pr/SKILL.md) -->
 
 ## 🥞 Contexto de Stacked PR (Opcional)
 
@@ -10,21 +10,26 @@
 - [ ] #3 `feat(web): [3/3] UI`
 -->
 
-## 🔴🟢🔵 Evidencia de Strict TDD
+## Evidence (Strict TDD — Seams & Vertical Slices)
 
-- [ ] **RED:** Se escribieron primero las pruebas (`*.test.ts`) cubriendo el caso de uso y bordes.
-- [ ] **GREEN:** Se implementó la lógica mínima necesaria para pasar las pruebas (`bun test`).
-- [ ] **REFACTOR:** Se limpió y optimizó el código manteniendo la suite en verde.
+- **Seams probados:** <!-- Fronteras públicas probadas en este PR -->
+- **Before (RED):** <!-- Salida del test fallando o estado previo -->
+- **After (GREEN):** <!-- Salida de bun test pasando o captura visual -->
 
 ## ⚖️ Decisiones Técnicas y Tradeoffs (Rúbrica: Claridad 10% · Complejidad 30%)
-
-<!-- Explica el porqué de las decisiones de diseño tomadas en este PR y qué alternativas se descartaron (tradeoffs). -->
 
 - **Decisión tomada:**
 - **Alternativa descartada / Tradeoff:**
 
+## Merge Danger
+
+**Door:** <!-- Two-way (fácil rollback) o One-way (migración destructiva / cambio irreversible) -->
+
+**Blast Radius:** <!-- Bajo / Medio / Alto + breve descripción del alcance -->
+
 ## ✅ Quality Gates
 
+- [ ] Ciclo `Red → Green` ejecutado en _Vertical Slices_ sobre _seams_ públicos (`.agents/skills/tdd/SKILL.md`)
 - [ ] `bun test` pasa al 100%
 - [ ] `bun check-types` sin errores de TypeScript
 - [ ] `bun check` (`oxlint` + `oxfmt`) sin advertencias ni errores
