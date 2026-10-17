@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🚗 Lima Fluye (`andes-hack`) — Movilidad Compartida Inteligente
+# 🚗 Te Jalo (`andes-hack`) — Movilidad Compartida Inteligente
 
 ### _Conectando comunidades verificadas para transformar el transporte urbano en Lima_
 
@@ -24,7 +24,7 @@
 
 ---
 
-[**🎯 El Problema**](#-problemática-en-lima) · [**💡 Comparativa**](#-comparativa-de-alternativas) · [**🗺️ Flujo de Navegación**](#️-flujo-de-navegación-recomendado--lima-fluye) · [**🏗️ Arquitectura**](#️-arquitectura-del-monorepo) · [**🚀 Inicio Rápido**](#-inicio-rápido)
+[**🎯 El Problema**](#-problemática-en-lima) · [**💡 Comparativa**](#-comparativa-de-alternativas) · [**🗺️ Flujo de Navegación**](#️-flujo-de-navegación-recomendado--te-jalo) · [**🏗️ Arquitectura**](#️-arquitectura-del-monorepo) · [**🚀 Inicio Rápido**](#-inicio-rápido)
 
 </div>
 
@@ -32,7 +32,7 @@
 
 ## 🌟 Resumen del Proyecto
 
-**Lima Fluye** (`andes-hack`) es una plataforma inteligente de **movilidad compartida comunitaria y corporativa** que conecta a miembros de entidades públicas y privadas aliadas con miembros verificados de sus propias comunidades que cuentan con vehículos y ya realizan recorridos similares.
+**Te Jalo** (`andes-hack`) es una plataforma inteligente de **movilidad compartida comunitaria y corporativa** que conecta a miembros de entidades públicas y privadas aliadas con miembros verificados de sus propias comunidades que cuentan con vehículos y ya realizan recorridos similares.
 
 Mediante un **sistema de emparejamiento inteligente**, la aplicación identifica coincidencias entre **rutas, horarios y destinos**, facilitando viajes compartidos **seguros por diseño, coordinados y recurrentes**. De esta manera, aprovecha los asientos disponibles en vehículos particulares, reduce los desplazamientos individuales en automóvil y contribuye a una movilidad urbana más eficiente, humana y sostenible en **Lima**.
 
@@ -83,7 +83,7 @@ flowchart LR
         M["Coincidencia de Ruta,\nHorario y Comunidad"]
     end
 
-    subgraph Despues["🟢 Con Lima Fluye (-75% Vehículos)"]
+    subgraph Despues["🟢 Con Te Jalo (-75% Vehículos)"]
         B1["🚙 1 Auto en Circulación\n(4 miembros verificados)"]
         B2["🏠 3 Autos en Casa\n(Menos tráfico y emisiones)"]
     end
@@ -95,7 +95,7 @@ flowchart LR
 
 ## 💡 Comparativa de Alternativas
 
-| Criterio                  |     🚌 Transporte Público     | 🚕 Apps de Taxi (Uber, etc.) |  🚗 Auto Propio (Solo)   |          ✨ **Lima Fluye**           |
+| Criterio                  |     🚌 Transporte Público     | 🚕 Apps de Taxi (Uber, etc.) |  🚗 Auto Propio (Solo)   |            ✨ **Te Jalo**            |
 | :------------------------ | :---------------------------: | :--------------------------: | :----------------------: | :----------------------------------: |
 | **Seguridad y Confianza** |            🔴 Baja            |           🟡 Media           |         🟢 Alta          |  🟢 **Alta (Comunidad Verificada)**  |
 | **Costo por Viaje**       |            🟢 Bajo            |           🔴 Alto            | 🔴 Alto (Gasolina/Mant.) |    🟢 **Bajo (Gasto Compartido)**    |
@@ -105,9 +105,9 @@ flowchart LR
 
 ---
 
-## 🗺️ Flujo de Navegación Recomendado — Lima Fluye
+## 🗺️ Flujo de Navegación Recomendado — Te Jalo
 
-La experiencia de usuario en **Lima Fluye** se estructura en **8 vistas clave** que conectan a pasajeros y conductores dentro de su comunidad autorizada:
+La experiencia de usuario en **Te Jalo** se estructura en **8 vistas clave** que conectan a pasajeros y conductores dentro de su comunidad autorizada:
 
 ```mermaid
 flowchart TD

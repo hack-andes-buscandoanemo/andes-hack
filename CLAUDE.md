@@ -4,13 +4,13 @@ This file provides context about the project, domain model, and technical stack 
 
 ## Project Overview & Domain Context
 
-- **Product Name**: **Lima Fluye** (Repo: `andes-hack` · Organización: `hack-andes-buscandoanemo`)
+- **Product Name**: **Te Jalo** (Repo: `andes-hack` · Organización: `hack-andes-buscandoanemo`)
 - **Domain**: Smart Shared Mobility / Community & Corporate Carpooling in Lima, Peru.
 - **Ecosystem**: TypeScript Monorepo (Bun + Turborepo)
 
 ### Product Description
 
-**Lima Fluye** (`andes-hack`) es una plataforma inteligente de movilidad compartida que conecta a miembros de entidades públicas y privadas aliadas con miembros verificados que tienen vehículos dentro de sus propias comunidades y que ya realizan recorridos similares.
+**Te Jalo** (`andes-hack`) es una plataforma inteligente de movilidad compartida que conecta a miembros de entidades públicas y privadas aliadas con miembros verificados que tienen vehículos dentro de sus propias comunidades y que ya realizan recorridos similares.
 
 Mediante un **sistema de emparejamiento inteligente (Smart Matching)**, la aplicación identifica coincidencias entre **rutas, horarios y destinos**, facilitando viajes compartidos seguros en su diseño, coordinados y recurrentes. Su objetivo es aprovechar los asientos disponibles en vehículos particulares, reducir los desplazamientos individuales en automóvil y contribuir a una movilidad urbana más eficiente y sostenible en Lima.
 
@@ -31,7 +31,7 @@ Al diseñar esquemas de base de datos (`packages/db`), endpoints (`apps/server`,
 - **Emparejamiento Inteligente (`TripMatch` / `MatchingEngine`)**: Algoritmo/servicio encargado de detectar compatibilidad espacial (cercanía de origen/destino/ruta) y temporal (ventana horaria) entre miembros de comunidades afines.
 - **División de Costos (`CostSharing`)**: Cálculo transparente de contribución a gastos de combustible/peaje dividido entre los ocupantes (modelo colaborativo sin lucro comercial).
 
-### 🗺️ Flujo de Navegación Recomendado — Lima Fluye (Arquitectura de Pantallas E2E)
+### 🗺️ Flujo de Navegación Recomendado — Te Jalo (Arquitectura de Pantallas E2E)
 
 Todo desarrollo de vistas (`apps/web`) y endpoints (`apps/server`) debe respaldar este flujo oficial de 8 módulos:
 
