@@ -285,14 +285,35 @@ cp packages/infra/.env.example packages/infra/.env
 
 ### 4. Base de Datos y Desarrollo
 
-Sincroniza el esquema de la base de datos e inicia los servidores de desarrollo:
+Aplica las migraciones versionadas de la base de datos e inicia los servidores de desarrollo:
 
 ```bash
-# Empujar el esquema a PostgreSQL con Drizzle
-bun db:push
+# Generar y aplicar migraciones versionadas a PostgreSQL (Neon) con Drizzle
+bun db:generate
+bun db:migrate
 
 # Iniciar frontend y backend en paralelo con Turborepo
 bun dev
+```
+
+### 5. URLs Públicas y Despliegue en Vivo (Cloudflare + Alchemy)
+
+- **Web pública (`apps/web`):** [`https://andes-hack-web-diego.diegorafaelcisnerostafur.workers.dev`](https://andes-hack-web-diego.diegorafaelcisnerostafur.workers.dev)
+- **API pública (`apps/server`):** [`https://andes-hack-server-diego.diegorafaelcisnerostafur.workers.dev`](https://andes-hack-server-diego.diegorafaelcisnerostafur.workers.dev)
+  - Healthcheck: [`GET /health`](https://andes-hack-server-diego.diegorafaelcisnerostafur.workers.dev/health) → `{ "status": "ok" }`
+  - Referencia OpenAPI: [`GET /docs`](https://andes-hack-server-diego.diegorafaelcisnerostafur.workers.dev/docs)
+
+Para volver a desplegar la web y la API en producción:
+
+```bash
+# 1. Autenticarse en Cloudflare (una sola vez) o configurar CLOUDFLARE_API_TOKEN en packages/infra/.env
+bun --cwd packages/infra alchemy login cloudflare
+
+# 2. Aplicar migraciones pendientes en Neon
+bun db:migrate
+
+# 3. Desplegar API (Cloudflare Worker) y Web (OpenNext Cloudflare)
+bun --cwd packages/infra deploy
 ```
 
 <details>

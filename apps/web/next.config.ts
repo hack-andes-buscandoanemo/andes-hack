@@ -18,6 +18,15 @@ const nextConfig: NextConfig = {
   },
   output: "standalone",
   outputFileTracingRoot: workspaceRoot,
+  async rewrites() {
+    const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${serverUrl}/api/:path*`,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
