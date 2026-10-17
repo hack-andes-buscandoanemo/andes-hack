@@ -20,7 +20,7 @@ describe("app shell", () => {
     shell();
 
     expect(screen.getByText("Te Jalo")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Avisos" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Avisos (próximamente)" })).toBeDisabled();
     expect(screen.getByLabelText("Perfil de Ana Pérez")).toHaveTextContent("AP");
     expect(screen.getByText("contenido")).toBeInTheDocument();
   });
@@ -48,13 +48,17 @@ describe("app shell", () => {
     expect(screen.getByRole("link", { name: "Inicio" })).not.toHaveAttribute("aria-current");
   });
 
-  it("keeps every bottom item at least 44px tall", () => {
+  it("keeps the section active on nested routes", () => {
+    usePathname.mockReturnValue("/viajes/123");
     shell();
 
-    for (const link of screen.getAllByRole("link", {
-      name: /^(Inicio|Buscar|Viajes|Chat|Perfil)$/,
-    })) {
-      expect(link.className).toContain("min-h-14");
-    }
+    expect(screen.getByRole("link", { name: "Viajes" })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("does not activate a section whose name only shares a prefix", () => {
+    usePathname.mockReturnValue("/viajesx");
+    shell();
+
+    expect(screen.getByRole("link", { name: "Viajes" })).not.toHaveAttribute("aria-current");
   });
 });

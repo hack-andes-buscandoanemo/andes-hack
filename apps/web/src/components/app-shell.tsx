@@ -39,8 +39,9 @@ export default function AppShell({ name, children }: { name: string; children: R
         <div className="flex items-center gap-3">
           <button
             type="button"
-            aria-label="Avisos"
-            className="flex size-11 items-center justify-center rounded-full"
+            disabled
+            aria-label="Avisos (próximamente)"
+            className="flex size-11 items-center justify-center rounded-full text-muted-foreground"
           >
             <HugeiconsIcon icon={Notification01Icon} className="size-6" aria-hidden />
           </button>
@@ -62,13 +63,13 @@ export default function AppShell({ name, children }: { name: string; children: R
       >
         <ul className="mx-auto flex max-w-md md:max-w-xl">
           {SECTIONS.map(({ href, label, icon }) => {
-            const active = pathname === href;
+            const active = pathname === href || pathname.startsWith(`${href}/`);
             return (
               <li key={href} className="flex-1">
                 <Link
                   href={href}
                   aria-current={active ? "page" : undefined}
-                  className={`flex min-h-14 flex-col items-center justify-center gap-0.5 text-xs font-medium focus-visible:outline-2 focus-visible:outline-offset-[-2px] ${
+                  className={`flex min-h-14 flex-col border-t-2 ${active ? "border-brand-yellow" : "border-transparent"} items-center justify-center gap-0.5 text-xs font-medium focus-visible:outline-2 focus-visible:outline-offset-[-2px] ${
                     active ? "font-bold text-foreground" : "text-muted-foreground"
                   }`}
                 >

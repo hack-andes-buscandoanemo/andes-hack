@@ -1,19 +1,24 @@
 import Link from "next/link";
 
+import EmptyState from "@/components/empty-state";
+
 const EMPTY_TRIPS = "Aún no tienes viajes. Busca uno o publica el que ya haces.";
 
 // ponytail: "Tu próximo viaje", matches (US-016) and impact (US-030) show empty states until built.
 export default function Inicio({ name, communityName }: { name: string; communityName?: string }) {
   return (
     <main className="flex flex-col gap-5 px-4 py-4">
-      <div>
-        <h1 className="text-3xl font-extrabold">Hola, {name} 👋</h1>
-        <p className="text-muted-foreground">¿A dónde vamos hoy?</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-extrabold">Hola, {name} 👋</h1>
+          <p className="text-muted-foreground">¿A dónde vamos hoy?</p>
+        </div>
         {communityName && (
-          <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-brand-yellow px-3 py-1 text-sm font-bold text-brand-black">
-            <span>{communityName}</span>
-            <span aria-hidden>·</span>
-            <span>Miembro verificado</span>
+          <p className="flex flex-col rounded-xl bg-muted px-3 py-2 text-sm">
+            <span className="font-bold">{communityName}</span>
+            <span className="font-medium text-brand-black">
+              <span aria-hidden>✓ </span>Miembro verificado
+            </span>
           </p>
         )}
       </div>
@@ -27,13 +32,13 @@ export default function Inicio({ name, communityName }: { name: string; communit
         </Link>
         <Link
           href="/ofrecer"
-          className="flex min-h-12 items-center justify-center rounded-full border-2 border-foreground px-4 font-bold"
+          className="flex min-h-12 items-center justify-center rounded-full bg-brand-black px-4 font-bold text-white"
         >
           Ofrecer viaje
         </Link>
       </div>
 
-      <p className="rounded-xl border bg-card p-4 text-muted-foreground">{EMPTY_TRIPS}</p>
+      <EmptyState tone="dark">{EMPTY_TRIPS}</EmptyState>
 
       <section aria-labelledby="matches" className="flex flex-col gap-2">
         <div className="flex items-baseline justify-between">
@@ -44,18 +49,17 @@ export default function Inicio({ name, communityName }: { name: string; communit
             Ver todas
           </Link>
         </div>
-        <p className="rounded-xl border bg-card p-4 text-muted-foreground">
-          Aún no hay coincidencias para hoy.
-        </p>
+        <EmptyState>Aún no hay coincidencias para hoy.</EmptyState>
       </section>
 
-      <section aria-labelledby="impact" className="flex flex-col gap-2">
+      <section
+        aria-labelledby="impact"
+        className="flex flex-col gap-2 rounded-2xl bg-brand-yellow/15 p-3"
+      >
         <h2 id="impact" className="text-lg font-bold">
           Tu impacto
         </h2>
-        <p className="rounded-xl border bg-card p-4 text-muted-foreground">
-          Tu impacto aparecerá cuando completes tu primer viaje compartido.
-        </p>
+        <EmptyState>Tu impacto aparecerá cuando completes tu primer viaje compartido.</EmptyState>
       </section>
     </main>
   );
