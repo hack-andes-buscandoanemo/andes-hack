@@ -238,13 +238,26 @@ bun dev
 
 </details>
 
+## 🧪 Estándares de Ingeniería y Flujo de Trabajo
+
+Para garantizar la máxima calidad técnica y trazabilidad de nuestras decisiones arquitectónicas, este repositorio aplica dos reglas de ingeniería estrictas:
+
+### 1. 🔴🟢🔵 Strict TDD (Test-Driven Development)
+Cada feature, algoritmo de *Smart Matching* o endpoint de API sigue el ciclo **Red → Green → Refactor** con **Vitest**:
+1. **Red:** Escribir primero la prueba automatizada (`*.test.ts`) que defina el contrato esperado y verificar que falle.
+2. **Green:** Implementar la lógica mínima necesaria para pasar la prueba (`bun test`).
+3. **Refactor:** Optimizar diseño, tipado estricto (`bun check-types`) y formato/linting (`bun check`).
+
+### 2. 🌿 Siempre PRs o Stacked PRs vía GitHub CLI (`gh`)
+No se realizan *pushes* directos a `main` durante el desarrollo de funcionalidades. Todo cambio ingresa mediante **Pull Requests atómicos** o **Stacked PRs** (PRs apilados por capas: `DB Schema` → `Backend API` → `Frontend UI`) creados desde la terminal con `gh pr create`, documentando explícitamente las **decisiones técnicas y tradeoffs**.
+
 ---
 
 ## 🤖 Soporte para Agentes de IA (AI-First Repo)
 
-Este repositorio está preparado para desarrollo asistido por agentes de IA (Antigravity, Claude Code, Cursor, GitHub Copilot). Toda la especificación de dominio, reglas de negocio y grafo del stack se encuentran documentados en:
+Este repositorio está preparado para desarrollo asistido por agentes de IA (Antigravity, Claude Code, Cursor, GitHub Copilot). Toda la especificación de dominio, **rúbrica de evaluación del hackathon**, reglas de negocio y grafo del stack se encuentran documentados en:
 
-- 📄 [`AGENTS.md`](./AGENTS.md) — Contexto integral de producto, arquitectura y reglas para agentes.
+- 📄 [`AGENTS.md`](./AGENTS.md) — Contexto integral de producto, rúbrica de evaluación (75% Técnico / 25% Producto), arquitectura y reglas estrictas para agentes.
 - 📄 [`CLAUDE.md`](./CLAUDE.md) — Instrucciones específicas y convenciones de código del monorepo.
 - 📄 [`bts.jsonc`](./bts.jsonc) — Definición declarativa del Stack Graph (Better Fullstack).
 
