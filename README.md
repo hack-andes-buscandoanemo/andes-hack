@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🚗 Andes Hack — Movilidad Compartida Inteligente
+# 🚗 Lima Fluye (`andes-hack`) — Movilidad Compartida Inteligente
 
 ### _Conectando comunidades verificadas para transformar el transporte urbano en Lima_
 
@@ -24,7 +24,7 @@
 
 ---
 
-[**🎯 El Problema**](#-problemática-en-lima) · [**💡 La Solución**](#-nuestra-propuesta) · [**🧠 Cómo Funciona**](#-cómo-funciona-el-sistema) · [**🏗️ Arquitectura**](#️-arquitectura-del-monorepo) · [**🚀 Inicio Rápido**](#-inicio-rápido)
+[**🎯 El Problema**](#-problemática-en-lima) · [**💡 Comparativa**](#-comparativa-de-alternativas) · [**🗺️ Flujo de Navegación**](#️-flujo-de-navegación-recomendado--lima-fluye) · [**🏗️ Arquitectura**](#️-arquitectura-del-monorepo) · [**🚀 Inicio Rápido**](#-inicio-rápido)
 
 </div>
 
@@ -32,7 +32,7 @@
 
 ## 🌟 Resumen del Proyecto
 
-**Andes Hack** es una plataforma inteligente de **movilidad compartida comunitaria y corporativa** que conecta a miembros de entidades públicas y privadas aliadas con miembros verificados de sus propias comunidades que cuentan con vehículos y ya realizan recorridos similares.
+**Lima Fluye** (`andes-hack`) es una plataforma inteligente de **movilidad compartida comunitaria y corporativa** que conecta a miembros de entidades públicas y privadas aliadas con miembros verificados de sus propias comunidades que cuentan con vehículos y ya realizan recorridos similares.
 
 Mediante un **sistema de emparejamiento inteligente**, la aplicación identifica coincidencias entre **rutas, horarios y destinos**, facilitando viajes compartidos **seguros por diseño, coordinados y recurrentes**. De esta manera, aprovecha los asientos disponibles en vehículos particulares, reduce los desplazamientos individuales en automóvil y contribuye a una movilidad urbana más eficiente, humana y sostenible en **Lima**.
 
@@ -83,7 +83,7 @@ flowchart LR
         M["Coincidencia de Ruta,\nHorario y Comunidad"]
     end
 
-    subgraph Despues["🟢 Con Andes Hack (-75% Vehículos)"]
+    subgraph Despues["🟢 Con Lima Fluye (-75% Vehículos)"]
         B1["🚙 1 Auto en Circulación\n(4 miembros verificados)"]
         B2["🏠 3 Autos en Casa\n(Menos tráfico y emisiones)"]
     end
@@ -95,7 +95,7 @@ flowchart LR
 
 ## 💡 Comparativa de Alternativas
 
-| Criterio                  |     🚌 Transporte Público     | 🚕 Apps de Taxi (Uber, etc.) |  🚗 Auto Propio (Solo)   |          ✨ **Andes Hack**           |
+| Criterio                  |     🚌 Transporte Público     | 🚕 Apps de Taxi (Uber, etc.) |  🚗 Auto Propio (Solo)   |          ✨ **Lima Fluye**           |
 | :------------------------ | :---------------------------: | :--------------------------: | :----------------------: | :----------------------------------: |
 | **Seguridad y Confianza** |            🔴 Baja            |           🟡 Media           |         🟢 Alta          |  🟢 **Alta (Comunidad Verificada)**  |
 | **Costo por Viaje**       |            🟢 Bajo            |           🔴 Alto            | 🔴 Alto (Gasolina/Mant.) |    🟢 **Bajo (Gasto Compartido)**    |
@@ -105,7 +105,83 @@ flowchart LR
 
 ---
 
-## 🧠 ¿Cómo Funciona el Sistema?
+## 🗺️ Flujo de Navegación Recomendado — Lima Fluye
+
+La experiencia de usuario en **Lima Fluye** se estructura en **8 vistas clave** que conectan a pasajeros y conductores dentro de su comunidad autorizada:
+
+```mermaid
+flowchart TD
+    S1["🏛️ 1. Bienvenida e ingreso institucional\n(Acceso a comunidad autorizada)"] --> S2["🏠 2. Inicio\n(Buscar u ofrecer viajes)"]
+
+    S2 -->|"Rol: Pasajero"| S3["🔍 3. Buscar viaje\n(Origen, destino y horario)"]
+    S2 -->|"Rol: Conductor"| S5["🚘 5. Ofrecer viaje\n(Recorrido habitual y asientos)"]
+
+    S3 --> S4["📋 4. Detalle del viaje\n(Info del conductor, ruta y asientos)"]
+    S5 --> S6["📥 6. Gestionar solicitudes\n(Revisión de pasajeros compatibles)"]
+
+    S4 --> ActP["✋ Solicitar asiento"]
+    S6 --> ActC["✅ Aceptar pasajeros"]
+
+    ActP --> S7["💬 7. Chat del viaje\n(Coordinar horarios y punto de encuentro)"]
+    ActC --> S7
+
+    S7 --> S8["🛡️ 8. Perfil y seguridad\n(Identidad, verificación e historial)"]
+    S2 -.->|"Acceso directo desde navegación principal"| S8
+```
+
+<details>
+<summary><b>📐 Ver Diagrama de Flujo en texto (ASCII)</b></summary>
+
+```text
+1. Bienvenida e ingreso institucional
+                 │
+                 ▼
+             2. Inicio
+                 │
+         ┌───────┴───────┐
+         ▼               ▼
+      PASAJERO        CONDUCTOR
+         │               │
+         ▼               ▼
+  3. Buscar viaje   5. Ofrecer viaje
+         │               │
+         ▼               ▼
+  4. Detalle del    6. Gestionar
+      viaje            solicitudes
+         │               │
+         ▼               ▼
+  Solicitar asiento  Aceptar pasajeros
+         │               │
+         └───────┬───────┘
+                 │
+                 ▼
+        7. Chat del viaje
+                 │
+                 ▼
+       8. Perfil y seguridad
+```
+
+</details>
+
+### 📱 Detalle de Pantallas del Flujo
+
+|   #   | Pantalla / Módulo                      |     Rol      | Descripción Funcional                                                                                                   |
+| :---: | :------------------------------------- | :----------: | :---------------------------------------------------------------------------------------------------------------------- |
+| **1** | **Bienvenida e ingreso institucional** |    Ambos     | Acceso y validación del miembro dentro de una comunidad o entidad aliada autorizada.                                    |
+| **2** | **Inicio**                             |    Ambos     | Pantalla principal de la aplicación desde donde el usuario elige buscar u ofrecer viajes.                               |
+| **3** | **Buscar viaje**                       | 👤 Pasajero  | El pasajero busca rutas compatibles según su origen, destino y ventana horaria.                                         |
+| **4** | **Detalle del viaje**                  | 👤 Pasajero  | El pasajero revisa la información del conductor, recorrido y asientos disponibles para **solicitar un asiento**.        |
+| **5** | **Ofrecer viaje**                      | 🚘 Conductor | El conductor publica su recorrido habitual, días/horarios e indica los asientos disponibles.                            |
+| **6** | **Gestionar solicitudes**              | 🚘 Conductor | El conductor revisa las solicitudes recibidas y **acepta pasajeros compatibles** de su comunidad.                       |
+| **7** | **Chat del viaje**                     |    Ambos     | Coordinación directa entre conductor y pasajeros para confirmar horarios, puntos de encuentro y detalles del recorrido. |
+| **8** | **Perfil y seguridad**                 |    Ambos     | Gestión de identidad, verificación institucional, historial de viajes y preferencias personales.                        |
+
+> [!NOTE]
+> **Acceso Global:** El módulo **8. Perfil y seguridad** es accesible desde la navegación principal en cualquier momento, no únicamente después del chat del viaje.
+
+---
+
+## 🧠 Secuencia de Interacción del Sistema
 
 ```mermaid
 sequenceDiagram
@@ -114,17 +190,17 @@ sequenceDiagram
     actor C as 🚘 Conductor (Miembro)
     participant Org as 🏛️ Entidad Aliada
     participant App as 🧠 Motor de Matching
-    participant Viaje as 🤝 Viaje Compartido
+    participant Viaje as 💬 Chat y Viaje Compartido
 
-    P->>Org: Verificación institucional (Correo / DNI)
-    C->>Org: Verificación institucional + Registro de Vehículo
-    C->>App: Publica ruta recurrente, horario y asientos libres
-    P->>App: Solicita recorrido (Origen, Destino, Horario)
-    App->>App: Analiza coincidencia geoespacial y temporal
-    App-->>P: Sugiere ruta compatible en su comunidad
-    P->>Viaje: Reserva asiento y confirma punto de encuentro
-    C->>Viaje: Acepta y coordina el viaje recurrente
-    Viaje-->>C: División transparente de gastos (Sin recargo comercial)
+    P->>Org: 1. Bienvenida e ingreso institucional
+    C->>Org: 1. Bienvenida e ingreso institucional + Vehículo
+    C->>App: 5. Ofrecer viaje (Ruta habitual, horario y asientos)
+    P->>App: 3. Buscar viaje (Origen, Destino, Horario)
+    App-->>P: 4. Detalle del viaje (Rutas compatibles sugeridas)
+    P->>App: Solicitar asiento
+    App-->>C: 6. Gestionar solicitudes (Notifica solicitud)
+    C->>Viaje: Aceptar pasajero compatible
+    P->>Viaje: 7. Chat del viaje (Coordinar punto de encuentro y gasto compartido)
 ```
 
 ---
