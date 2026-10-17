@@ -1,0 +1,66 @@
+{
+  "name": "andes-hack",
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "apps/*",
+      "packages/*"
+    ],
+    "catalog": {
+      "dotenv": "^17.4.2",
+      "zod": "^4.6.5",
+      "@types/bun": "^1.4.2",
+      "@cloudflare/workers-types": "^4.20260629.1",
+      "hono": "^4.12.27",
+      "better-auth": "1.6.22",
+      "react": "19.2.8",
+      "@types/react": "~19.2.18",
+      "vitest": "4.1.8",
+      "@vitest/ui": "4.1.8",
+      "@vitest/coverage-v8": "4.1.8",
+      "jsdom": "^29.1.1",
+      "alchemy": "^0.93.12"
+    }
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "check-types": "turbo check-types",
+    "dev:web": "turbo -F web dev",
+    "dev:server": "turbo -F server dev",
+    "db:push": "turbo -F @andes-hack/db db:push",
+    "db:studio": "turbo -F @andes-hack/db db:studio",
+    "db:generate": "turbo -F @andes-hack/db db:generate",
+    "db:migrate": "turbo -F @andes-hack/db db:migrate",
+    "test": "bun run --filter web test && bun run --filter server test && bun run --filter @andes-hack/api test",
+    "check": "oxlint && oxfmt --write",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@andes-hack/env": "workspace:*",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@andes-hack/config": "workspace:*",
+    "@cloudflare/workers-types": "catalog:",
+    "@types/bun": "catalog:",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "oxfmt": "^0.56.0",
+    "oxlint": "^1.86.0",
+    "turbo": "2.10.11",
+    "typescript": "^6.0.3"
+  },
+  "overrides": {
+    "kysely": "0.28.17"
+  },
+  "lint-staged": {
+    "*": [
+      "oxlint",
+      "oxfmt --write"
+    ]
+  },
+  "packageManager": "bun@1.4.2"
+}

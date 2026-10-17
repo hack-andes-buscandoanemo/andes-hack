@@ -1,0 +1,30 @@
+{
+  "name": "@andes-hack/auth",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@andes-hack/db": "workspace:*",
+    "@andes-hack/env": "workspace:*",
+    "@better-auth/core": "1.6.22",
+    "@better-auth/drizzle-adapter": "1.6.22",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@andes-hack/config": "workspace:*",
+    "typescript": "^6.0.3"
+  }
+}

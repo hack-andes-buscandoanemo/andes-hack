@@ -1,0 +1,3 @@
+{
+  "extends": "@andes-hack/config/tsconfig.base.json"
+}

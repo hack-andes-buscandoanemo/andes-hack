@@ -1,0 +1,56 @@
+name: andes-hack
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile.next
+    env_file:
+      - apps/web/.env
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - server
+    restart: unless-stopped
+
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    env_file:
+      - apps/server/.env
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - CORS_ORIGIN=http://localhost:3001
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/andes-hack
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    container_name: andes-hack-postgres
+    # WARNING: Configure database credentials via environment variables before production use.
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-andes-hack}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

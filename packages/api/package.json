@@ -1,0 +1,34 @@
+{
+  "name": "@andes-hack/api",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "openapi:verify": "bun src/verify-openapi.ts",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@andes-hack/auth": "workspace:*",
+    "@andes-hack/db": "workspace:*",
+    "@andes-hack/env": "workspace:*",
+    "@asteasolutions/zod-to-openapi": "^8.5.0",
+    "dotenv": "catalog:",
+    "hono": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@andes-hack/config": "workspace:*",
+    "@vitest/coverage-v8": "catalog:",
+    "@vitest/ui": "catalog:",
+    "jsdom": "catalog:",
+    "typescript": "^6.0.3",
+    "vitest": "catalog:"
+  }
+}
