@@ -72,12 +72,29 @@ describe("app route protection", () => {
     expect(await access()).toEqual({ user: { name: "Ana", email: "ana@uni.pe" } });
   });
 
-  it("does not crash when /me fails with a server error or the network drops", async () => {
-    fetchMock.mockReturnValueOnce(meResponse({}, 503));
-    expect(await access()).toEqual({ user: { name: "Ana", email: "ana@uni.pe" } });
+  it("fails closed when /me answers with a server error", async () => {
+    fetchMock.mockReturnValue(meResponse({}, 503));
 
-    fetchMock.mockRejectedValueOnce(new TypeError("fetch failed"));
-    expect(await access()).toEqual({ user: { name: "Ana", email: "ana@uni.pe" } });
+    expect(await access()).toEqual({ unavailable: true });
+  });
+
+  it("fails closed when the network drops", async () => {
+    fetchMock.mockRejectedValue(new TypeError("fetch failed"));
+
+    expect(await access()).toEqual({ unavailable: true });
+  });
+
+  it("asks /me for fresh data on every request", async () => {
+    fetchMock.mockReturnValue(meResponse({ user: ana, memberships: [readyMembership] }));
+    await access();
+
+    expect(fetchMock.mock.calls[0]![1].cache).toBe("no-store");
+  });
+
+  it("fails closed when the auth server is down", async () => {
+    getSession.mockRejectedValue(new Error("auth down"));
+
+    expect(await access()).toEqual({ unavailable: true });
   });
 
   it("sends the visitor to the welcome screen when /me rejects the session (401)", async () => {
