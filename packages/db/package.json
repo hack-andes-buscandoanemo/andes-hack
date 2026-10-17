@@ -14,7 +14,8 @@
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@andes-hack/env": "workspace:*",
@@ -25,7 +26,9 @@
   },
   "devDependencies": {
     "@andes-hack/config": "workspace:*",
+    "@electric-sql/pglite": "0.5.8",
     "drizzle-kit": "^0.31.11",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "catalog:"
   }
 }

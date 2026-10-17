@@ -15,6 +15,13 @@
       "when": 1792280816285,
       "tag": "0001_drop_template_task",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792281204154,
+      "tag": "0002_core_domain",
+      "breakpoints": true
     }
   ]
 }
