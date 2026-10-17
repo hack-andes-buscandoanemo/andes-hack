@@ -1,5 +1,5 @@
 {
-  "id": "6e49d4d5-a0e0-4be5-9975-5fce0f8eda39",
+  "id": "d489b2ad-5534-48f8-826d-502875183d60",
   "prevId": "09a06024-4fa7-4879-9098-89738cb90bfa",
   "version": "7",
   "dialect": "postgresql",
@@ -1067,7 +1067,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "trip_offer_seats_taken_check": {
+          "name": "trip_offer_seats_taken_check",
+          "value": "\"trip_offer\".\"seats_taken\" BETWEEN 0 AND \"trip_offer\".\"seats_total\""
+        }
+      },
       "isRLSEnabled": false
     },
     "public.trip_request": {

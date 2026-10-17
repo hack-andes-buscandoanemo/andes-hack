@@ -96,7 +96,8 @@ CREATE TABLE "trip_offer" (
 	"note" varchar(280),
 	"status" "offer_status" DEFAULT 'active' NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "trip_offer_seats_taken_check" CHECK ("trip_offer"."seats_taken" BETWEEN 0 AND "trip_offer"."seats_total")
 );
 --> statement-breakpoint
 CREATE TABLE "trip_request" (
