@@ -8,6 +8,13 @@
       "when": 1792275147016,
       "tag": "0000_loose_justin_hammer",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792280816285,
+      "tag": "0001_drop_template_task",
+      "breakpoints": true
     }
   ]
 }
