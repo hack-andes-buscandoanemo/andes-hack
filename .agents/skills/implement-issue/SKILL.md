@@ -1,6 +1,6 @@
 ---
 name: implement-issue
-description: Implement a Te Jalo user story (US-XXX) or GitHub issue end-to-end following the repo's strict workflow. Orchestrates issue & dependency discovery via gh, codebase-memory-mcp graph exploration, design-tree clarification via grilling (grill-me), deep-module seam confirmation via codebase-design + tdd, vertical-slice Red->Green TDD with YAGNI discipline (ponytail), OpenAPI contract sync, two-axis parallel review via code-review, quality gates (bun test, bun check-types, bun check), and PR / Stacked PR creation via pr. Use whenever the user passes a GitHub issue URL, issue number (#N), or user story ID (US-XXX), or asks to implement an issue/story.
+description: Implement a Te Jalo user story (US-XXX) or GitHub issue end-to-end following the repo's strict workflow. Orchestrates issue & dependency discovery via gh, codebase-memory-mcp graph exploration, design-tree clarification via grilling (grill-me), deep-module seam confirmation via codebase-design + tdd, vertical-slice Red->Green TDD with YAGNI discipline (ponytail), OpenAPI contract sync, two-axis parallel review via code-review, quality gates (bun run test, bun check-types, bun check), and PR / Stacked PR creation via pr. Use whenever the user passes a GitHub issue URL, issue number (#N), or user story ID (US-XXX), or asks to implement an issue/story.
 ---
 
 # Implement Issue (`US-XXX` / `#N`)

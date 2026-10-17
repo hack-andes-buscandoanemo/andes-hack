@@ -13,4 +13,4 @@ The skills speak in terms of five canonical triage roles, plus this repo's epic 
 Repo-specific priority and epic labels:
 
 - `prioridad:P0` (Imprescindible para la demo en vivo), `prioridad:P1`, `prioridad:P2`
-- `epic:plataforma-despliegue`, `epic:comunidades-verificacion`, `epic:recorridos-busqueda`, `epic:motor-emparejamiento`, `epic:solicitudes-coordinacion`, `epic:impacto-transparencia`, `epic:experiencia-narrativa`
+- `epic:plataforma-despliegue`, `epic:comunidades-verificacion`, `epic:recorridos-busqueda`, `epic:motor-emparejamiento`, `epic:viajes-coordinacion`, `epic:seguridad-confianza`, `epic:impacto-metricas`, `epic:experiencia-narrativa`

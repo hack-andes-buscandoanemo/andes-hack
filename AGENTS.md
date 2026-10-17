@@ -106,7 +106,7 @@ Toda implementación debe seguir estrictamente la skill **[`tdd`](.agents/skills
    - **Prueba únicamente en _seams_ acordados previamente:** Antes de escribir cualquier test, propón los _seams_ al usuario (_"¿Cuál es la interfaz pública y qué seams debemos probar?"_, indicando en una línea qué atrapa y qué deja fuera cada seam). No se escribe ningún test en un seam no confirmado.
    - Si el diseño de la interfaz o la profundidad del módulo está en duda, consulta la skill **[`codebase-design`](.agents/skills/codebase-design/SKILL.md)**.
 3. **Reglas del bucle Red → Green (Vertical Slicing)**:
-   - 🔴 **Red antes que Green:** Escribe primero **una** prueba que falle (`bun test`) y luego **únicamente** el código mínimo para pasarla. No anticipes pruebas futuras ni agregues código especulativo.
+   - 🔴 **Red antes que Green:** Escribe primero **una** prueba que falle (`bun run test`) y luego **únicamente** el código mínimo para pasarla. No anticipes pruebas futuras ni agregues código especulativo.
    - 🍰 **Una rebanada vertical a la vez (_Vertical Slicing / Tracer Bullets_):** `1 seam → 1 test → 1 implementación mínima → repetir`. Cada test responde a lo aprendido en el ciclo anterior.
    - 🔍 **El Refactoring pertenece a la etapa de revisión:** No mezcles refactorización arquitectónica durante el bucle Red → Green; aplícala en la fase posterior usando la skill **[`code-review`](.agents/skills/code-review/SKILL.md)**.
 4. **Anti-patrones Estrictamente Prohibidos**:
@@ -127,7 +127,7 @@ git checkout main && git pull origin main
 git checkout -b feat/matching-engine-core
 
 # 2. Desarrollar en Vertical Slices (Red -> Green) y validar Quality Gates
-bun test && bun check-types && bun check
+bun run test && bun check-types && bun check
 
 # 3. Commit semántico (Conventional Commits) y push de la rama
 git add .
@@ -171,7 +171,7 @@ gh pr create --base feat/02-trips-api --head feat/03-trips-ui --title "feat(web)
 
 Ningún PR puede abrirse ni darse por completado sin que estos 3 comandos terminen con código de salida `0`:
 
-- `bun test` (Suite de pruebas unitarias/integración en verde)
+- `bun run test` (Suite de pruebas unitarias/integración en verde)
 - `bun check-types` (Cero errores de TypeScript en todo el monorepo)
 - `bun check` (Linter `oxlint` y formateador `oxfmt` sin errores)
 
@@ -274,7 +274,7 @@ andes-hack/
 - `bun dev:web` - Start frontend only
 - `bun dev:server` - Start backend only
 - `bun build` - Build for production
-- `bun test` - Run tests across workspaces
+- `bun run test` - Run tests across workspaces
 - `bun check` - Lint (`oxlint`) and format (`oxfmt --write`)
 - `bun check-types` - Run TypeScript type checking across workspaces
 - `bun db:push` - Push database schema
