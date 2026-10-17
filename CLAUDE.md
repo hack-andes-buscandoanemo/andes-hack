@@ -181,18 +181,33 @@ Ningún PR puede abrirse ni darse por completado sin que estos 3 comandos termin
 
 El repositorio incluye una suite curada de **Agent Skills** en `.agents/skills/` (bloqueadas en `skills-lock.json`) que los agentes de IA deben consultar y activar según la fase del desarrollo:
 
-| Fase                      | Skill                          | Ruta                                      | Cuándo usarla                                                                                                   |
-| :------------------------ | :----------------------------- | :---------------------------------------- | :-------------------------------------------------------------------------------------------------------------- |
-| **1. Diseño y Dominio**   | `domain-modeling`              | `.agents/skills/domain-modeling/SKILL.md` | Al definir vocabulario ubicuo (`GLOSSARY.md`), entidades de negocio o decisiones arquitectónicas (`ADR`).       |
-| **1. Diseño y Dominio**   | `codebase-design`              | `.agents/skills/codebase-design/SKILL.md` | Para diseñar módulos profundos (_deep modules_), definir interfaces simples y elegir dónde colocar los _seams_. |
-| **1. Diseño y Dominio**   | `grill-me` / `grilling`        | `.agents/skills/grill-me/SKILL.md`        | Para estresar un plan o arquitectura mediante preguntas incisivas antes de escribir código.                     |
-| **1. Diseño y Dominio**   | `prototype`                    | `.agents/skills/prototype/SKILL.md`       | Cuando se necesita validar rápidamente un modelo de estado o explorar una interfaz de usuario.                  |
-| **2. Especificación**     | `to-spec` / `to-tickets`       | `.agents/skills/to-spec/SKILL.md`         | Para transformar decisiones de diseño en especificaciones ejecutables y tickets verticales.                     |
-| **3. Implementación TDD** | **`tdd`**                      | `.agents/skills/tdd/SKILL.md`             | **Obligatoria al programar.** Ciclo Red → Green en _seams_ acordados mediante _vertical slices_.                |
-| **3. Implementación TDD** | `implement` / `implement-spec` | `.agents/skills/implement/SKILL.md`       | Para ejecutar planes e implementar especificaciones manteniendo simplicidad (YAGNI / `ponytail`).               |
-| **4. Revisión y PRs**     | `code-review`                  | `.agents/skills/code-review/SKILL.md`     | Etapa de revisión paralela (Standards + Spec) y refactorización posterior al ciclo Red → Green.                 |
-| **4. Revisión y PRs**     | **`pr`**                       | `.agents/skills/pr/SKILL.md`              | **Obligatoria al crear PRs.** Estructura visual de PR con diagramas, evidencia Before/After y Merge Danger.     |
-| **5. Diagnóstico**        | `diagnosing-bugs`              | `.agents/skills/diagnosing-bugs/SKILL.md` | Bucle sistemático de diagnóstico e hipótesis ante errores complejos o regresiones de rendimiento.               |
+| Fase                      | Skill                          | Ruta                                      | Cuándo usarla                                                                                                                                                                            |
+| :------------------------ | :----------------------------- | :---------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1. Diseño y Dominio**   | `domain-modeling`              | `.agents/skills/domain-modeling/SKILL.md` | Al definir vocabulario ubicuo (`GLOSSARY.md`), entidades de negocio o decisiones arquitectónicas (`ADR`).                                                                                |
+| **1. Diseño y Dominio**   | `codebase-design`              | `.agents/skills/codebase-design/SKILL.md` | Para diseñar módulos profundos (_deep modules_), definir interfaces simples y elegir dónde colocar los _seams_.                                                                          |
+| **1. Diseño y Dominio**   | `grill-me` / `grilling`        | `.agents/skills/grill-me/SKILL.md`        | Para estresar un plan o arquitectura mediante preguntas incisivas antes de escribir código.                                                                                              |
+| **1. Diseño y Dominio**   | `prototype`                    | `.agents/skills/prototype/SKILL.md`       | Cuando se necesita validar rápidamente un modelo de estado o explorar una interfaz de usuario.                                                                                           |
+| **2. Especificación**     | `to-spec` / `to-tickets`       | `.agents/skills/to-spec/SKILL.md`         | Para transformar decisiones de diseño en especificaciones ejecutables y tickets verticales.                                                                                              |
+| **3. Implementación TDD** | **`tdd`**                      | `.agents/skills/tdd/SKILL.md`             | **Obligatoria al programar.** Ciclo Red → Green en _seams_ acordados mediante _vertical slices_.                                                                                         |
+| **3. Implementación TDD** | **`implement-issue`**          | `.agents/skills/implement-issue/SKILL.md` | **Orquestador E2E de historias (`US-XXX` / `#N`).** Integra `gh`, `grilling`, confirmación de _seams_ (`codebase-design` + `tdd`), _vertical slices_ (`ponytail`), `code-review` y `pr`. |
+| **3. Implementación TDD** | `implement` / `implement-spec` | `.agents/skills/implement/SKILL.md`       | Para ejecutar planes e implementar especificaciones manteniendo simplicidad (YAGNI / `ponytail`).                                                                                        |
+| **4. Revisión y PRs**     | `code-review`                  | `.agents/skills/code-review/SKILL.md`     | Etapa de revisión paralela (Standards + Spec) y refactorización posterior al ciclo Red → Green.                                                                                          |
+| **4. Revisión y PRs**     | **`pr`**                       | `.agents/skills/pr/SKILL.md`              | **Obligatoria al crear PRs.** Estructura visual de PR con diagramas, evidencia Before/After y Merge Danger.                                                                              |
+| **5. Diagnóstico**        | `diagnosing-bugs`              | `.agents/skills/diagnosing-bugs/SKILL.md` | Bucle sistemático de diagnóstico e hipótesis ante errores complejos o regresiones de rendimiento.                                                                                        |
+
+## Agent skills
+
+### Issue tracker
+
+Las historias de usuario (`US-001` a `US-037`) y especificaciones viven en GitHub Issues (`hack-andes-buscandoanemo/andes-hack`) y se operan con `gh` CLI. Ver [`docs/agents/issue-tracker.md`](docs/agents/issue-tracker.md).
+
+### Triage labels
+
+Mapeo de etiquetas de triaje, prioridades (`prioridad:P0`, `P1`, `P2`) y épicas. Ver [`docs/agents/triage-labels.md`](docs/agents/triage-labels.md).
+
+### Domain docs
+
+Contexto único de dominio en `AGENTS.md` / `CLAUDE.md` (más `GLOSSARY.md` y `docs/adr/` cuando aplique). Ver [`docs/agents/domain.md`](docs/agents/domain.md).
 
 ---
 
