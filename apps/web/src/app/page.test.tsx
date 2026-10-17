@@ -66,6 +66,22 @@ describe("welcome screen", () => {
     expect(replace).toHaveBeenCalledWith("/dashboard");
   });
 
+  it("hides the welcome while the session is loading", () => {
+    useSession.mockReturnValue({ data: null, isPending: true });
+
+    render(<Home />);
+
+    expect(screen.queryByRole("heading", { level: 1, name: "Te Jalo" })).not.toBeInTheDocument();
+  });
+
+  it("does not flash the welcome to a signed-in member", () => {
+    useSession.mockReturnValue({ data: { user: { name: "Ana" } }, isPending: false });
+
+    render(<Home />);
+
+    expect(screen.queryByRole("heading", { level: 1, name: "Te Jalo" })).not.toBeInTheDocument();
+  });
+
   it("keeps a visitor without session on the welcome screen", () => {
     render(<Home />);
 

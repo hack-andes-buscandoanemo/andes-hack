@@ -28,7 +28,12 @@ export default function SignInForm() {
       await authClient.signIn.email(value, {
         // ponytail: US-011 will route to onboarding when the profile is incomplete.
         onSuccess: () => router.push("/dashboard"),
-        onError: () => setFormError("Correo o contraseña incorrectos."),
+        onError: ({ error }) =>
+          setFormError(
+            error.status === 401 || error.code === "INVALID_EMAIL_OR_PASSWORD"
+              ? "Correo o contraseña incorrectos."
+              : "No pudimos iniciar sesión. Inténtalo de nuevo.",
+          ),
       });
     },
   });

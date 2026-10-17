@@ -58,6 +58,20 @@ describe("sign-in page", () => {
     expect(await screen.findByText("Correo o contraseña incorrectos.")).toBeInTheDocument();
   });
 
+  it("shows a generic Spanish error when sign-in fails for another reason", async () => {
+    signInEmail.mockImplementation(async (_data, callbacks) =>
+      callbacks.onError({ error: { code: "INTERNAL_SERVER_ERROR", status: 500 } }),
+    );
+    render(<SignInPage />);
+
+    await fillAndSubmit({ email: "ana@uni.edu.pe", password: "12345678" });
+
+    expect(
+      await screen.findByText("No pudimos iniciar sesión. Inténtalo de nuevo."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Correo o contraseña incorrectos.")).not.toBeInTheDocument();
+  });
+
   it("links to the sign-up page for people without an account", () => {
     render(<SignInPage />);
 

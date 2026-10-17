@@ -48,12 +48,14 @@ const FOOTER_LINKS = [
 
 export default function Home() {
   const router = useRouter();
-  const { data: session } = authClient.useSession();
+  const { data: session, isPending } = authClient.useSession();
 
   // ponytail: Inicio is the existing /dashboard; route to onboarding once US-011 exists.
   useEffect(() => {
     if (session) router.replace("/dashboard");
   }, [session, router]);
+
+  if (isPending || session) return null;
 
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-md flex-col gap-5 px-4 py-6 md:max-w-xl">

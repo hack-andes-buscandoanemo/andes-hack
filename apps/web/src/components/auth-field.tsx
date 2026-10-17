@@ -25,11 +25,11 @@ export default function AuthField({ name, label, errors, onChange, ...input }: A
         onChange={(e) => onChange(e.target.value)}
         {...input}
       />
-      {messages.map((message) => (
-        <p key={message} id={`${name}-error`} className="text-sm font-medium text-destructive">
-          {message}
+      {messages.length > 0 && (
+        <p id={`${name}-error`} className="text-sm font-medium text-destructive">
+          {messages.join(" ")}
         </p>
-      ))}
+      )}
     </div>
   );
 }
