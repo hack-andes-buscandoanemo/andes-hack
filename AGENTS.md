@@ -230,6 +230,7 @@ Contexto único de dominio en `AGENTS.md` / `CLAUDE.md` (más `GLOSSARY.md` y `d
 
 - Framework: hono
 - API: openapi (`openapi-typescript`)
+- Shared session, community-membership, rate-limit, and error middleware: `apps/server/src/middleware.ts` and `apps/server/src/utils/error-handler.ts`
 - Validation: zod
 - Rate Limiting: upstash-ratelimit
 
