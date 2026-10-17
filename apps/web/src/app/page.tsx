@@ -49,7 +49,7 @@ export default function Home() {
                 ? "Checking..."
                 : healthCheck.data
                   ? "Connected"
-                  : "Disconnected"}
+                  : "No pudimos conectar con el servidor. Inténtalo en unos segundos."}
             </span>
           </div>
         </section>
