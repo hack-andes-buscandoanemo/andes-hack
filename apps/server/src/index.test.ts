@@ -1,8 +1,20 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { z } from "zod";
+
+vi.hoisted(() => {
+  Object.assign(process.env, {
+    DATABASE_URL: "postgres://test:test@localhost:5432/test",
+    BETTER_AUTH_SECRET: "vitest-secret-with-at-least-thirty-two-characters",
+    BETTER_AUTH_URL: "http://localhost:3000",
+    UPSTASH_REDIS_REST_URL: "https://example.com",
+    UPSTASH_REDIS_REST_TOKEN: "vitest-token",
+    CORS_ORIGIN: "http://localhost:3001",
+    NODE_ENV: "test",
+  });
+});
 
 import { env } from "@andes-hack/env/server";
 import app from "./index";
