@@ -104,7 +104,7 @@ async function givenMeetingPoint() {
   );
 }
 
-async function givenVehicle(ownerId: string) {
+async function givenVehicle(ownerId: string, values: Partial<typeof vehicle.$inferInsert> = {}) {
   sequence += 1;
   return first(
     db
@@ -116,6 +116,7 @@ async function givenVehicle(ownerId: string) {
         model: "Yaris",
         color: "Gris",
         seats: 4,
+        ...values,
       })
       .returning(),
   );
@@ -202,6 +203,21 @@ describe("seats on an offer", () => {
         .set({ seatsTaken: sql`${tripOffer.seatsTaken} + 1` })
         .where(eq(tripOffer.id, offer.id)),
     ).rejects.toMatchObject(checkViolation("trip_offer_seats_taken_check"));
+  });
+
+  test.each([0, 7])("rejects an offer of %i seats", async (seatsTotal) => {
+    await expect(givenOffer({ seatsTotal })).rejects.toMatchObject(
+      checkViolation("trip_offer_seats_total_check"),
+    );
+  });
+
+  test.each([0, 7])("rejects a vehicle with %i passenger seats", async (seats) => {
+    const team = await givenCommunity();
+    const owner = await givenMember(team.id);
+
+    await expect(givenVehicle(owner.id, { seats })).rejects.toMatchObject(
+      checkViolation("vehicle_seats_check"),
+    );
   });
 
   test("rejects releasing a seat on an offer with no seats taken", async () => {

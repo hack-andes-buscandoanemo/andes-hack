@@ -1,4 +1,5 @@
-import { index, pgTable, smallint, text, uuid } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { check, index, pgTable, smallint, text, uuid } from "drizzle-orm/pg-core";
 
 import { user } from "./auth";
 import { timestamps } from "./columns";
@@ -17,7 +18,10 @@ export const vehicle = pgTable(
     seats: smallint("seats").notNull(),
     ...timestamps,
   },
-  (table) => [index("vehicle_owner_id_idx").on(table.ownerId)],
+  (table) => [
+    index("vehicle_owner_id_idx").on(table.ownerId),
+    check("vehicle_seats_check", sql`${table.seats} BETWEEN 1 AND 6`),
+  ],
 );
 
 export type Vehicle = typeof vehicle.$inferSelect;

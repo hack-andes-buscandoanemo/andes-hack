@@ -1,5 +1,5 @@
 {
-  "id": "d489b2ad-5534-48f8-826d-502875183d60",
+  "id": "f34a4c1f-54aa-45b7-b99e-e3930a3d28fd",
   "prevId": "09a06024-4fa7-4879-9098-89738cb90bfa",
   "version": "7",
   "dialect": "postgresql",
@@ -1068,6 +1068,10 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {
+        "trip_offer_seats_total_check": {
+          "name": "trip_offer_seats_total_check",
+          "value": "\"trip_offer\".\"seats_total\" BETWEEN 1 AND 6"
+        },
         "trip_offer_seats_taken_check": {
           "name": "trip_offer_seats_taken_check",
           "value": "\"trip_offer\".\"seats_taken\" BETWEEN 0 AND \"trip_offer\".\"seats_total\""
@@ -1331,7 +1335,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "vehicle_seats_check": {
+          "name": "vehicle_seats_check",
+          "value": "\"vehicle\".\"seats\" BETWEEN 1 AND 6"
+        }
+      },
       "isRLSEnabled": false
     }
   },

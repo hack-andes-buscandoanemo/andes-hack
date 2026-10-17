@@ -97,6 +97,7 @@ CREATE TABLE "trip_offer" (
 	"status" "offer_status" DEFAULT 'active' NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "trip_offer_seats_total_check" CHECK ("trip_offer"."seats_total" BETWEEN 1 AND 6),
 	CONSTRAINT "trip_offer_seats_taken_check" CHECK ("trip_offer"."seats_taken" BETWEEN 0 AND "trip_offer"."seats_total")
 );
 --> statement-breakpoint
@@ -126,7 +127,8 @@ CREATE TABLE "vehicle" (
 	"color" text NOT NULL,
 	"seats" smallint NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "vehicle_seats_check" CHECK ("vehicle"."seats" BETWEEN 1 AND 6)
 );
 --> statement-breakpoint
 ALTER TABLE "community_member" ADD CONSTRAINT "community_member_community_id_community_id_fk" FOREIGN KEY ("community_id") REFERENCES "public"."community"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

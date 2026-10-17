@@ -77,6 +77,7 @@ export const tripOffer = pgTable(
   (table) => [
     index("trip_offer_community_id_idx").on(table.communityId),
     index("trip_offer_driver_id_idx").on(table.driverId),
+    check("trip_offer_seats_total_check", sql`${table.seatsTotal} BETWEEN 1 AND 6`),
     check(
       "trip_offer_seats_taken_check",
       sql`${table.seatsTaken} BETWEEN 0 AND ${table.seatsTotal}`,
