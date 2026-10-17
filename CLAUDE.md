@@ -4,13 +4,13 @@ This file provides context about the project, domain model, and technical stack 
 
 ## Project Overview & Domain Context
 
-- **Project Name**: Andes Hack (Organización: `hack-andes-buscandoanemo`)
+- **Product Name**: **Lima Fluye** (Repo: `andes-hack` · Organización: `hack-andes-buscandoanemo`)
 - **Domain**: Smart Shared Mobility / Community & Corporate Carpooling in Lima, Peru.
 - **Ecosystem**: TypeScript Monorepo (Bun + Turborepo)
 
 ### Product Description
 
-**Andes Hack** es una plataforma inteligente de movilidad compartida que conecta a miembros de entidades públicas y privadas aliadas con miembros verificados que tienen vehículos dentro de sus propias comunidades y que ya realizan recorridos similares.
+**Lima Fluye** (`andes-hack`) es una plataforma inteligente de movilidad compartida que conecta a miembros de entidades públicas y privadas aliadas con miembros verificados que tienen vehículos dentro de sus propias comunidades y que ya realizan recorridos similares.
 
 Mediante un **sistema de emparejamiento inteligente (Smart Matching)**, la aplicación identifica coincidencias entre **rutas, horarios y destinos**, facilitando viajes compartidos seguros en su diseño, coordinados y recurrentes. Su objetivo es aprovechar los asientos disponibles en vehículos particulares, reducir los desplazamientos individuales en automóvil y contribuir a una movilidad urbana más eficiente y sostenible en Lima.
 
@@ -30,6 +30,49 @@ Al diseñar esquemas de base de datos (`packages/db`), endpoints (`apps/server`,
 - **Rutas y Horarios Recurrentes (`Route` / `Schedule`)**: Trayectos habituales con origen, destino, puntos de paso (waypoints), días de la semana, hora de salida y asientos disponibles.
 - **Emparejamiento Inteligente (`TripMatch` / `MatchingEngine`)**: Algoritmo/servicio encargado de detectar compatibilidad espacial (cercanía de origen/destino/ruta) y temporal (ventana horaria) entre miembros de comunidades afines.
 - **División de Costos (`CostSharing`)**: Cálculo transparente de contribución a gastos de combustible/peaje dividido entre los ocupantes (modelo colaborativo sin lucro comercial).
+
+### 🗺️ Flujo de Navegación Recomendado — Lima Fluye (Arquitectura de Pantallas E2E)
+
+Todo desarrollo de vistas (`apps/web`) y endpoints (`apps/server`) debe respaldar este flujo oficial de 8 módulos:
+
+1. **Bienvenida e ingreso institucional**: Acceso a una comunidad autorizada.
+2. **Inicio**: Pantalla principal de la aplicación, desde donde el usuario puede buscar u ofrecer viajes.
+3. **Buscar viaje (Flujo del Pasajero)**: El pasajero busca rutas compatibles según origen, destino y horario.
+4. **Detalle del viaje (Flujo del Pasajero)**: El pasajero revisa la información del conductor, recorrido y asientos disponibles para **solicitar un asiento**.
+5. **Ofrecer viaje (Flujo del Conductor)**: El conductor publica su recorrido habitual e indica los asientos disponibles.
+6. **Gestionar solicitudes (Flujo del Conductor)**: El conductor revisa las solicitudes recibidas y **acepta pasajeros compatibles**.
+7. **Chat del viaje**: Coordinación entre conductor y pasajeros para confirmar horarios, puntos de encuentro y detalles del recorrido.
+8. **Perfil y seguridad**: Gestión de identidad, verificación institucional, historial de viajes y preferencias personales.
+   - _Nota de navegación:_ **Perfil y seguridad** es accesible desde la navegación principal en cualquier momento, no únicamente después del chat.
+
+```text
+1. Bienvenida e ingreso institucional
+                 │
+                 ▼
+             2. Inicio
+                 │
+         ┌───────┴───────┐
+         ▼               ▼
+      PASAJERO        CONDUCTOR
+         │               │
+         ▼               ▼
+  3. Buscar viaje   5. Ofrecer viaje
+         │               │
+         ▼               ▼
+  4. Detalle del    6. Gestionar
+      viaje            solicitudes
+         │               │
+         ▼               ▼
+  Solicitar asiento  Aceptar pasajeros
+         │               │
+         └───────┬───────┘
+                 │
+                 ▼
+        7. Chat del viaje
+                 │
+                 ▼
+       8. Perfil y seguridad
+```
 
 ## 🏆 Rúbrica de Evaluación del Hackathon (Guía de Priorización)
 
