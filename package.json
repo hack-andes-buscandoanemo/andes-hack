@@ -1,5 +1,10 @@
 {
   "name": "andes-hack",
+  "description": "Plataforma inteligente de movilidad compartida que conecta comunidades verificadas para transformar el transporte urbano en Lima.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hack-andes-buscandoanemo/andes-hack.git"
+  },
   "private": true,
   "workspaces": {
     "packages": [
