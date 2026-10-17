@@ -1,0 +1,5 @@
+interface:
+  display_name: "Implement Issue (Te Jalo)"
+  short_description: "Implement a GitHub issue (US-XXX) end-to-end with Grilling, Seams TDD, Code Review, and PR"
+policy:
+  allow_implicit_invocation: true
