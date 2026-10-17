@@ -40,7 +40,7 @@ describe("sign-in page", () => {
 
     await fillAndSubmit({ email: "ana@uni.edu.pe", password: "12345678" });
 
-    await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/dashboard"));
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/inicio"));
     expect(signInEmail).toHaveBeenCalledWith(
       { email: "ana@uni.edu.pe", password: "12345678" },
       expect.anything(),

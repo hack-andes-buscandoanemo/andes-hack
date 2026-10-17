@@ -50,9 +50,9 @@ export default function Home() {
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
 
-  // ponytail: Inicio is the existing /dashboard; route to onboarding once US-011 exists.
+  // ponytail: the (app) layout routes to /ingresar or /comenzar when /me says so (US-011).
   useEffect(() => {
-    if (session) router.replace("/dashboard");
+    if (session) router.replace("/inicio");
   }, [session, router]);
 
   if (isPending || session) return null;

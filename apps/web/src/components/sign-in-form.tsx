@@ -27,7 +27,7 @@ export default function SignInForm() {
       setFormError(null);
       await authClient.signIn.email(value, {
         // ponytail: US-011 will route to onboarding when the profile is incomplete.
-        onSuccess: () => router.push("/dashboard"),
+        onSuccess: () => router.push("/inicio"),
         onError: ({ error }) =>
           setFormError(
             error.status === 401 || error.code === "INVALID_EMAIL_OR_PASSWORD"

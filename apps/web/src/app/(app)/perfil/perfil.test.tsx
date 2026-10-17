@@ -5,29 +5,30 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const push = vi.fn();
 const signOut = vi.fn();
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push, replace: vi.fn() }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("@/lib/auth-client", () => ({
   authClient: { signOut: (...args: unknown[]) => signOut(...args) },
 }));
 
-import Dashboard from "./dashboard";
+import Perfil from "./perfil";
 
 beforeEach(() => {
   push.mockClear();
   signOut.mockReset();
 });
 
-describe("inicio", () => {
-  it("greets the member in Spanish", () => {
-    render(<Dashboard name="Ana" />);
+describe("perfil", () => {
+  it("shows the account name and email", () => {
+    render(<Perfil name="Ana" email="ana@uni.pe" />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "Inicio" })).toBeInTheDocument();
-    expect(screen.getByText("Hola, Ana")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Perfil" })).toBeInTheDocument();
+    expect(screen.getByText("Ana")).toBeInTheDocument();
+    expect(screen.getByText("ana@uni.pe")).toBeInTheDocument();
   });
 
   it("signs out and returns to the welcome screen", async () => {
     signOut.mockResolvedValue({});
-    render(<Dashboard name="Ana" />);
+    render(<Perfil name="Ana" email="ana@uni.pe" />);
 
     await userEvent.setup().click(screen.getByRole("button", { name: "Cerrar sesión" }));
 

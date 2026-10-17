@@ -5,15 +5,19 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 
-export default function Dashboard({ name }: { name: string }) {
+export default function Perfil({ name, email }: { name: string; email: string }) {
   const router = useRouter();
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-col gap-4 px-4 py-6">
-      <h1 className="text-3xl font-extrabold">Inicio</h1>
-      <p>Hola, {name}</p>
+    <main className="flex flex-col gap-4 px-4 py-4">
+      <h1 className="text-3xl font-extrabold">Perfil</h1>
+      <div className="rounded-xl border bg-card p-4">
+        <p className="font-bold">{name}</p>
+        <p className="text-muted-foreground">{email}</p>
+      </div>
       <Button
         variant="outline"
+        className="min-h-12"
         onClick={async () => {
           await authClient.signOut();
           router.push("/");
