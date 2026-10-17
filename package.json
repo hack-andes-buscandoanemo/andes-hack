@@ -57,7 +57,7 @@
     "kysely": "0.28.17"
   },
   "lint-staged": {
-    "*": [
+    "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}": [
       "oxlint",
       "oxfmt --write"
     ]
