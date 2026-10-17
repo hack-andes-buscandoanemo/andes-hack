@@ -1,5 +1,5 @@
 {
-  "id": "f34a4c1f-54aa-45b7-b99e-e3930a3d28fd",
+  "id": "fad430a6-ee23-4e4a-8038-2d0d1d173a25",
   "prevId": "09a06024-4fa7-4879-9098-89738cb90bfa",
   "version": "7",
   "dialect": "postgresql",
@@ -1071,6 +1071,10 @@
         "trip_offer_seats_total_check": {
           "name": "trip_offer_seats_total_check",
           "value": "\"trip_offer\".\"seats_total\" BETWEEN 1 AND 6"
+        },
+        "trip_offer_max_detour_minutes_check": {
+          "name": "trip_offer_max_detour_minutes_check",
+          "value": "\"trip_offer\".\"max_detour_minutes\" IN (0, 5, 10)"
         },
         "trip_offer_seats_taken_check": {
           "name": "trip_offer_seats_taken_check",

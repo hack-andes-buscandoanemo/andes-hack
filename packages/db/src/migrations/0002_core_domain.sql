@@ -98,6 +98,7 @@ CREATE TABLE "trip_offer" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "trip_offer_seats_total_check" CHECK ("trip_offer"."seats_total" BETWEEN 1 AND 6),
+	CONSTRAINT "trip_offer_max_detour_minutes_check" CHECK ("trip_offer"."max_detour_minutes" IN (0, 5, 10)),
 	CONSTRAINT "trip_offer_seats_taken_check" CHECK ("trip_offer"."seats_taken" BETWEEN 0 AND "trip_offer"."seats_total")
 );
 --> statement-breakpoint

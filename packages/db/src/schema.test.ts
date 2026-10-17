@@ -220,6 +220,12 @@ describe("seats on an offer", () => {
     );
   });
 
+  test.each([3, 15])("rejects a maximum detour of %i minutes", async (maxDetourMinutes) => {
+    await expect(givenOffer({ maxDetourMinutes })).rejects.toMatchObject(
+      checkViolation("trip_offer_max_detour_minutes_check"),
+    );
+  });
+
   test("rejects releasing a seat on an offer with no seats taken", async () => {
     const { offer } = await givenOffer({ seatsTotal: 3, seatsTaken: 0 });
 
