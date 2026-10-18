@@ -64,18 +64,23 @@ export function drawRouteMap(
     container.closest(".dark") !== null ||
     (typeof document !== "undefined" && document.documentElement.classList.contains("dark"));
 
-  // CartoDB Voyager (or Dark Matter) gives a clean, modern, high-contrast street map
-  // that highlights routes and meeting points clearly in both light and dark modes.
+  // ESRI World Street Map (and Dark Canvas) provides high-contrast, clean street maps
+  // with no API key required and no domain blocking.
   const tileUrl = isDark
-    ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-    : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+    ? "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+    : "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
 
   const tiles = L.tileLayer(tileUrl, {
-    subdomains: "abcd",
-    maxZoom: 20,
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    maxZoom: 18,
+    attribution: "Tiles &copy; Esri",
   }).addTo(map);
+
+  if (isDark) {
+    L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}",
+      { maxZoom: 18 },
+    ).addTo(map);
+  }
 
   // One stray tile error is not a failed map: only a view with no tile at all is.
   let loaded = false;
