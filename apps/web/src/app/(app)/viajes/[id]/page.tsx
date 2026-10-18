@@ -238,14 +238,31 @@ export default function TripDetailPage() {
       <FuelEstimateDetail estimate={detail.fuelEstimate} />
       <section className="space-y-2 rounded-2xl border bg-card p-4 text-sm shadow-sm">
         <h2 className="font-bold">Seguridad del viaje</h2>
-        <ul className="space-y-1">
+        <ul className="flex flex-wrap items-start gap-3">
           <li>Miembro verificado</li>
           {detail.vehicle ? <li>Vehículo registrado</li> : null}
           {detail.vehicle ? <li>Info del vehículo disponible</li> : null}
+          {detail.booking?.status === "accepted" && !withdrawn ? (
+            <li className="contents">
+              <ShareTrip tile bookingId={detail.booking.id} label="Compartir detalles del viaje" />
+            </li>
+          ) : (
+            <li className="flex flex-col items-center gap-1 text-center">
+              <Button
+                type="button"
+                variant="outline"
+                disabled
+                aria-describedby="share-unavailable"
+                className="h-auto rounded-2xl px-3 py-2 whitespace-normal"
+              >
+                Compartir detalles del viaje
+              </Button>
+              <span id="share-unavailable" className="text-xs text-muted-foreground">
+                Disponible cuando el conductor acepte tu solicitud.
+              </span>
+            </li>
+          )}
         </ul>
-        {detail.booking?.status === "accepted" && !withdrawn ? (
-          <ShareTrip bookingId={detail.booking.id} label="Compartir detalles del viaje" />
-        ) : null}
       </section>
       {detail.note ? (
         <section className="rounded-2xl border bg-card p-4 text-sm shadow-sm">

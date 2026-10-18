@@ -7,7 +7,16 @@ import { reasonOf } from "@/lib/api-error";
 import { communitiesApi } from "@/lib/communities-api";
 
 // Gives a trusted person a private link to follow one accepted seat (US-028).
-export default function ShareTrip({ bookingId, label }: { bookingId: string; label: string }) {
+export default function ShareTrip({
+  bookingId,
+  label,
+  tile = false,
+}: {
+  bookingId: string;
+  label: string;
+  // Sits among the safety items as a tile; the link panel takes the whole row once open.
+  tile?: boolean;
+}) {
   const [shared, setShared] = useState<{ id: string; url: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,7 +83,7 @@ export default function ShareTrip({ bookingId, label }: { bookingId: string; lab
   }
 
   return (
-    <div className="space-y-2">
+    <div className={tile && shared ? "w-full basis-full space-y-2" : "space-y-2"}>
       {shared ? (
         <>
           <label className="block space-y-1 text-sm font-medium">
@@ -103,7 +112,15 @@ export default function ShareTrip({ bookingId, label }: { bookingId: string; lab
           </Button>
         </>
       ) : (
-        <Button type="button" variant="outline" disabled={busy} onClick={() => void share()}>
+        <Button
+          type="button"
+          variant="outline"
+          className={
+            tile ? "h-auto flex-col rounded-2xl px-3 py-2 text-center whitespace-normal" : undefined
+          }
+          disabled={busy}
+          onClick={() => void share()}
+        >
           {label}
         </Button>
       )}
