@@ -10,26 +10,26 @@ This file provides context about the project, domain model, and technical stack 
 
 ### Product Description
 
-**Te Jalo** (`andes-hack`) es una plataforma inteligente de movilidad compartida que conecta a miembros de entidades públicas y privadas aliadas con miembros verificados que tienen vehículos dentro de sus propias comunidades y que ya realizan recorridos similares.
+**Te Jalo** (`andes-hack`) es una plataforma inteligente de movilidad compartida que conecta a miembros verificados de una misma organización aliada (empresas privadas primero; universidades y entidades públicas son una segunda fase) que ya hacen recorridos parecidos hacia su sede, para que quien maneja solo lleve a colegas en sus asientos vacíos.
 
 Mediante un **sistema de emparejamiento inteligente (Smart Matching)**, la aplicación identifica coincidencias entre **rutas, horarios y destinos**, facilitando viajes compartidos seguros en su diseño, coordinados y recurrentes. Su objetivo es aprovechar los asientos disponibles en vehículos particulares, reducir los desplazamientos individuales en automóvil y contribuir a una movilidad urbana más eficiente y sostenible en Lima.
 
 ### Problem Statement & Core Drivers
 
-1. **Inseguridad ciudadana**: Ir en servicio público genera ansiedad y tensión por temor a robos o atentados. La plataforma garantiza seguridad mediante comunidades cerradas/verificadas a un precio mucho más barato que un aplicativo de taxi (como Uber), ya que los pasajeros **comparten el gasto operativo** sin generar una ganancia comercial para el conductor.
-2. **Tiempos de espera y saturación**: Evita largas esperas en paraderos o colas extensas en horas punta en sistemas saturados como los Corredores o el Tren Eléctrico, ofreciendo transporte rápido a precio accesible.
-3. **Incentivo para dejar el auto en casa**: Impulsa a propietarios de vehículos a dejar ocasionalmente su auto en casa, al contar con una alternativa segura cuyo costo compartido resulta menor que el gasto individual de gasolina.
-4. **Reducción del tráfico**: Si 4 personas con vehículo propio coinciden en la misma ruta y viajan juntas, se retiran **3 vehículos de circulación**. Al escalar la propuesta entre múltiples instituciones aliadas, se logra reducir el tráfico y viajar con la comodidad de un transporte privado a costo de transporte público.
+1. **Inseguridad ciudadana**: Ir en servicio público genera ansiedad y tensión por temor a robos o atentados. La plataforma es **segura por diseño** (comunidades cerradas y verificadas, opción de viajar solo con mujeres, compartir el viaje con un contacto de confianza), sin prometer seguridad absoluta. **La app no cobra** (RNAT, D.S. 017-2009-MTC, art. 3, num. 3.61; ver `docs/decisiones/0001-sin-pagos-en-la-app.md`): solo muestra un estimado de combustible por ocupante como referencia para un aporte voluntario.
+2. **Tiempos de espera y saturación**: Frente a las colas en paraderos en hora punta (Corredores, Metro de Lima), ofrece un viaje **más predecible**, con hora y punto de encuentro acordados. No se afirma que sea más rápido.
+3. **Incentivo para dejar el auto en casa**: Quien maneja solo puede dejar ocasionalmente su auto en casa y viajar con un colega; el estimado de combustible por ocupante es menor que manejar solo (estimado, ver `/datos`).
+4. **Reducción del tráfico** (ejemplo hipotético): si 4 personas que manejaban solas comparten un auto, se pasa de 4 autos a 1 (**3 viajes en auto evitados**); si comparten 3 de 4, quedan 2 autos (2 evitados). Quien venía en transporte público no resta autos, por eso la métrica son los **viajes en auto evitados netos** (`packages/matching/src/metrics.ts`, `docs/decisiones/0003-metrica-viajes-en-auto-evitados.md`), aparte de las personas transportadas.
 
 ### Core Domain Concepts (Guía para Agentes de IA)
 
 Al diseñar esquemas de base de datos (`packages/db`), endpoints (`apps/server`, `packages/api`) o interfaces (`apps/web`), ten en cuenta las siguientes entidades y reglas de dominio:
 
-- **Comunidades / Entidades Aliadas (`Organization` / `Community`)**: Universidades, empresas privadas e instituciones públicas cuyos miembros están verificados (ej. por dominio de correo institucional o validación de identidad).
+- **Comunidades / Entidades Aliadas (`Organization` / `Community`)**: Empresas privadas en el MVP (universidades e instituciones públicas en una segunda fase) cuyos miembros se verifican con un código de acceso o un correo institucional. La demo usa Comunidad Alfa, con usuarios reales y sin datos sintéticos.
 - **Miembros Verificados (`Member` / `User`)**: Usuarios autenticados mediante `better-auth` pertenecientes a una entidad aliada. Pueden actuar como **Pasajeros**, **Conductores** (si registran un vehículo verificado) o alternar entre ambos roles.
 - **Rutas y Horarios Recurrentes (`Route` / `Schedule`)**: Trayectos habituales con origen, destino, puntos de paso (waypoints), días de la semana, hora de salida y asientos disponibles.
 - **Emparejamiento Inteligente (`TripMatch` / `MatchingEngine`)**: Algoritmo/servicio encargado de detectar compatibilidad espacial (cercanía de origen/destino/ruta) y temporal (ventana horaria) entre miembros de comunidades afines.
-- **División de Costos (`CostSharing`)**: Cálculo transparente de contribución a gastos de combustible/peaje dividido entre los ocupantes (modelo colaborativo sin lucro comercial).
+- **Estimado de combustible (`FuelCostEstimate`)**: Estimado del combustible del trayecto y de cuánto sería por ocupante (`packages/matching/src/fuel-cost.ts`). Es una referencia para un aporte voluntario fuera de la app: Te Jalo nunca cobra ni muestra tarifas.
 
 ### 🗺️ Flujo de Navegación Recomendado — Te Jalo (Arquitectura de Pantallas E2E)
 
@@ -85,7 +85,7 @@ Todo agente de IA o desarrollador debe tomar decisiones de arquitectura, impleme
 | **30%** | **Técnico**  | **Complejidad técnica** | Integraciones, datos, modelos y arquitectura. | Diseñar una arquitectura robusta en el monorepo: algoritmo de _Smart Matching_ geoespacial/temporal bien modelado, esquemas relacionales sólidos en Drizzle (`packages/db`), caché/ratelimit con Upstash Redis, contratos OpenAPI tipados de extremo a extremo y validación estricta con Zod. |
 | **25%** | **Técnico**  | **Funciona**            | Flujo completo en vivo desde la URL pública.  | Priorizar flujos _End-to-End (E2E)_ completamente operativos y desplegables sin errores en producción. Nunca dejar vistas rotas, mocks incompletos en rutas críticas ni migraciones pendientes.                                                                                               |
 | **20%** | **Técnico**  | **Calidad técnica**     | El jurado revisa tu repo en GitHub.           | Mantener un historial de Git impecable mediante **Strict TDD**, **PRs / Stacked PRs**, commits semánticos, cero errores de tipos (`bun check-types`) y linter limpio (`bun check`).                                                                                                           |
-| **15%** | **Producto** | **Problema e impacto**  | Un usuario real de tu track.                  | Enfocar cada pantalla y flujo en resolver el dolor real del ciudadano en Lima: seguridad en comunidades verificadas, ahorro frente a taxis/gasolina, cero colas en hora punta y métrica visible de vehículos retirados de circulación.                                                        |
+| **15%** | **Producto** | **Problema e impacto**  | Un usuario real de tu track.                  | Enfocar cada pantalla y flujo en resolver el dolor real del ciudadano en Lima: seguridad por diseño en comunidades verificadas, estimado de combustible frente a manejar solo, viajes más predecibles en hora punta y métrica visible de viajes en auto evitados netos.                       |
 | **10%** | **Producto** | **Claridad**            | Explicas decisiones y tradeoffs.              | Documentar explícitamente el _porqué_ de las decisiones técnicas y los _tradeoffs_ tanto en las descripciones de los Pull Requests como en la documentación del repositorio.                                                                                                                  |
 
 ---
@@ -207,7 +207,7 @@ Mapeo de etiquetas de triaje, prioridades (`prioridad:P0`, `P1`, `P2`) y épicas
 
 ### Domain docs
 
-Contexto único de dominio en `AGENTS.md` / `CLAUDE.md` (más `GLOSSARY.md` y `docs/adr/` cuando aplique). Ver [`docs/agents/domain.md`](docs/agents/domain.md).
+Contexto único de dominio en `AGENTS.md` / `CLAUDE.md` (más `GLOSSARY.md` cuando aplique y los ADR breves de `docs/decisiones/`). Ver [`docs/agents/domain.md`](docs/agents/domain.md).
 
 ---
 
@@ -221,8 +221,8 @@ Contexto único de dominio en `AGENTS.md` / `CLAUDE.md` (más `GLOSSARY.md` y `d
 - Framework: next
 - CSS: tailwind
 - UI Library: shadcn-ui
-- Animation: framer-motion
-- Forms: react-hook-form
+- Animation: motion (paquete `motion`, sucesor de framer-motion)
+- Forms: @tanstack/react-form (`react-hook-form` no está instalado)
 - HTTP Client: axios
 - State: zustand
 
@@ -272,6 +272,7 @@ andes-hack/
 │   ├── db/          # Database schema & Drizzle ORM migrations (PostgreSQL / Neon)
 │   ├── env/         # Type-safe environment variables validation (Zod)
 │   ├── infra/       # Infrastructure & Cloudflare deployment config (Alchemy)
+│   ├── matching/    # Pure TypeScript matching engine: travel times, meeting points, day optimizer, impact metrics
 │   └── config/      # Shared TypeScript & workspace configurations
 ```
 
