@@ -32,6 +32,8 @@ export interface Assignment {
   passengerId: string;
   offerId: string;
   meetingPointId: string;
+  // Index of the stop among all the driver's passengers, those already accepted included.
+  position: number;
   pickupAt: string;
   arrivalAt: string;
   detourMinutes: number;
@@ -128,6 +130,7 @@ export function optimizeDay(instance: DayInstance, model: TravelTimeModel): DayP
       passengerId: request.passengerId,
       offerId: best.offerId,
       meetingPointId: best.meetingPointId,
+      position: best.position,
       pickupAt: best.pickupAt,
       arrivalAt: best.arrivalAt,
       detourMinutes: best.detourMinutes,
@@ -145,7 +148,8 @@ export function optimizeDay(instance: DayInstance, model: TravelTimeModel): DayP
     const timing = timeRoute(routes.get(offer.id)!, instance.date, model);
     ids.forEach((requestId, stop) => {
       const assignment = requestId === null ? undefined : seated.get(requestId);
-      if (assignment) seated.set(assignment.requestId, { ...assignment, ...timing.stops[stop]! });
+      if (assignment)
+        seated.set(assignment.requestId, { ...assignment, ...timing.stops[stop]!, position: stop });
     });
     // What the plan adds to the trip the driver already had.
     detourMinutes += Math.round(timing.minutes - timeRoute(offer, instance.date, model).minutes);

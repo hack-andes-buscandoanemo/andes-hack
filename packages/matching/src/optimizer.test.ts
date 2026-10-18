@@ -159,6 +159,27 @@ describe("seats of a day assigned to maximise the car trips avoided", () => {
     ]);
   });
 
+  it("places each passenger in the order the driver picks them up, after those already accepted", () => {
+    const acceptedAtThePlaza = {
+      meetingPointId: "la-molina-plaza-de-armas",
+      windowStart: "07:30",
+      windowEnd: "08:00",
+    };
+
+    const plan = optimizeDay(
+      {
+        date: monday,
+        offers: [offer({ maxDetourMinutes: 10, passengers: [acceptedAtThePlaza] })],
+        requests: [request("pedro")],
+      },
+      model,
+    );
+
+    expect(plan.assignments.map(({ passengerId, position }) => [passengerId, position])).toEqual([
+      ["pedro", 1],
+    ]);
+  });
+
   it("scores the plan by car trips avoided, passengers, then the drivers' detour and the walk", () => {
     const plan = optimizeDay(
       {
