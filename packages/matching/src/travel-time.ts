@@ -1,6 +1,6 @@
 import { haversineKm } from "./geo";
 import { places } from "./places";
-import { type Source, type SourceKind, sources } from "./sources";
+import { type SourceKind, sources } from "./sources";
 import { travelMatrix } from "./travel-matrix";
 
 export interface PlacePoint {
@@ -31,13 +31,19 @@ export interface TravelTimeModel {
   walkMinutes(zoneId: string, meetingPointId: string): number;
 }
 
+// How many times the free-flow time a trip takes, and whether that is a measured value.
+interface TrafficFactor {
+  value: number;
+  kind: SourceKind;
+}
+
 // Peru has no daylight saving time: Lima is always UTC−5.
 const limaOffsetMs = -5 * 60 * 60 * 1000;
 
 // Weekday factors by Lima hour, in order, from 0 to 23 so every hour falls between two
-// of them. Hours in between are interpolated linearly, an assumption of ours, so their
-// times are `estimado`.
-const weekdayAnchors: readonly { hour: number; factor: Source }[] = [
+// of them. Hours in between are interpolated linearly (sources.weekdayInterpolation), so
+// their times are `estimado`.
+const weekdayAnchors: readonly { hour: number; factor: TrafficFactor }[] = [
   { hour: 0, factor: sources.nightFactor },
   { hour: 4, factor: sources.nightFactor },
   { hour: 7, factor: sources.weekdayFactorAt7 },
@@ -47,17 +53,17 @@ const weekdayAnchors: readonly { hour: number; factor: Source }[] = [
   { hour: 23, factor: sources.nightFactor },
 ];
 
-function trafficFactor(departAt: Date): { value: number; kind: SourceKind } {
+function trafficFactor(departAt: Date): TrafficFactor {
   if (Number.isNaN(departAt.getTime())) throw new RangeError("Fecha de salida inválida");
 
   // Shifted so its UTC fields read as the wall clock in Lima.
-  const lima = new Date(departAt.getTime() + limaOffsetMs);
-  const day = lima.getUTCDay();
+  const wallClock = new Date(departAt.getTime() + limaOffsetMs);
+  const day = wallClock.getUTCDay();
   if (day === 0 || day === 6) return sources.weekendFactor;
-  return weekdayFactor(lima.getUTCHours());
+  return weekdayFactor(wallClock.getUTCHours());
 }
 
-function weekdayFactor(hour: number): { value: number; kind: SourceKind } {
+function weekdayFactor(hour: number): TrafficFactor {
   const exact = weekdayAnchors.find((anchor) => anchor.hour === hour);
   if (exact) return exact.factor;
 
@@ -71,13 +77,13 @@ function weekdayFactor(hour: number): { value: number; kind: SourceKind } {
   return { value, kind: "estimado" };
 }
 
-const lima: TravelTimeData = {
+const limaData: TravelTimeData = {
   places: [...places.zones, ...places.meetingPoints, ...places.destinations],
   matrix: travelMatrix,
 };
 
 // Built on the real places of Lima unless other data is given, as tests do.
-export function createTravelTimeModel(data: TravelTimeData = lima): TravelTimeModel {
+export function createTravelTimeModel(data: TravelTimeData = limaData): TravelTimeModel {
   const index = new Map(data.matrix.ids.map((id, position) => [id, position]));
   const placesById = new Map(data.places.map((place) => [place.id, place]));
 

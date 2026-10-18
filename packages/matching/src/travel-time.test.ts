@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createTravelTimeModel, places as lima } from "./index";
+import { createTravelTimeModel, places as limaPlaces } from "./index";
 
 // A hand-made matrix: real coordinates, but round free-flow minutes so the expected
 // values can be worked out by hand.
@@ -98,7 +98,8 @@ describe("travel times with the real places of Lima", () => {
   it("takes about 42 minutes from La Molina to the Centro Empresarial Real at 8:00 on a weekday", () => {
     const model = createTravelTimeModel();
 
-    // Reference in US-015: OSRM gives 21.0 min at free flow, × 2.01 at 8:00.
+    // Reference in US-015: OSRM gives 21.0 min at free flow from the Municipalidad, next
+    // to this Plaza de Armas (20.9 min in the matrix), × 2.01 at 8:00.
     const trip = model.minutes(
       "la-molina-plaza-de-armas",
       "centro-empresarial-real",
@@ -111,7 +112,8 @@ describe("travel times with the real places of Lima", () => {
 
   it("has an OSRM time between every pair of places, so none falls back to an estimate", () => {
     const model = createTravelTimeModel();
-    const ids = [...lima.zones, ...lima.meetingPoints, ...lima.destinations].map(({ id }) => id);
+    const { zones, meetingPoints, destinations } = limaPlaces;
+    const ids = [...zones, ...meetingPoints, ...destinations].map(({ id }) => id);
 
     const estimated = ids.flatMap((from) =>
       ids

@@ -35,9 +35,9 @@ for (const from of blocks) {
     const coordinates = [...from, ...to]
       .map((index) => `${all[index]!.lng},${all[index]!.lat}`)
       .join(";");
-    const sources = from.map((_, position) => position).join(";");
-    const destinations = to.map((_, position) => from.length + position).join(";");
-    const url = `${osrm}/${coordinates}?sources=${sources}&destinations=${destinations}&annotations=duration,distance`;
+    const sourceIndexes = from.map((_, position) => position).join(";");
+    const destinationIndexes = to.map((_, position) => from.length + position).join(";");
+    const url = `${osrm}/${coordinates}?sources=${sourceIndexes}&destinations=${destinationIndexes}&annotations=duration,distance`;
 
     const response = await fetch(url, { headers: { "User-Agent": userAgent } });
     const table = (await response.json()) as OsrmTable;

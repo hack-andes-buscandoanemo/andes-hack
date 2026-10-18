@@ -5,7 +5,8 @@ export type SourceKind = "dato" | "estimado";
 
 export interface Source {
   label: string;
-  value: number;
+  // A rule rather than a number, like the interpolation, is written as text.
+  value: number | string;
   unit: string;
   kind: SourceKind;
   source: string;
@@ -53,8 +54,17 @@ export const sources = {
     value: 1,
     unit: "× flujo libre",
     kind: "estimado",
+    source: "Supuesto del equipo: de madrugada se circula a flujo libre.",
+    date: "2026-10-17",
+  },
+  weekdayInterpolation: {
+    label:
+      "Factor de tráfico, día laborable, horas sin dato de TomTom (5:00 a 6:59, 10:00 a 17:59 y 19:00 a 22:59)",
+    value: "interpolación lineal",
+    unit: "entre las dos horas vecinas con factor",
+    kind: "estimado",
     source:
-      "Supuesto del equipo: de madrugada se circula a flujo libre. Las horas entre este tramo y los datos de TomTom se interpolan linealmente.",
+      "Supuesto del equipo: entre dos horas con factor conocido (TomTom o el flujo libre de madrugada) el tráfico cambia en línea recta.",
     date: "2026-10-17",
   },
   weekendFactor: {
