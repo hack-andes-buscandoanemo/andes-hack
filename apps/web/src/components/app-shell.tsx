@@ -15,6 +15,8 @@ import { usePathname } from "next/navigation";
 
 import LiveAlerts from "@/components/live-alerts";
 
+import { BrandLockup } from "./brand-mark";
+
 const SECTIONS = [
   { href: "/inicio", label: "Inicio", icon: Home01Icon },
   { href: "/buscar", label: "Buscar", icon: Search01Icon },
@@ -55,21 +57,26 @@ export default function AppShell({
 
   return (
     <div className="mx-auto flex min-h-svh w-full max-w-md flex-col md:max-w-xl">
-      <header className="flex items-center justify-between px-4 py-3">
-        <span className="text-2xl font-extrabold tracking-tight">Te Jalo</span>
-        <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-20 flex items-center justify-between bg-background/85 px-4 py-3 backdrop-blur-md supports-[backdrop-filter]:bg-background/70">
+        <Link
+          href="/inicio"
+          className="rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+        >
+          <BrandLockup />
+        </Link>
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
             disabled
             aria-label="Avisos (próximamente)"
-            className="flex size-11 items-center justify-center rounded-full text-muted-foreground"
+            className="flex size-11 items-center justify-center rounded-full text-muted-foreground disabled:opacity-60"
           >
-            <HugeiconsIcon icon={Notification01Icon} className="size-6" aria-hidden />
+            <HugeiconsIcon icon={Notification01Icon} className="size-[1.375rem]" aria-hidden />
           </button>
           <span
             role="img"
             aria-label={`Perfil de ${name}`}
-            className="flex size-11 items-center justify-center rounded-full bg-brand-yellow font-bold text-brand-black"
+            className="flex size-10 items-center justify-center rounded-full bg-brand-yellow text-sm font-bold text-brand-black ring-2 ring-background"
           >
             {initials(name)}
           </span>
@@ -78,30 +85,39 @@ export default function AppShell({
 
       <LiveAlerts />
 
-      <div className="flex-1 pb-20">{children}</div>
+      <div className="flex-1 pb-28">{children}</div>
 
       <nav
         aria-label="Principal"
-        className="fixed inset-x-0 bottom-0 z-10 border-t bg-background pb-[env(safe-area-inset-bottom)]"
+        className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-md supports-[backdrop-filter]:bg-background/75"
       >
-        <ul className="mx-auto flex max-w-md md:max-w-xl">
+        <ul className="mx-auto flex max-w-md px-1 md:max-w-xl">
           {sections.map(({ href, label, icon }) => {
             const active = pathname === href || pathname.startsWith(`${href}/`);
+            const short = href === "/comunidad/reportes" ? "Comunidad" : label;
             return (
               <li key={href} className="flex-1">
                 <Link
                   href={href}
                   aria-current={active ? "page" : undefined}
-                  className={`flex min-h-14 flex-col border-t-2 ${active ? "border-brand-yellow" : "border-transparent"} items-center justify-center gap-0.5 text-xs font-medium focus-visible:outline-2 focus-visible:outline-offset-[-2px] ${
-                    active ? "font-bold text-foreground" : "text-muted-foreground"
+                  aria-label={short === label ? undefined : label}
+                  className={`group flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl text-[0.6875rem] tracking-wide transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-ring ${
+                    active
+                      ? "font-semibold text-foreground"
+                      : "font-medium text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   <span
-                    className={`flex h-7 w-12 items-center justify-center rounded-full ${active ? "bg-brand-yellow text-brand-black" : ""}`}
+                    className={`flex h-8 w-14 items-center justify-center rounded-full transition-colors duration-200 ease-out ${active ? "bg-brand-yellow text-brand-black" : "group-hover:bg-muted"}`}
                   >
-                    <HugeiconsIcon icon={icon} className="size-5" aria-hidden />
+                    <HugeiconsIcon
+                      icon={icon}
+                      className="size-5"
+                      strokeWidth={active ? 2 : 1.6}
+                      aria-hidden
+                    />
                   </span>
-                  {label}
+                  {short}
                 </Link>
               </li>
             );
