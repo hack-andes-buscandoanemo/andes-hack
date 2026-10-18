@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import EmptyState from "@/components/empty-state";
+import ReturnTripCard from "@/components/return-trip-card";
 import { Button } from "@/components/ui/button";
 import { communitiesApi, type MyTrip } from "@/lib/communities-api";
 
@@ -25,10 +26,14 @@ function TripCard({
   trip,
   busy,
   onToggle,
+  coordinateReturn,
+  trips,
 }: {
   trip: MyTrip;
   busy: boolean;
   onToggle: (trip: MyTrip) => void;
+  coordinateReturn: boolean;
+  trips: MyTrip[];
 }) {
   const outbound = trip.direction === "outbound";
   const from = outbound ? trip.originZoneName : trip.destinationName;
@@ -84,6 +89,7 @@ function TripCard({
           {trip.status === "paused" ? "Reactivar" : "Pausar"}
         </Button>
       ) : null}
+      {coordinateReturn ? <ReturnTripCard trip={trip} trips={trips} /> : null}
     </li>
   );
 }
@@ -243,7 +249,14 @@ export default function Viajes() {
         ) : (
           <ul className="space-y-3">
             {trips.map((trip) => (
-              <TripCard key={trip.id} trip={trip} busy={togglingId === trip.id} onToggle={toggle} />
+              <TripCard
+                key={trip.id}
+                trip={trip}
+                busy={togglingId === trip.id}
+                onToggle={toggle}
+                coordinateReturn={scope === "upcoming"}
+                trips={trips}
+              />
             ))}
           </ul>
         )}

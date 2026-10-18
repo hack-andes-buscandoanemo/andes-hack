@@ -1,13 +1,30 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { dateLabel, daysLabel } from "@/app/(app)/buscar/schedule";
+import { clockLabel, dateLabel, daysLabel } from "@/app/(app)/buscar/schedule";
 import { Button } from "@/components/ui/button";
 import type { MyTrip } from "@/lib/communities-api";
 
-export default function ReturnTripCard({ trip }: { trip: MyTrip }) {
+function commonCalendar(...calendars: Pick<MyTrip, "date" | "daysOfWeek">[]) {
+  const date = calendars.find((calendar) => calendar.date)?.date ?? null;
+  if (date) {
+    const day = new Date(`${date}T12:00:00Z`).getUTCDay() || 7;
+    return calendars.every((calendar) =>
+      calendar.date ? calendar.date === date : calendar.daysOfWeek?.includes(day),
+    )
+      ? { date, days: [] }
+      : null;
+  }
+  const days = calendars[0]?.daysOfWeek?.filter((day) =>
+    calendars.every((calendar) => calendar.daysOfWeek?.includes(day)),
+  );
+  return days?.length ? { date: null, days } : null;
+}
+
+export default function ReturnTripCard({ trip, trips = [] }: { trip: MyTrip; trips?: MyTrip[] }) {
   const router = useRouter();
   const context = trip.passengerRequest;
   const [start, setStart] = useState(context?.returnWindow?.start ?? "");
@@ -20,26 +37,48 @@ export default function ReturnTripCard({ trip }: { trip: MyTrip }) {
     trip.direction !== "outbound"
   )
     return null;
-  const days = context.daysOfWeek?.filter((day) => trip.daysOfWeek?.includes(day)) ?? [];
-  const date = context.date ?? trip.date;
-  if (context.date && trip.date && context.date !== trip.date) return null;
-  if (
-    context.date &&
-    trip.daysOfWeek &&
-    !trip.daysOfWeek.includes(new Date(`${context.date}T12:00:00Z`).getUTCDay() || 7)
-  )
-    return null;
-  if (
-    trip.date &&
-    context.daysOfWeek &&
-    !context.daysOfWeek.includes(new Date(`${trip.date}T12:00:00Z`).getUTCDay() || 7)
-  )
-    return null;
-  if (!date && days.length === 0) return null;
+  const calendar = commonCalendar(trip, context);
+  if (!calendar) return null;
+  const { date, days } = calendar;
+  const returns = trips.flatMap((candidate) => {
+    const request = candidate.passengerRequest;
+    if (
+      candidate.role !== "passenger" ||
+      candidate.status !== "accepted" ||
+      candidate.direction !== "return" ||
+      candidate.time.slice(0, 5) <= trip.time.slice(0, 5) ||
+      !request ||
+      request.communityId !== context.communityId ||
+      request.originZoneId !== context.originZoneId
+    )
+      return [];
+    const shared = commonCalendar(trip, context, candidate, request);
+    return shared
+      ? [{ trip: candidate, label: shared.date ? dateLabel(shared.date) : daysLabel(shared.days) }]
+      : [];
+  });
 
   return (
     <section aria-label="¿Y el regreso?" className="space-y-3 rounded-2xl border bg-card p-4">
       <h2 className="text-lg font-bold">¿Y el regreso?</h2>
+      {returns.map(({ trip: acceptedReturn, label }) => (
+        <section
+          key={acceptedReturn.id}
+          aria-label={`Ida y regreso: ${label}`}
+          className="space-y-2 rounded-xl border p-3 text-sm"
+        >
+          <h3 className="font-bold">{`Ida y regreso: ${label}`}</h3>
+          <p>Ambos viajes aceptados para esta fecha o estos días.</p>
+          <div className="flex flex-col gap-2 font-bold underline">
+            <Link href={`/viajes/${trip.offerId}`}>
+              {`Ida · ${clockLabel(trip.time.slice(0, 5))}`}
+            </Link>
+            <Link href={`/viajes/${acceptedReturn.offerId}`}>
+              {`Regreso · ${clockLabel(acceptedReturn.time.slice(0, 5))}`}
+            </Link>
+          </div>
+        </section>
+      ))}
       <form
         className="space-y-3"
         onSubmit={(event) => {
