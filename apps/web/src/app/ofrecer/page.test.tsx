@@ -132,11 +132,11 @@ describe("offer page /ofrecer (US-012)", () => {
 
     // 3. Configure recurring trip offer (origin, destination, L and X, 07:30, Hasta 5 min default, note)
     await user.type(screen.getByLabelText("Sales de"), "San Borja");
-    await user.click(screen.getAllByRole("button", { name: "Buscar" })[0]!);
+    await user.click(screen.getAllByRole("button", { name: "Buscar lugar" })[0]!);
     await user.click(await screen.findByRole("button", { name: "San Borja, Lima" }));
 
     await user.type(screen.getByLabelText("Vas a"), "San Isidro");
-    await user.click(screen.getAllByRole("button", { name: "Buscar" })[0]!);
+    await user.click(screen.getAllByRole("button", { name: "Buscar lugar" })[0]!);
     await user.click(await screen.findByRole("button", { name: "San Isidro, Lima" }));
 
     await user.click(screen.getByRole("button", { name: "L" }));

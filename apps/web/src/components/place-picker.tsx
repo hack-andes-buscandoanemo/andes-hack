@@ -125,7 +125,7 @@ export default function PlacePicker({
           onClick={() => void search()}
         >
           <HugeiconsIcon icon={Search01Icon} aria-hidden />
-          <span className="sr-only sm:not-sr-only">{busy ? "Buscando…" : "Buscar"}</span>
+          <span>{busy ? "Buscando lugar…" : "Buscar lugar"}</span>
         </Button>
       </div>
       {withLocation ? (
