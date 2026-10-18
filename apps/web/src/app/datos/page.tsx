@@ -30,14 +30,15 @@ function dateLabel(date: string) {
 }
 
 function KindCell({ source }: { source: DataSource }) {
-  if (source.kind === "estimado" || !source.url) return <>Estimado</>;
+  // The contract only lets a `dato` through with its link.
+  if (source.kind === "estimado") return <>Estimado</>;
   return (
     <>
       Dato real ·{" "}
       <a href={source.url} target="_blank" rel="noreferrer" className="underline">
         fuente
       </a>{" "}
-      · {dateLabel(source.date)}
+      · consultado el {dateLabel(source.date)}
     </>
   );
 }

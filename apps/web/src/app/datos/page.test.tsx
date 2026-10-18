@@ -83,7 +83,7 @@ describe("data page (US-032)", () => {
     ).toEqual([
       "CO₂ que emite un galón de gasolina",
       "8,887 kg de CO₂ por galón",
-      "Dato real · fuente · 17-10-2026",
+      "Dato real · fuente · consultado el 17-10-2026",
       "EPA, Greenhouse Gas Emissions from a Typical Passenger Vehicle",
     ]);
     expect(within(emission).getByRole("link", { name: "fuente" })).toHaveAttribute(
