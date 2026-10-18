@@ -723,6 +723,7 @@ export const TripMatchSchema = z
   .object({
     offerId: z.string().uuid(),
     driverName: z.string(),
+    driverPhotoUrl: z.string().url().nullable(),
     originZoneName: z.string(),
     destinationName: z.string(),
     direction: TripDirectionSchema,
@@ -795,6 +796,7 @@ export const OfferDetailSchema = z
     // Only an active trip can be requested; paused and cancelled trips are unavailable.
     status: z.enum(["active", "paused", "cancelled"]),
     driverName: z.string(),
+    driverPhotoUrl: z.string().url().nullable(),
     communityName: z.string(),
     originZoneName: z.string(),
     destinationName: z.string(),
@@ -809,6 +811,7 @@ export const OfferDetailSchema = z
       .nullable(),
     note: z.string().nullable(),
     isOwn: z.boolean(),
+    hasOpenNeed: z.boolean(),
     // What the server calculates for the person's saved need; null without a need or when it no longer fits.
     match: z
       .object({
@@ -1329,6 +1332,7 @@ export const MatchProposalSchema = z
     suggestionId: z.string().uuid(),
     offerId: z.string().uuid(),
     driverName: z.string(),
+    driverPhotoUrl: z.string().url().nullable(),
     direction: TripDirectionSchema,
     date: z.string(),
     meetingPointName: z.string(),
