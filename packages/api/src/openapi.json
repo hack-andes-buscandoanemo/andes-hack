@@ -1291,6 +1291,84 @@
           "institutions",
           "individuals"
         ]
+      },
+      "DataSourcesResponse": {
+        "type": "object",
+        "properties": {
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DataSource"
+            }
+          }
+        },
+        "required": [
+          "sources"
+        ]
+      },
+      "DataSource": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "topic": {
+            "type": "string",
+            "enum": [
+              "tiempos",
+              "impacto",
+              "contexto"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "unit": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "dato",
+              "estimado"
+            ]
+          },
+          "source": {
+            "type": "string"
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "id",
+          "topic",
+          "label",
+          "value",
+          "unit",
+          "kind",
+          "source",
+          "url",
+          "date"
+        ]
       }
     },
     "parameters": {}
@@ -2020,6 +2098,25 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WaitlistSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/data-sources": {
+      "get": {
+        "tags": [
+          "Público"
+        ],
+        "responses": {
+          "200": {
+            "description": "Cada constante de los tiempos y del impacto, con su tipo, fuente y fecha",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataSourcesResponse"
                 }
               }
             }
