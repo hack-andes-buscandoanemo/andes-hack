@@ -8,6 +8,12 @@ const getOfferDetail = vi.fn();
 const requestSeat = vi.fn();
 const cancelBooking = vi.fn();
 const cancelOffer = vi.fn();
+// Leaflet and the tile provider are the boundary: the fake draws nothing.
+const drawRouteMap = vi.fn();
+
+vi.mock("@/components/leaflet-map", () => ({
+  drawRouteMap: (...args: unknown[]) => drawRouteMap(...args),
+}));
 
 vi.mock("next/navigation", () => ({ useParams: () => ({ id: currentId }) }));
 vi.mock("@/lib/communities-api", () => ({
@@ -51,6 +57,24 @@ const DETAIL = {
   },
   booking: null,
   fuelEstimate: { tripSoles: 9.84, perOccupantSoles: 2.46, occupants: 4 },
+  routeMap: {
+    path: [
+      [-12.078, -76.9173],
+      [-12.0975, -77.0376],
+    ],
+    approximate: true,
+    markers: [
+      { role: "start", name: "La Molina", lat: -12.078, lng: -76.9173, mine: false },
+      {
+        role: "meeting",
+        name: "Estación San Borja Sur (Línea 1)",
+        lat: -12.1004,
+        lng: -77.0018,
+        mine: true,
+      },
+      { role: "end", name: "Centro Empresarial Real", lat: -12.0975, lng: -77.0376, mine: false },
+    ],
+  },
 };
 
 beforeEach(() => {
@@ -59,6 +83,12 @@ beforeEach(() => {
   requestSeat.mockReset();
   cancelBooking.mockReset();
   cancelOffer.mockReset();
+  drawRouteMap
+    .mockReset()
+    .mockImplementation((_container: unknown, _route: unknown, events: { onLoad(): void }) => {
+      events.onLoad();
+      return () => {};
+    });
 });
 
 describe("trip detail /viajes/{id} (US-014)", () => {
@@ -104,6 +134,34 @@ describe("trip detail /viajes/{id} (US-014)", () => {
       "/datos#impacto",
     );
     expect(document.body.textContent).not.toMatch(/pagar|saldo|deuda|Métodos de pago/i);
+  });
+
+  it("draws the route with my meeting point and notes when the line is approximate (US-037)", async () => {
+    render(<TripDetailPage />);
+
+    expect(
+      await screen.findByRole("img", {
+        name: "La Molina → Estación San Borja Sur (Línea 1) (tu punto de encuentro) → Centro Empresarial Real",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Trazado aproximado")).toBeInTheDocument();
+  });
+
+  it("shows the route in text and still lets me request the seat when the tiles do not load (US-037)", async () => {
+    drawRouteMap.mockImplementation(
+      (_container: unknown, _route: unknown, events: { onFail(): void }) => {
+        events.onFail();
+        return () => {};
+      },
+    );
+    render(<TripDetailPage />);
+
+    expect(
+      await screen.findByText(
+        "La Molina → Estación San Borja Sur (Línea 1) (tu punto de encuentro) → Centro Empresarial Real",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Solicitar asiento" })).toBeEnabled();
   });
 
   it("says when the fuel of the leg could not be estimated", async () => {
@@ -412,6 +470,14 @@ describe("trip detail /viajes/{id} (US-014)", () => {
   });
 
   describe("trip cancellation (US-022)", () => {
+    it("shows a link to requests for the driver of the trip", async () => {
+      getOfferDetail.mockResolvedValue({ ...DETAIL, isOwn: true, status: "active" });
+      render(<TripDetailPage />);
+
+      const link = await screen.findByRole("link", { name: "Solicitudes" });
+      expect(link).toHaveAttribute("href", `/viajes/${OFFER_ID}/solicitudes`);
+    });
+
     it("lets the driver cancel their own trip with reasons dialog and confirms cancellation", async () => {
       getOfferDetail.mockResolvedValue({ ...DETAIL, isOwn: true, status: "active" });
       cancelOffer.mockResolvedValue({

@@ -243,6 +243,20 @@ describe("GET /offers/{id} (US-014)", () => {
       match: null,
       booking: null,
       fuelEstimate: { tripSoles: 10.04, perOccupantSoles: 5.02, occupants: 2 },
+      routeMap: {
+        path: expect.any(Array),
+        approximate: false,
+        markers: [
+          { role: "start", name: "La Molina", lat: -12.077983, lng: -76.9172838, mine: false },
+          {
+            role: "end",
+            name: "Centro Empresarial Real",
+            lat: -12.0975459,
+            lng: -77.0375707,
+            mine: false,
+          },
+        ],
+      },
     });
   });
 
@@ -393,6 +407,105 @@ describe("GET /offers/{id} (US-014)", () => {
       detourMinutes: 6,
       walkMinutes: 14,
     });
+  });
+
+  it("marks on the map the pickup the engine calculates before the person asks for a seat (US-037)", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const lucia = await createMember(alfa.id, "u-lucia", "Lucía");
+    const offer = await seedOffer(alfa.id, driver.id);
+    await seedMeetingPoint();
+    await seedNeed(alfa.id, lucia.id);
+
+    const body = (await (await requestAs(lucia, `/offers/${offer.id}`)).json()) as {
+      routeMap: { markers: { role: string; name: string; mine: boolean }[] };
+    };
+
+    expect(body.routeMap.markers.map(({ role, name, mine }) => [role, name, mine])).toEqual([
+      ["start", "La Molina", false],
+      ["meeting", "Estación San Borja Sur (Línea 1)", true],
+      ["end", "Centro Empresarial Real", false],
+    ]);
+  });
+
+  it("marks a meeting point shared with another passenger once, as the person's own (US-037)", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const lucia = await createMember(alfa.id, "u-lucia", "Lucía");
+    const rosa = await createMember(alfa.id, "u-rosa", "Rosa");
+    const offer = await seedOffer(alfa.id, driver.id);
+    await bookSeat(offer, rosa.id, "accepted");
+    await bookSeat(offer, lucia.id, "pending");
+
+    const body = (await (await requestAs(lucia, `/offers/${offer.id}`)).json()) as {
+      routeMap: { markers: { role: string; name: string; mine: boolean }[] };
+    };
+
+    expect(body.routeMap.markers.map(({ role, name, mine }) => [role, name, mine])).toEqual([
+      ["start", "La Molina", false],
+      ["meeting", "Estación San Borja Sur (Línea 1)", true],
+      ["end", "Centro Empresarial Real", false],
+    ]);
+  });
+
+  it("maps the meeting points of the accepted passengers and the person's own, highlighted (US-037)", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const lucia = await createMember(alfa.id, "u-lucia", "Lucía");
+    const rosa = await createMember(alfa.id, "u-rosa", "Rosa");
+    const offer = await seedOffer(alfa.id, driver.id);
+    await bookSeat(offer, lucia.id, "pending");
+    const rosaNeed = await seedNeed(alfa.id, rosa.id);
+    await testDb.insert(meetingPoint).values({
+      id: "la-molina-plaza-de-armas",
+      zoneId: "la-molina",
+      name: "Plaza de Armas de La Molina",
+      kind: "park",
+      lat: -12.0780067,
+      lng: -76.917343,
+      source: "test",
+    });
+    await testDb.insert(seatBooking).values({
+      offerId: offer.id,
+      requestId: rosaNeed.id,
+      passengerId: rosa.id,
+      meetingPointId: "la-molina-plaza-de-armas",
+      pickupAt: "07:05",
+      detourMinutes: 0,
+      walkMinutes: 5,
+      status: "accepted",
+    });
+
+    const body = (await (await requestAs(lucia, `/offers/${offer.id}`)).json()) as {
+      routeMap: { approximate: boolean; markers: unknown };
+    };
+
+    expect(body.routeMap.markers).toEqual([
+      { role: "start", name: "La Molina", lat: -12.077983, lng: -76.9172838, mine: false },
+      {
+        role: "meeting",
+        name: "Plaza de Armas de La Molina",
+        lat: -12.0780067,
+        lng: -76.917343,
+        mine: false,
+      },
+      {
+        role: "meeting",
+        name: "Estación San Borja Sur (Línea 1)",
+        lat: -12.1004192,
+        lng: -77.001846,
+        mine: true,
+      },
+      {
+        role: "end",
+        name: "Centro Empresarial Real",
+        lat: -12.0975459,
+        lng: -77.0375707,
+        mine: false,
+      },
+    ]);
+    // San Borja is off La Molina's drive to the sede: part of the line is straight.
+    expect(body.routeMap.approximate).toBe(true);
   });
 
   it("answers 404 for an unknown trip and 401 without a session", async () => {
@@ -557,6 +670,82 @@ describe("POST /bookings/{id}/accept (US-020)", () => {
     };
     expect(detailBody.booking.status).toBe("accepted");
     expect(detailBody.vehicle.plate).toBe("ABC123");
+  });
+
+  it("rejects accept and reject calls from non-drivers with 403", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const passenger = await createMember(alfa.id, "u-lucia", "Lucía");
+    const outsider = await createMember(alfa.id, "u-rosa", "Rosa");
+    const offer = await seedOffer(alfa.id, driver.id);
+    const booking = await bookSeat(offer, passenger.id, "pending");
+
+    const passengerAccept = await requestAs(passenger, `/bookings/${booking.id}/accept`, {
+      method: "POST",
+    });
+    expect(passengerAccept.status).toBe(403);
+    expect(((await passengerAccept.json()) as { error: string }).error).toBe(
+      "No puedes gestionar esta solicitud.",
+    );
+
+    const outsiderReject = await requestAs(outsider, `/bookings/${booking.id}/reject`, {
+      method: "POST",
+    });
+    expect(outsiderReject.status).toBe(403);
+    expect(((await outsiderReject.json()) as { error: string }).error).toBe(
+      "No puedes gestionar esta solicitud.",
+    );
+  });
+
+  it("returns 409 when trying to accept or reject a cancelled or withdrawn request", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const passenger = await createMember(alfa.id, "u-lucia", "Lucía");
+    const offer = await seedOffer(alfa.id, driver.id);
+    const booking = await bookSeat(offer, passenger.id, "pending");
+
+    const cancelRes = await requestAs(passenger, `/bookings/${booking.id}/cancel`, {
+      method: "POST",
+    });
+    expect(cancelRes.status).toBe(200);
+
+    const acceptRes = await requestAs(driver, `/bookings/${booking.id}/accept`, {
+      method: "POST",
+    });
+    expect(acceptRes.status).toBe(409);
+    expect(((await acceptRes.json()) as { error: string }).error).toBe(
+      "Esta solicitud ya no está disponible.",
+    );
+
+    const rejectRes = await requestAs(driver, `/bookings/${booking.id}/reject`, {
+      method: "POST",
+    });
+    expect(rejectRes.status).toBe(409);
+    expect(((await rejectRes.json()) as { error: string }).error).toBe(
+      "Esta solicitud ya no está disponible.",
+    );
+  });
+
+  it("returns 404 when trying to accept or reject an unknown booking", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const unknownId = "00000000-0000-4000-8000-000000000000";
+
+    const acceptRes = await requestAs(driver, `/bookings/${unknownId}/accept`, {
+      method: "POST",
+    });
+    expect(acceptRes.status).toBe(404);
+    expect(((await acceptRes.json()) as { error: string }).error).toBe(
+      "Esta solicitud ya no está disponible.",
+    );
+
+    const rejectRes = await requestAs(driver, `/bookings/${unknownId}/reject`, {
+      method: "POST",
+    });
+    expect(rejectRes.status).toBe(404);
+    expect(((await rejectRes.json()) as { error: string }).error).toBe(
+      "Esta solicitud ya no está disponible.",
+    );
   });
 });
 

@@ -133,6 +133,7 @@ export default function BookingRequests({ offerId }: { offerId: string }) {
     <main className="mx-auto flex w-full max-w-md flex-col gap-4 px-4 py-6">
       <h1 className="text-2xl font-extrabold">Solicitudes</h1>
       <p>{`${result.seatsTaken} de ${result.seatsTotal} asientos ocupados`}</p>
+      {result.seatsTaken >= result.seatsTotal ? <p role="status">Tu auto ya está lleno.</p> : null}
       {result.bookings.length === 0 ? <p>Aún no hay solicitudes para este viaje.</p> : null}
       <ul className="space-y-3">
         {result.bookings.map((booking) => (
@@ -155,7 +156,7 @@ export default function BookingRequests({ offerId }: { offerId: string }) {
               <div className="flex gap-2">
                 <Button
                   type="button"
-                  disabled={Boolean(busyId)}
+                  disabled={Boolean(busyId) || result.seatsTaken >= result.seatsTotal}
                   onClick={() => decide(booking.id, "accept")}
                 >
                   {busyId === booking.id ? "Actualizando…" : "Aceptar"}

@@ -11,6 +11,7 @@ import { FuelEstimateDetail } from "@/components/fuel-estimate";
 import ShareTrip from "@/components/share-trip";
 import SourceInfo from "@/components/source-info";
 import ProfileAvatar from "@/components/profile-avatar";
+import RouteMap from "@/components/route-map";
 import { Button } from "@/components/ui/button";
 import { reasonOf } from "@/lib/api-error";
 import { communitiesApi, type OfferDetail } from "@/lib/communities-api";
@@ -162,6 +163,12 @@ export default function TripDetailPage() {
     } else {
       action = (
         <div className="space-y-3">
+          <Link
+            href={`/viajes/${id}/solicitudes`}
+            className="flex h-11 w-full items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground hover:bg-primary/90"
+          >
+            Solicitudes
+          </Link>
           {error ? (
             <p role="alert" className="text-sm font-medium text-destructive">
               {error}
@@ -362,6 +369,7 @@ export default function TripDetailPage() {
       </section>
       <section className="space-y-1 rounded-2xl border bg-card p-4 shadow-sm">
         <p className="font-semibold">{`${from} → ${to}`}</p>
+        <RouteMap route={detail.routeMap} />
         {detail.daysOfWeek ? (
           <p className="text-sm">{`Viaje recurrente: ${daysLabel(detail.daysOfWeek)}`}</p>
         ) : detail.date ? (
