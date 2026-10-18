@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import EmptyState from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ const selectClass =
 type DayChoice = "today" | "tomorrow" | "other" | "days";
 
 export default function SearchPage() {
+  const initialSearch = useRef<URLSearchParams | null>(null);
   const [memberships, setMemberships] = useState<MembershipSummary[]>([]);
   const [communityId, setCommunityId] = useState("");
   const [zones, setZones] = useState<ZoneSummary[]>([]);
@@ -32,6 +33,10 @@ export default function SearchPage() {
   const [windowStart, setWindowStart] = useState("07:30");
   const [windowEnd, setWindowEnd] = useState("08:30");
   const [result, setResult] = useState<SearchTripsResponse | null>(null);
+  const [completedSearch, setCompletedSearch] = useState<{
+    outbound: boolean;
+    fallback: string;
+  } | null>(null);
   const [fallbackMode, setFallbackMode] =
     useState<(typeof FALLBACK_OPTIONS)[number]["value"]>("other");
   const [womenOnly, setWomenOnly] = useState(false);
@@ -49,9 +54,16 @@ export default function SearchPage() {
       .then((me) => {
         const first = me.memberships[0];
         if (!active || !first) return;
+        const query = new URLSearchParams(window.location.search);
+        const linkedMembership = me.memberships.find(
+          (item) => item.communityId === query.get("communityId"),
+        );
+        const selected = linkedMembership ?? first;
+        initialSearch.current =
+          linkedMembership && query.get("direction") === "return" ? query : null;
         setMemberships(me.memberships);
-        setCommunityId(first.communityId);
-        setFallbackMode(FALLBACK_FOR_USUAL_MODE[first.usualMode ?? "other"] ?? "other");
+        setCommunityId(selected.communityId);
+        setFallbackMode(FALLBACK_FOR_USUAL_MODE[selected.usualMode ?? "other"] ?? "other");
       })
       .catch(() => {
         if (active) setLoadError("No pudimos cargar tu cuenta. Inténtalo de nuevo.");
@@ -67,7 +79,46 @@ export default function SearchPage() {
     communitiesApi
       .listCommunityZones(communityId)
       .then((list) => {
-        if (active) setZones(list);
+        if (!active) return;
+        setZones(list);
+        const query = initialSearch.current;
+        initialSearch.current = null;
+        if (
+          !query ||
+          query.get("communityId") !== communityId ||
+          !list.some((zone) => zone.id === query.get("originZoneId"))
+        )
+          return;
+        const start = query.get("windowStart") ?? "";
+        const end = query.get("windowEnd") ?? "";
+        const fallback = FALLBACK_OPTIONS.find(
+          (option) => option.value === query.get("fallbackMode"),
+        );
+        const date = query.get("date") ?? "";
+        const weekdayValue = query.get("daysOfWeek") ?? "";
+        if (query.has("date") === query.has("daysOfWeek")) return;
+        const weekdays = weekdayValue.split(",").map(Number);
+        const validSchedule = date
+          ? /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+            Number.isFinite(Date.parse(`${date}T12:00:00Z`)) &&
+            new Date(`${date}T12:00:00Z`).toISOString().slice(0, 10) === date
+          : /^[1-7](,[1-7])*$/.test(weekdayValue) && new Set(weekdays).size === weekdays.length;
+        if (
+          !/^([01]\d|2[0-3]):[0-5]\d$/.test(start) ||
+          !/^([01]\d|2[0-3]):[0-5]\d$/.test(end) ||
+          start >= end ||
+          !fallback ||
+          !validSchedule
+        )
+          return;
+        setOutbound(false);
+        setZoneId(query.get("originZoneId")!);
+        setWindowStart(start);
+        setWindowEnd(end);
+        setFallbackMode(fallback.value);
+        setDayChoice(date ? "other" : "days");
+        setOtherDate(date);
+        setDays(date ? [] : weekdays);
       })
       .catch(() => {
         if (active) setLoadError("No pudimos cargar tus zonas. Inténtalo de nuevo.");
@@ -101,6 +152,10 @@ export default function SearchPage() {
     setDateError(null);
     setSearching(true);
     setResult(null);
+    const submittedSearch = {
+      outbound,
+      fallback: FALLBACK_OPTIONS.find((option) => option.value === fallbackMode)!.label,
+    };
     try {
       setResult(
         await communitiesApi.searchTrips(membership.communityId, {
@@ -115,6 +170,7 @@ export default function SearchPage() {
           womenOnly,
         }),
       );
+      setCompletedSearch(submittedSearch);
     } catch (err: unknown) {
       const apiError = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       setError(apiError ?? "No pudimos buscar viajes. Inténtalo de nuevo.");
@@ -256,7 +312,7 @@ export default function SearchPage() {
                   value={windowStart}
                   onChange={(event) => setWindowStart(event.target.value)}
                 >
-                  {TIME_SLOTS.map((slot) => (
+                  {[...new Set([...TIME_SLOTS, windowStart])].sort().map((slot) => (
                     <option key={slot} value={slot}>
                       {clockLabel(slot)}
                     </option>
@@ -269,7 +325,7 @@ export default function SearchPage() {
                   value={windowEnd}
                   onChange={(event) => setWindowEnd(event.target.value)}
                 >
-                  {TIME_SLOTS.map((slot) => (
+                  {[...new Set([...TIME_SLOTS, windowEnd])].sort().map((slot) => (
                     <option key={slot} value={slot}>
                       {clockLabel(slot)}
                     </option>
@@ -347,7 +403,14 @@ export default function SearchPage() {
                 ? "1 coincidencia encontrada"
                 : `${result.matches.length} coincidencias encontradas`}
             </h2>
-            {result.reason ? (
+            {result.matches.length === 0 && completedSearch?.outbound === false ? (
+              <EmptyState>
+                <span className="block font-medium text-foreground">
+                  Aún no hay un regreso compatible. Te incluiremos en el emparejamiento del regreso.
+                </span>
+                <span className="block text-xs">Tu alternativa: {completedSearch.fallback}</span>
+              </EmptyState>
+            ) : result.reason ? (
               <EmptyState>
                 <span className="block font-medium text-foreground">
                   {REASON_MESSAGES[result.reason]}

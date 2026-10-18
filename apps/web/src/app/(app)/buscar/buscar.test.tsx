@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -6,13 +6,9 @@ const getMe = vi.fn();
 const listCommunityZones = vi.fn();
 const searchTrips = vi.fn();
 
-vi.mock("@/lib/communities-api", () => ({
-  communitiesApi: {
-    getMe: (...args: unknown[]) => getMe(...args),
-    listCommunityZones: (...args: unknown[]) => listCommunityZones(...args),
-    searchTrips: (...args: unknown[]) => searchTrips(...args),
-  },
-}));
+import { httpClient } from "@/lib/http-client";
+
+const originalAdapter = httpClient.defaults.adapter;
 
 import BuscarPage from "./page";
 
@@ -62,12 +58,28 @@ const MATCH = {
 };
 
 beforeEach(() => {
+  window.history.replaceState({}, "", "/buscar");
+  httpClient.defaults.adapter = async (config) => {
+    const communityId = config.url?.split("/")[2];
+    const data =
+      config.url === "/me"
+        ? await getMe()
+        : config.url?.endsWith("/zones")
+          ? { zones: await listCommunityZones(communityId) }
+          : config.url?.endsWith("/search")
+            ? await searchTrips(communityId, JSON.parse(config.data))
+            : (() => {
+                throw new Error(`Unexpected request: ${config.url}`);
+              })();
+    return { data, status: 200, statusText: "OK", headers: {}, config };
+  };
   getMe.mockReset().mockResolvedValue(ME);
   listCommunityZones.mockReset().mockResolvedValue(ZONES);
   searchTrips.mockReset();
 });
 
 afterEach(() => {
+  httpClient.defaults.adapter = originalAdapter;
   vi.useRealTimers();
 });
 
@@ -85,6 +97,201 @@ async function searchFromSanBorja() {
 }
 
 describe("search page /buscar (US-013)", () => {
+  it("widens a late return window without collapsing it to the standard time slots", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      `/buscar?direction=return&communityId=${COMMUNITY_ID}&originZoneId=san-borja&windowStart=23:00&windowEnd=23:30&fallbackMode=public_transport&date=2026-11-02`,
+    );
+    searchTrips.mockResolvedValue({
+      requestId: "return-request",
+      matches: [],
+      reason: "outside_time_window",
+    });
+    const user = userEvent.setup();
+    render(<BuscarPage />);
+    await screen.findByRole("option", { name: "San Borja" });
+    await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
+    await user.click(await screen.findByRole("button", { name: "Ampliar horario 15 min" }));
+
+    await waitFor(() =>
+      expect(searchTrips).toHaveBeenLastCalledWith(
+        COMMUNITY_ID,
+        expect.objectContaining({
+          direction: "return",
+          windowStart: "22:45",
+          windowEnd: "23:45",
+        }),
+      ),
+    );
+    expect(screen.getByLabelText("Desde")).toHaveValue("22:45");
+    expect(screen.getByLabelText("Hasta")).toHaveValue("23:45");
+  });
+
+  it("does not apply the return link after the person selects a different community during loading", async () => {
+    const betaId = "55555555-5555-4555-8555-555555555555";
+    getMe.mockResolvedValue({
+      ...ME,
+      memberships: [membership(), membership({ communityId: betaId, communityName: "Beta" })],
+    });
+    listCommunityZones.mockImplementation((id) =>
+      id === betaId ? new Promise(() => {}) : Promise.resolve(ZONES),
+    );
+    window.history.replaceState(
+      {},
+      "",
+      `/buscar?direction=return&communityId=${betaId}&originZoneId=san-borja&windowStart=18:00&windowEnd=19:00&fallbackMode=public_transport&date=2026-11-02`,
+    );
+    const user = userEvent.setup();
+    render(<BuscarPage />);
+    await user.selectOptions(await screen.findByLabelText("Comunidad"), COMMUNITY_ID);
+    await screen.findByRole("option", { name: "San Borja" });
+    expect(screen.getByLabelText("Mi zona")).toHaveValue("");
+    expect(screen.getByLabelText("Desde")).toHaveValue("07:30");
+  });
+
+  it("ignores a return link that declares both a date and recurring weekdays", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      `/buscar?direction=return&communityId=${COMMUNITY_ID}&originZoneId=san-borja&windowStart=18:00&windowEnd=19:00&fallbackMode=public_transport&date=2026-11-02&daysOfWeek=1,3`,
+    );
+    render(<BuscarPage />);
+    await screen.findByRole("option", { name: "San Borja" });
+    expect(screen.getByLabelText("Fecha")).toHaveValue("today");
+    expect(screen.getByLabelText("Mi zona")).toHaveValue("");
+  });
+
+  it("ignores a return link with an impossible calendar date", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      `/buscar?direction=return&communityId=${COMMUNITY_ID}&originZoneId=san-borja&windowStart=18:00&windowEnd=19:00&fallbackMode=public_transport&date=2026-02-30`,
+    );
+    render(<BuscarPage />);
+    await screen.findByRole("option", { name: "San Borja" });
+    expect(screen.getByLabelText("Fecha")).toHaveValue("today");
+    expect(screen.getByLabelText("Mi zona")).toHaveValue("");
+    expect(screen.getByLabelText("Desde")).toHaveValue("07:30");
+  });
+
+  it("keeps the return empty state and declared alternative tied to the completed search", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      `/buscar?direction=return&communityId=${COMMUNITY_ID}&originZoneId=san-borja&windowStart=18:00&windowEnd=19:00&fallbackMode=public_transport&date=2026-11-02`,
+    );
+    let finish!: (value: unknown) => void;
+    searchTrips.mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    const user = userEvent.setup();
+    render(<BuscarPage />);
+    await screen.findByRole("option", { name: "San Borja" });
+    await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
+    await user.click(screen.getByRole("button", { name: "Invertir sentido" }));
+    await user.selectOptions(
+      screen.getByLabelText("Si no encuentras viaje, ¿cómo irías?"),
+      "taxi_app",
+    );
+    finish({ requestId: "return-request", matches: [], reason: null });
+
+    expect(
+      await screen.findByText(
+        "Aún no hay un regreso compatible. Te incluiremos en el emparejamiento del regreso.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Tu alternativa: Bus, combi, Corredor o metro")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Guardamos tu búsqueda para el emparejamiento de la jornada."),
+    ).not.toBeInTheDocument();
+  });
+
+  it("searches the recurring weekdays from a return link without adding a date", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      `/buscar?direction=return&communityId=${COMMUNITY_ID}&originZoneId=san-borja&windowStart=18:00&windowEnd=19:00&fallbackMode=picked_up&daysOfWeek=1,3,5`,
+    );
+    searchTrips.mockResolvedValue({
+      requestId: "return-request",
+      matches: [],
+      reason: "days_mismatch",
+    });
+    const user = userEvent.setup();
+    render(<BuscarPage />);
+    await screen.findByRole("option", { name: "San Borja" });
+    expect(screen.getByLabelText("Fecha")).toHaveValue("days");
+    expect(screen.getByRole("button", { name: "Miércoles" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
+    await waitFor(() =>
+      expect(searchTrips).toHaveBeenCalledWith(
+        COMMUNITY_ID,
+        expect.objectContaining({
+          direction: "return",
+          date: null,
+          daysOfWeek: [1, 3, 5],
+          fallbackMode: "picked_up",
+        }),
+      ),
+    );
+  });
+
+  it("loads the return link after account and zone options arrive and submits its exact times", async () => {
+    const betaId = "55555555-5555-4555-8555-555555555555";
+    getMe.mockResolvedValue({
+      ...ME,
+      memberships: [
+        membership(),
+        membership({ communityId: betaId, communityName: "Beta", destinationName: "Campus Beta" }),
+      ],
+    });
+    window.history.replaceState(
+      {},
+      "",
+      `/buscar?direction=return&communityId=${betaId}&originZoneId=la-molina&windowStart=18%3A07&windowEnd=19%3A22&fallbackMode=public_transport&date=2026-11-02`,
+    );
+    searchTrips.mockResolvedValue({
+      requestId: "return-request",
+      matches: [],
+      reason: "outside_time_window",
+    });
+    const user = userEvent.setup();
+    render(<BuscarPage />);
+
+    await screen.findByRole("option", { name: "La Molina" });
+    expect(screen.getByLabelText("Comunidad")).toHaveValue(betaId);
+    expect(screen.getByLabelText("Mi zona")).toHaveValue("la-molina");
+    expect(
+      within(screen.getByRole("group", { name: "Origen" })).getByText("Campus Beta"),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Desde")).toHaveValue("18:07");
+    expect(screen.getByLabelText("Hasta")).toHaveValue("19:22");
+    expect(screen.getByLabelText("Día del viaje")).toHaveValue("2026-11-02");
+    expect(screen.getByLabelText("Si no encuentras viaje, ¿cómo irías?")).toHaveValue(
+      "public_transport",
+    );
+    await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
+    await waitFor(() =>
+      expect(searchTrips).toHaveBeenCalledWith(betaId, {
+        direction: "return",
+        originZoneId: "la-molina",
+        windowStart: "18:07",
+        windowEnd: "19:22",
+        date: "2026-11-02",
+        daysOfWeek: null,
+        fallbackMode: "public_transport",
+        maxWalkMinutes: 15,
+        womenOnly: false,
+      }),
+    );
+  });
+
   it("lists the matches with the engine's factors instead of a percentage", async () => {
     searchTrips.mockResolvedValue({
       requestId: "33333333-3333-4333-8333-333333333333",
