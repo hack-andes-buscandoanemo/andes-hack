@@ -1,5 +1,5 @@
-import ComingSoon from "@/components/coming-soon";
+import Panel from "./panel";
 
 export default function ImpactPage() {
-  return <ComingSoon title="Impacto en vivo" />;
+  return <Panel />;
 }
