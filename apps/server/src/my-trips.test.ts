@@ -210,6 +210,8 @@ describe("GET /me/trips", () => {
           destinationName: "Centro Empresarial Real",
           meetingPointName: "Estación San Borja Sur (Línea 1)",
           driver: { alias: "Carlos Q.", plate },
+          seatsTotal: null,
+          seatsFree: null,
           pendingRequests: null,
           acceptedPassengers: null,
         },
@@ -342,6 +344,8 @@ describe("GET /me/trips", () => {
           destinationName: "Centro Empresarial Real",
           meetingPointName: null,
           driver: null,
+          seatsTotal: 3,
+          seatsFree: 2,
           pendingRequests: 1,
           acceptedPassengers: ["Lucía R."],
         },
@@ -398,5 +402,38 @@ describe("GET /me/trips", () => {
 
     expect(body.trips).toHaveLength(1);
     expect(body.trips[0]).toMatchObject({ driver: { alias: "Carlos Quispe" } });
+  });
+
+  it("keeps a weekly trip upcoming while the offer is paused and the request is open", async () => {
+    const org = await seedWorld();
+    const driver = await createMember(org.id, "driver-1", "Carlos Quispe", "Carlos Q.");
+    const passenger = await createMember(org.id, "pax-1", "Lucía Ramos");
+    const { offer } = await createOffer(org.id, driver.id, { status: "paused" });
+    await book(offer, passenger.id, "accepted");
+    await book(offer, passenger.id, "rejected");
+
+    const statuses = async (scope: string) =>
+      (await (await requestAs(passenger, `/me/trips?role=passenger&scope=${scope}`)).json()).trips
+        .map((trip) => trip.status)
+        .sort();
+
+    expect(await statuses("upcoming")).toEqual(["accepted"]);
+    expect(await statuses("past")).toEqual(["rejected"]);
+  });
+
+  it("shows a request nobody answered before a one-off trip left as cancelled in the past", async () => {
+    const org = await seedWorld();
+    const driver = await createMember(org.id, "driver-1", "Carlos Quispe", "Carlos Q.");
+    const passenger = await createMember(org.id, "pax-1", "Lucía Ramos");
+    const { offer } = await createOffer(org.id, driver.id, { date: PAST_DATE });
+    await book(offer, passenger.id, "pending");
+
+    const past = await (await requestAs(passenger, "/me/trips?role=passenger&scope=past")).json();
+    const upcoming = await (
+      await requestAs(passenger, "/me/trips?role=passenger&scope=upcoming")
+    ).json();
+
+    expect(past.trips.map((trip) => trip.status)).toEqual(["cancelled"]);
+    expect(upcoming.trips).toEqual([]);
   });
 });

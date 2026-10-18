@@ -1175,6 +1175,18 @@
               "plate"
             ]
           },
+          "seatsTotal": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "seatsFree": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
           "pendingRequests": {
             "type": [
               "integer",
@@ -1204,6 +1216,8 @@
           "destinationName",
           "meetingPointName",
           "driver",
+          "seatsTotal",
+          "seatsFree",
           "pendingRequests",
           "acceptedPassengers"
         ]

@@ -8,6 +8,7 @@ import { places } from "@andes-hack/matching";
 import { and, desc, eq, inArray } from "drizzle-orm";
 
 import { destinationOf, matchOfferForNeed } from "./search";
+import { canSeePlate, displayName, seatsFree } from "./trip-rules";
 import { ApiError } from "./utils/api-response";
 
 type Database = typeof defaultDb;
@@ -109,7 +110,7 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
   const detail = {
     offerId: row.id,
     status: row.status,
-    driverName: row.driverAlias ?? row.accountName,
+    driverName: displayName(row.driverAlias, row.accountName),
     communityName: row.communityName,
     originZoneName: row.originZoneName,
     destinationName: destination.name,
@@ -118,17 +119,23 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
     date: row.date,
     daysOfWeek: row.daysOfWeek,
     // Same count the engine and the search use: accepted passengers hold the seats.
-    seatsFree: row.seatsTotal - bookings.filter((booking) => booking.status === "accepted").length,
+    seatsFree: seatsFree(
+      row.seatsTotal,
+      bookings.filter((booking) => booking.status === "accepted").length,
+    ),
     vehicle:
       row.make && row.model
         ? {
             make: row.make,
             model: row.model,
             // Never revealed once the trip is cancelled.
-            plate:
-              row.status !== "cancelled" && (isOwn || mine?.status === "accepted")
-                ? row.plate
-                : null,
+            plate: canSeePlate({
+              offerStatus: row.status,
+              isOwn,
+              bookingStatus: mine?.status,
+            })
+              ? row.plate
+              : null,
           }
         : null,
     note: row.note,

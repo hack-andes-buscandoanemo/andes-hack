@@ -715,6 +715,9 @@ export const MyTripSchema = z
     meetingPointName: z.string().nullable(),
     // Alias always; the plate only once the request is accepted. Null for the driver's own view.
     driver: z.object({ alias: z.string(), plate: z.string().nullable() }).nullable(),
+    // Driver view only: seats offered and seats still free (accepted passengers hold seats).
+    seatsTotal: z.number().int().nullable(),
+    seatsFree: z.number().int().nullable(),
     // Driver view only: requests waiting for an answer, and the aliases of accepted passengers.
     pendingRequests: z.number().int().nullable(),
     acceptedPassengers: z.array(z.string()).nullable(),

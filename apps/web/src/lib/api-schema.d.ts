@@ -1193,6 +1193,8 @@ export interface components {
         alias: string;
         plate: string | null;
       } | null;
+      seatsTotal: number | null;
+      seatsFree: number | null;
       pendingRequests: number | null;
       acceptedPassengers: string[] | null;
     };
