@@ -326,4 +326,24 @@ describe("seats of a day assigned to maximise the car trips avoided", () => {
       { requestId: "necesidad-pedro", passengerId: "pedro", reason: "previously_rejected" },
     ]);
   });
+
+  it("plans a day with trips both ways, matching each passenger only with drivers going theirs", () => {
+    const plan = optimizeDay(
+      {
+        date: monday,
+        offers: [offer()],
+        requests: [
+          request("pedro"),
+          request("sofia", { direction: "return", windowStart: "17:30", windowEnd: "18:30" }),
+        ],
+      },
+      model,
+    );
+
+    expect(plan.assignments.map(({ passengerId }) => passengerId)).toEqual(["pedro"]);
+    // No driver comes back that evening.
+    expect(plan.unassigned).toEqual([
+      { requestId: "necesidad-sofia", passengerId: "sofia", reason: "outside_time_window" },
+    ]);
+  });
 });

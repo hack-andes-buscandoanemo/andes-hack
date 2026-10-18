@@ -246,15 +246,17 @@ export function optimizeDay(
   const seatedOn = new Map<DayRequest, string>();
   const waiting = () => instance.requests.filter((request) => !seatedOn.has(request));
 
-  // The offers a passenger tries. Seating others can delay a car into their window, so
-  // those stay. A driver who turns them down alone for the detour could still take them
-  // once another pickup takes the car their way, but that is rare, and leaving those
-  // offers out makes a day of 200 needs and 60 offers about ten times faster, time the
-  // local search uses better.
+  // The offers a passenger tries: those going their way that take them alone, or turn
+  // them down only for the time, since seating others can delay a car into their window.
+  // A driver who turns them down alone for the detour could still take them once another
+  // pickup takes the car their way, but that is rare, and leaving those offers out makes a
+  // day of 200 needs and 60 offers about ten times faster, time the local search uses
+  // better.
   const reachable = new Map(
     instance.requests.map((request) => [
       request,
       instance.offers.filter((offer) => {
+        if (offer.direction !== request.direction) return false;
         const alone = bestInsertion(offer, request, model, date);
         return alone.feasible || alone.reason === "outside_time_window";
       }),
