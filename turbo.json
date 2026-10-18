@@ -27,6 +27,10 @@
     "db:migrate": {
       "cache": false
     },
+    "db:seed": {
+      "cache": false,
+      "passThroughEnv": ["DATABASE_URL", "DEMO_JOIN_CODE", "DEMO_ADMIN_EMAIL"]
+    },
     "db:generate": {
       "cache": false
     },
