@@ -15,10 +15,21 @@ export const joinAttemptRateLimit = new Ratelimit({
   prefix: "andes-hack:join-attempt",
 });
 
+export const otpSendRateLimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(3, "10 m"),
+  analytics: true,
+  prefix: "andes-hack:otp-send",
+});
+
 export async function checkRateLimit(identifier: string) {
   return rateLimit.limit(identifier);
 }
 
 export async function checkJoinAttemptRateLimit(identifier: string) {
   return joinAttemptRateLimit.limit(identifier);
+}
+
+export async function checkOtpSendRateLimit(identifier: string) {
+  return otpSendRateLimit.limit(identifier);
 }

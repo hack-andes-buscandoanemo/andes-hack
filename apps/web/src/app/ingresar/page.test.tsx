@@ -5,12 +5,24 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const push = vi.fn();
 const listCommunities = vi.fn();
 const joinCommunity = vi.fn();
+const sendEmailOtp = vi.fn();
+const verifyEmailOtp = vi.fn();
+const confirmEmailMembership = vi.fn();
+const useSession = vi.fn();
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push, replace: vi.fn() }) }));
+vi.mock("@/lib/auth-client", () => ({
+  authClient: {
+    useSession: () => useSession(),
+  },
+}));
 vi.mock("@/lib/communities-api", () => ({
   communitiesApi: {
     listCommunities: (...args: unknown[]) => listCommunities(...args),
     joinCommunity: (...args: unknown[]) => joinCommunity(...args),
+    sendEmailOtp: (...args: unknown[]) => sendEmailOtp(...args),
+    verifyEmailOtp: (...args: unknown[]) => verifyEmailOtp(...args),
+    confirmEmailMembership: (...args: unknown[]) => confirmEmailMembership(...args),
   },
 }));
 
@@ -21,6 +33,8 @@ const DEMO_COMMUNITY = {
   name: "Comunidad Alfa",
   kind: "company" as const,
   isDemo: true,
+  hasEmailVerification: false,
+  matchedEmailDomain: null,
 };
 
 const UNI_COMMUNITY = {
@@ -28,16 +42,25 @@ const UNI_COMMUNITY = {
   name: "Universidad del Pacífico Sur",
   kind: "university" as const,
   isDemo: false,
+  hasEmailVerification: true,
+  matchedEmailDomain: "@upacifico.edu.pe",
 };
 
 beforeEach(() => {
   push.mockClear();
   listCommunities.mockReset();
   joinCommunity.mockReset();
+  sendEmailOtp.mockReset();
+  verifyEmailOtp.mockReset();
+  confirmEmailMembership.mockReset();
+  useSession.mockReturnValue({
+    data: { user: { id: "u1", name: "Ana", email: "ana@upacifico.edu.pe" } },
+    isPending: false,
+  });
   listCommunities.mockResolvedValue([DEMO_COMMUNITY, UNI_COMMUNITY]);
 });
 
-describe("enter page (US-009)", () => {
+describe("enter page (US-009 & US-010)", () => {
   it("offers to create an account or sign in", async () => {
     render(<EnterPage />);
     await screen.findByText("Comunidad Alfa");
@@ -127,5 +150,81 @@ describe("enter page (US-009)", () => {
     await user.click(screen.getByRole("button", { name: "Unirme" }));
     await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/comenzar"));
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("verifies institutional email with 6-digit OTP, enforces 60s resend cooldown, and handles invalid OTP", async () => {
+    sendEmailOtp.mockResolvedValue({ success: true });
+    verifyEmailOtp
+      .mockRejectedValueOnce(new Error("INVALID_OTP"))
+      .mockResolvedValueOnce({ success: true });
+    confirmEmailMembership.mockResolvedValue({
+      joined: true,
+      alreadyMember: false,
+      communityId: UNI_COMMUNITY.id,
+      communityName: UNI_COMMUNITY.name,
+      verificationMethod: "email_domain",
+      isTeam: false,
+      message: "Pertenencia verificada.",
+    });
+
+    const user = userEvent.setup();
+    render(<EnterPage />);
+    await screen.findByText("Universidad del Pacífico Sur");
+
+    await user.click(screen.getByRole("button", { name: /Universidad del Pacífico Sur/i }));
+    await user.click(screen.getByRole("button", { name: "Verificar con correo institucional" }));
+
+    expect(
+      screen.getByText("Usa tu correo de Universidad del Pacífico Sur (@upacifico.edu.pe)"),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Enviar código" }));
+
+    expect(
+      await screen.findByText("Te enviamos un código a ana@upacifico.edu.pe. Vence en 5 minutos."),
+    ).toBeInTheDocument();
+    expect(sendEmailOtp).toHaveBeenCalledWith(UNI_COMMUNITY.id, "ana@upacifico.edu.pe");
+    expect(screen.getByRole("button", { name: /Reenviar código/i })).toBeDisabled();
+
+    // Invalid OTP first
+    const otpInput = screen.getByLabelText("Código de 6 dígitos");
+    await user.type(otpInput, "000000");
+    await user.click(screen.getByRole("button", { name: "Verificar" }));
+    expect(await screen.findByText("El código no es válido o ya venció.")).toBeInTheDocument();
+
+    // Valid OTP
+    await user.clear(otpInput);
+    await user.type(otpInput, "123456");
+    await user.click(screen.getByRole("button", { name: "Verificar" }));
+
+    expect(await screen.findByText("Pertenencia verificada.")).toBeInTheDocument();
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/comenzar"));
+    expect(verifyEmailOtp).toHaveBeenLastCalledWith("ana@upacifico.edu.pe", "123456");
+    expect(confirmEmailMembership).toHaveBeenCalledWith(UNI_COMMUNITY.id);
+  });
+
+  it("blocks institutional verification and explains how to create an institutional account when the email domain does not match", async () => {
+    useSession.mockReturnValue({
+      data: { user: { id: "u2", name: "Pedro", email: "pedro@gmail.com" } },
+      isPending: false,
+    });
+    listCommunities.mockResolvedValue([
+      DEMO_COMMUNITY,
+      { ...UNI_COMMUNITY, matchedEmailDomain: null },
+    ]);
+
+    const user = userEvent.setup();
+    render(<EnterPage />);
+    await screen.findByText("Universidad del Pacífico Sur");
+
+    await user.click(screen.getByRole("button", { name: /Universidad del Pacífico Sur/i }));
+    await user.click(screen.getByRole("button", { name: "Verificar con correo institucional" }));
+
+    expect(
+      screen.getByText(
+        "Tu cuenta usa un correo que no pertenece a Universidad del Pacífico Sur. Crea tu cuenta con tu correo institucional.",
+      ),
+    ).toBeInTheDocument();
+    expect(sendEmailOtp).not.toHaveBeenCalled();
   });
 });
