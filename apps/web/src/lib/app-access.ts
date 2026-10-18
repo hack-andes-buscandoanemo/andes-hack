@@ -1,7 +1,9 @@
 import { authClient } from "@/lib/auth-client";
 
 type Membership = {
+  communityId: string;
   communityName: string;
+  role: "member" | "admin";
   consentAt: string | null;
   usualMode: string | null;
 };
@@ -9,7 +11,12 @@ type Membership = {
 export type AppAccess =
   | { redirectTo: "/" | "/ingresar" | "/comenzar" }
   | { unavailable: true }
-  | { user: { name: string; email: string }; communityName?: string };
+  | {
+      user: { name: string; email: string };
+      communityId?: string;
+      communityName?: string;
+      role?: "member" | "admin";
+    };
 
 async function fetchMemberships(headers: Headers, serverUrl: string) {
   try {
@@ -49,5 +56,10 @@ export async function resolveAppAccess({
   const membership = memberships[0];
   if (!membership) return { redirectTo: "/ingresar" };
   if (!membership.consentAt || !membership.usualMode) return { redirectTo: "/comenzar" };
-  return { user, communityName: membership.communityName };
+  return {
+    user,
+    communityId: membership.communityId,
+    communityName: membership.communityName,
+    role: membership.role,
+  };
 }
