@@ -3,17 +3,24 @@
 // fixed seed, not the demo community: it only has real members and none of their trips
 // are made up. `bun run compare:strategies`.
 
-import { compareStrategies, createTravelTimeModel, type StrategyReport } from "../src/index";
+import {
+  compareStrategies,
+  createTravelTimeModel,
+  type StrategyComparison,
+  type StrategyReport,
+} from "../src/index";
 import { randomDay } from "../src/testing/random-day";
 
 const days = Number(process.argv[2] ?? 200);
+if (!Number.isInteger(days) || days < 1) throw new Error("Pasa un número de días mayor que 0.");
 const size = { offers: 12, requests: 30 };
 const model = createTravelTimeModel();
 
-type Strategy = "firstComeFirstServed" | "optimizer";
+type Strategy = keyof StrategyComparison;
+type Figure = keyof Omit<StrategyReport, "plan">;
 const strategies: readonly Strategy[] = ["firstComeFirstServed", "optimizer"];
 
-const totals: Record<Strategy, Record<keyof Omit<StrategyReport, "plan">, number>> = {
+const totals: Record<Strategy, Record<Figure, number>> = {
   firstComeFirstServed: zero(),
   optimizer: zero(),
 };
@@ -24,8 +31,8 @@ for (let seed = 1; seed <= days; seed++) {
   const comparison = compareStrategies(randomDay(seed, size, model), model);
   for (const strategy of strategies) {
     const report = comparison[strategy];
-    for (const key of Object.keys(totals[strategy]) as (keyof typeof report)[]) {
-      if (key !== "plan") totals[strategy][key] += report[key];
+    for (const key of Object.keys(totals[strategy]) as Figure[]) {
+      totals[strategy][key] += report[key];
     }
   }
   const difference =
@@ -46,8 +53,7 @@ function zero() {
   };
 }
 
-const perDay = (strategy: Strategy, key: keyof ReturnType<typeof zero>) =>
-  (totals[strategy][key] / days).toFixed(2);
+const perDay = (strategy: Strategy, key: Figure) => (totals[strategy][key] / days).toFixed(2);
 
 console.log(
   `${days} días aleatorios, ${size.offers} ofertas y ${size.requests} necesidades cada uno`,
