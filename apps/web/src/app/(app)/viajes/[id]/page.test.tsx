@@ -7,7 +7,7 @@ const getOfferDetail = vi.fn();
 const requestSeat = vi.fn();
 const cancelBooking = vi.fn();
 
-vi.mock("next/navigation", () => ({ useParams: () => ({ id: OFFER_ID }) }));
+vi.mock("next/navigation", () => ({ useParams: () => ({ id: currentId }) }));
 vi.mock("@/lib/communities-api", () => ({
   communitiesApi: {
     getOfferDetail: (...args: unknown[]) => getOfferDetail(...args),
@@ -19,6 +19,8 @@ vi.mock("@/lib/communities-api", () => ({
 import TripDetailPage from "./page";
 
 const OFFER_ID = "22222222-2222-4222-8222-222222222222";
+const OTHER_ID = "33333333-3333-4333-8333-333333333333";
+let currentId = OFFER_ID;
 
 const DETAIL = {
   offerId: OFFER_ID,
@@ -51,6 +53,7 @@ function serverError(status: number, error: string) {
 }
 
 beforeEach(() => {
+  currentId = OFFER_ID;
   getOfferDetail.mockReset().mockResolvedValue(DETAIL);
   requestSeat.mockReset();
   cancelBooking.mockReset();
@@ -172,6 +175,37 @@ describe("trip detail /viajes/{id} (US-014)", () => {
     expect(screen.queryByRole("button", { name: "Solicitar asiento" })).toBeNull();
   });
 
+  it("announces the sent confirmation in a status region and shows progress while sending", async () => {
+    let finish: (value: unknown) => void = () => {};
+    requestSeat.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    const user = userEvent.setup();
+    render(<TripDetailPage />);
+
+    await user.click(await screen.findByRole("button", { name: "Solicitar asiento" }));
+    expect(screen.getByRole("button", { name: "Enviando…" })).toHaveProperty("disabled", true);
+
+    finish({ booking: { id: "b-1", status: "pending" } });
+    expect((await screen.findByRole("status")).textContent).toBe(
+      "Solicitud enviada. Te avisaremos cuando Mateo Q. responda.",
+    );
+  });
+
+  it("starts from scratch when the person moves to another trip", async () => {
+    requestSeat.mockResolvedValue({ booking: { id: "b-1", status: "pending" } });
+    const user = userEvent.setup();
+    const { rerender } = render(<TripDetailPage />);
+    await user.click(await screen.findByRole("button", { name: "Solicitar asiento" }));
+    await screen.findByText(/Solicitud enviada/);
+
+    currentId = OTHER_ID;
+    getOfferDetail.mockResolvedValue({ ...DETAIL, offerId: OTHER_ID, driverName: "Ana R." });
+    rerender(<TripDetailPage />);
+
+    expect(await screen.findByText("Ana R.")).toBeTruthy();
+    expect(screen.queryByText(/Solicitud enviada/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Solicitar asiento" })).toBeTruthy();
+  });
+
   it("lets the passenger withdraw a pending request and ask again", async () => {
     getOfferDetail.mockResolvedValue({ ...DETAIL, booking: { id: "b-1", status: "pending" } });
     cancelBooking.mockResolvedValue({ booking: { id: "b-1", status: "cancelled_by_passenger" } });
@@ -200,6 +234,19 @@ describe("trip detail /viajes/{id} (US-014)", () => {
     expect(screen.getByText(/Solicitud enviada/)).toBeTruthy();
   });
 
+  it.each(["paused", "cancelled"] as const)(
+    "does not offer a seat on a %s trip",
+    async (status) => {
+      getOfferDetail.mockResolvedValue({ ...DETAIL, status, match: null });
+      render(<TripDetailPage />);
+
+      expect(
+        await screen.findByText("Este viaje cambió y ya no es compatible con tu búsqueda."),
+      ).toBeTruthy();
+      expect(screen.queryByRole("button", { name: "Solicitar asiento" })).toBeNull();
+    },
+  );
+
   it("says the trip is full instead of offering a request when no seat is free", async () => {
     getOfferDetail.mockResolvedValue({ ...DETAIL, seatsFree: 0 });
     render(<TripDetailPage />);
@@ -216,11 +263,27 @@ describe("trip detail /viajes/{id} (US-014)", () => {
     expect(screen.queryByRole("button", { name: "Solicitar asiento" })).toBeNull();
   });
 
-  it("says so when the trip cannot be loaded", async () => {
-    getOfferDetail.mockRejectedValue(serverError(403, "No perteneces a esta comunidad."));
+  it("announces that the trip is loading", async () => {
+    getOfferDetail.mockReturnValue(new Promise(() => {}));
     render(<TripDetailPage />);
 
-    expect((await screen.findByRole("alert")).textContent).toBe("No perteneces a esta comunidad.");
+    expect(screen.getByRole("status").textContent).toBe("Cargando viaje…");
+  });
+
+  it.each([404, 422])("says the trip was not found when the server answers %i", async (status) => {
+    getOfferDetail.mockRejectedValue(serverError(status, "Not Found"));
+    render(<TripDetailPage />);
+
+    expect((await screen.findByRole("alert")).textContent).toBe("No encontramos este viaje.");
+  });
+
+  it("never shows a raw error when the trip cannot be loaded", async () => {
+    getOfferDetail.mockRejectedValue(serverError(500, "Internal Server Error"));
+    render(<TripDetailPage />);
+
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "No pudimos cargar este viaje. Inténtalo de nuevo.",
+    );
   });
 
   it("sends the request only once when the button is tapped twice", async () => {

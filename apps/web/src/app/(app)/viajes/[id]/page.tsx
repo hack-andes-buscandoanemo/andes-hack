@@ -37,14 +37,27 @@ export default function TripDetailPage() {
 
   useEffect(() => {
     let active = true;
+    // A different trip starts from scratch: nothing from the previous one may leak in.
+    setDetail(null);
+    setLoadError(null);
+    setError(null);
+    setMessage("");
+    setSentId(null);
+    setWithdrawn(false);
     communitiesApi
       .getOfferDetail(id)
       .then((loaded) => {
         if (active) setDetail(loaded);
       })
       .catch((failure: unknown) => {
-        if (active)
-          setLoadError(reasonOf(failure, "No pudimos cargar este viaje. Inténtalo de nuevo."));
+        if (!active) return;
+        // 404 (unknown or another community's trip) and 422 (malformed id) read the same to the person.
+        const status = isAxiosError(failure) ? failure.response?.status : undefined;
+        setLoadError(
+          status === 404 || status === 422
+            ? "No encontramos este viaje."
+            : "No pudimos cargar este viaje. Inténtalo de nuevo.",
+        );
       });
     return () => {
       active = false;
@@ -63,7 +76,15 @@ export default function TripDetailPage() {
       </main>
     );
   }
-  if (!detail) return null;
+  if (!detail) {
+    return (
+      <main className="mx-auto w-full max-w-md px-4 py-6">
+        <p role="status" className="text-sm text-muted-foreground">
+          Cargando viaje…
+        </p>
+      </main>
+    );
+  }
 
   const pendingId = withdrawn
     ? null
@@ -97,12 +118,16 @@ export default function TripDetailPage() {
 
   let action: React.ReactNode = null;
   if (detail.isOwn) action = null;
+  else if (detail.status !== "active")
+    action = <EmptyState>Este viaje cambió y ya no es compatible con tu búsqueda.</EmptyState>;
   else if (detail.booking?.status === "accepted")
     action = <EmptyState>{`${detail.driverName} aceptó tu solicitud.`}</EmptyState>;
   else if (pendingId)
     action = (
       <div className="space-y-2">
-        <EmptyState>{`Solicitud enviada. Te avisaremos cuando ${detail.driverName} responda.`}</EmptyState>
+        <div role="status">
+          <EmptyState>{`Solicitud enviada. Te avisaremos cuando ${detail.driverName} responda.`}</EmptyState>
+        </div>
         {error ? (
           <p role="alert" className="text-sm font-medium text-destructive">
             {error}
@@ -145,7 +170,7 @@ export default function TripDetailPage() {
           </p>
         ) : null}
         <Button type="submit" disabled={sending} className="h-11 w-full rounded-xl font-bold">
-          Solicitar asiento
+          {sending ? "Enviando…" : "Solicitar asiento"}
         </Button>
       </form>
     );
