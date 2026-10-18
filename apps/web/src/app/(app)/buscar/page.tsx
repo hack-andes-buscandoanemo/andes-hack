@@ -4,6 +4,7 @@ import { Search01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useState } from "react";
 
+import CommunityContext from "@/components/community-context";
 import EmptyState from "@/components/empty-state";
 import PageHeader from "@/components/page-header";
 import PlacePicker from "@/components/place-picker";
@@ -160,6 +161,12 @@ export default function SearchPage() {
   return (
     <main className="flex flex-col gap-6 px-4 pt-2 pb-6">
       <PageHeader title="Buscar viaje" description="Encuentra personas que van en tu dirección" />
+      {membership ? (
+        <CommunityContext
+          communityName={membership.communityName}
+          destinationName={membership.destinationName}
+        />
+      ) : null}
       {loadError ? (
         <p role="alert" className="text-sm font-medium text-destructive">
           {loadError}

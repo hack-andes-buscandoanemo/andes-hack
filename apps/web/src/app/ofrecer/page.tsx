@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import CommunityContext from "@/components/community-context";
 import PlacePicker from "@/components/place-picker";
 import RouteMap from "@/components/route-map";
 import StandaloneHeader from "@/components/standalone-header";
@@ -228,6 +229,10 @@ export default function OfferPage() {
         </Link>
         <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight">Ofrecer viaje</h1>
       </div>
+      <CommunityContext
+        communityName={membership.communityName}
+        destinationName={membership.destinationName}
+      />
 
       {!activeVehicle ? (
         <section className="flex flex-col gap-4 rounded-2xl border bg-card p-5 shadow-sm">
