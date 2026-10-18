@@ -1605,6 +1605,79 @@
           "booking"
         ]
       },
+      "StartTripResponse": {
+        "type": "object",
+        "properties": {
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "boarded": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "startedAt",
+          "boarded",
+          "message"
+        ]
+      },
+      "TripProgressResponse": {
+        "type": "object",
+        "properties": {
+          "booking": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "accepted",
+                  "rejected",
+                  "cancelled_by_passenger",
+                  "cancelled_by_driver",
+                  "completed",
+                  "no_show"
+                ]
+              },
+              "startedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "arrivedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "id",
+              "status",
+              "startedAt",
+              "arrivedAt"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "booking",
+          "message"
+        ]
+      },
       "OfferBookingsResponse": {
         "type": "object",
         "properties": {
@@ -3921,6 +3994,306 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RejectBookingResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/offers/{id}/start": {
+      "post": {
+        "tags": [
+          "Ofertas"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "El viaje quedó en curso para los pasajeros aceptados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartTripResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No hay sesión iniciada (`unauthorized`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Solo quien conduce puede iniciar el viaje (`driver_required`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El viaje no existe (`offer_not_found`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "El viaje no se puede iniciar (`trip_too_early`: antes de 30 minutos de la salida; `trip_not_today`; `trip_cancelled`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "El identificador no es válido (`validation_error`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bookings/{id}/board": {
+      "post": {
+        "tags": [
+          "Ofertas"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "La persona confirmó que ya está en el auto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripProgressResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No hay sesión iniciada (`unauthorized`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "La reserva no existe o no es de la persona (`booking_not_found`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "No se puede marcar el viaje (`booking_not_accepted`: la solicitud no está aceptada; `trip_too_early`; `trip_not_today`; `trip_cancelled`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "El identificador no es válido (`validation_error`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bookings/{id}/arrive": {
+      "post": {
+        "tags": [
+          "Ofertas"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "La persona confirmó que llegó bien y la reserva quedó completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripProgressResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No hay sesión iniciada (`unauthorized`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "La reserva no existe o no es de la persona (`booking_not_found`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "No se puede confirmar la llegada (`booking_not_accepted`: la solicitud no está aceptada; `trip_not_started`: el viaje todavía no empezó)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "El identificador no es válido (`validation_error`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bookings/{id}/no-show": {
+      "post": {
+        "tags": [
+          "Ofertas"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "El conductor registró que la persona no se presentó",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripProgressResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No hay sesión iniciada (`unauthorized`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Solo quien conduce puede marcar que alguien no se presentó (`driver_required`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "La reserva no existe (`booking_not_found`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "No se puede marcar (`no_show_too_early`: antes de 10 minutos de la hora de recogida; `booking_not_accepted`; `booking_already_started`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "El identificador no es válido (`validation_error`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }

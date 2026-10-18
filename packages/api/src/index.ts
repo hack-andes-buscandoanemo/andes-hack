@@ -1049,6 +1049,106 @@ export const rejectBookingRoute = createRoute({
   },
 });
 
+export const StartTripResponseSchema = z
+  .object({
+    startedAt: z.string().datetime(),
+    boarded: z.number().int(),
+    message: z.string(),
+  })
+  .openapi("StartTripResponse");
+
+export const startTripRoute = createRoute({
+  method: "post",
+  path: "/offers/{id}/start",
+  tags: ["Ofertas"],
+  request: { params: JoinCommunityParamsSchema },
+  responses: {
+    200: {
+      description: "El viaje quedó en curso para los pasajeros aceptados",
+      content: { "application/json": { schema: StartTripResponseSchema } },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    403: apiErrorResponse("Solo quien conduce puede iniciar el viaje (`driver_required`)"),
+    404: apiErrorResponse("El viaje no existe (`offer_not_found`)"),
+    409: apiErrorResponse(
+      "El viaje no se puede iniciar (`trip_too_early`: antes de 30 minutos de la salida; `trip_not_today`; `trip_cancelled`)",
+    ),
+    422: apiErrorResponse("El identificador no es válido (`validation_error`)"),
+  },
+});
+
+export const TripProgressResponseSchema = z
+  .object({
+    booking: z.object({
+      id: z.string().uuid(),
+      status: BookingStatusSchema,
+      startedAt: z.string().datetime().nullable(),
+      arrivedAt: z.string().datetime().nullable(),
+    }),
+    message: z.string(),
+  })
+  .openapi("TripProgressResponse");
+
+export const boardBookingRoute = createRoute({
+  method: "post",
+  path: "/bookings/{id}/board",
+  tags: ["Ofertas"],
+  request: { params: JoinCommunityParamsSchema },
+  responses: {
+    200: {
+      description: "La persona confirmó que ya está en el auto",
+      content: { "application/json": { schema: TripProgressResponseSchema } },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    404: apiErrorResponse("La reserva no existe o no es de la persona (`booking_not_found`)"),
+    409: apiErrorResponse(
+      "No se puede marcar el viaje (`booking_not_accepted`: la solicitud no está aceptada; `trip_too_early`; `trip_not_today`; `trip_cancelled`)",
+    ),
+    422: apiErrorResponse("El identificador no es válido (`validation_error`)"),
+  },
+});
+
+export const arriveBookingRoute = createRoute({
+  method: "post",
+  path: "/bookings/{id}/arrive",
+  tags: ["Ofertas"],
+  request: { params: JoinCommunityParamsSchema },
+  responses: {
+    200: {
+      description: "La persona confirmó que llegó bien y la reserva quedó completada",
+      content: { "application/json": { schema: TripProgressResponseSchema } },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    404: apiErrorResponse("La reserva no existe o no es de la persona (`booking_not_found`)"),
+    409: apiErrorResponse(
+      "No se puede confirmar la llegada (`booking_not_accepted`: la solicitud no está aceptada; `trip_not_started`: el viaje todavía no empezó)",
+    ),
+    422: apiErrorResponse("El identificador no es válido (`validation_error`)"),
+  },
+});
+
+export const noShowBookingRoute = createRoute({
+  method: "post",
+  path: "/bookings/{id}/no-show",
+  tags: ["Ofertas"],
+  request: { params: JoinCommunityParamsSchema },
+  responses: {
+    200: {
+      description: "El conductor registró que la persona no se presentó",
+      content: { "application/json": { schema: TripProgressResponseSchema } },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    403: apiErrorResponse(
+      "Solo quien conduce puede marcar que alguien no se presentó (`driver_required`)",
+    ),
+    404: apiErrorResponse("La reserva no existe (`booking_not_found`)"),
+    409: apiErrorResponse(
+      "No se puede marcar (`no_show_too_early`: antes de 10 minutos de la hora de recogida; `booking_not_accepted`; `booking_already_started`)",
+    ),
+    422: apiErrorResponse("El identificador no es válido (`validation_error`)"),
+  },
+});
+
 export const QuickMessageSchema = z.enum([
   "Ya salí",
   "Estoy en el punto de encuentro",
@@ -1727,6 +1827,10 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   requestSeatRoute,
   acceptBookingRoute,
   rejectBookingRoute,
+  startTripRoute,
+  boardBookingRoute,
+  arriveBookingRoute,
+  noShowBookingRoute,
   listOfferBookingsRoute,
   cancelBookingRoute,
   runMatchingRoute,

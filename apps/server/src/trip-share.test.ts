@@ -516,3 +516,27 @@ describe("what a link never reveals", () => {
     }
   });
 });
+
+describe("the status once the trip is done", () => {
+  it("keeps the link open and says the passenger arrived when the booking is completed", async () => {
+    const { passenger, booking } = await world();
+    const { token } = await (await shareAs(passenger, booking.id)).json();
+    const at = (limaTime: string) => new Date(`${TRIP_DAY}T${limaTime}:00.000-05:00`);
+
+    const board = await appFor(passenger, { now: () => at("06:45") }).request(
+      `/bookings/${booking.id}/board`,
+      { method: "POST" },
+    );
+    const inProgress = await (await openLink(token)).json();
+    const arrive = await appFor(passenger, { now: () => at("07:55") }).request(
+      `/bookings/${booking.id}/arrive`,
+      { method: "POST" },
+    );
+    const done = await openLink(token);
+
+    expect([board.status, arrive.status]).toEqual([200, 200]);
+    expect(inProgress.status).toBe("in_progress");
+    expect(done.status).toBe(200);
+    expect((await done.json()).status).toBe("arrived");
+  });
+});

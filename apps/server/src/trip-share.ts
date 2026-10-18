@@ -4,7 +4,7 @@ import { communityMember } from "@andes-hack/db/schema/community";
 import { seatBooking, tripOffer, tripShareLink } from "@andes-hack/db/schema/trips";
 import { vehicle } from "@andes-hack/db/schema/vehicle";
 import { places } from "@andes-hack/matching";
-import { and, eq, gt, isNull, ne } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull, ne } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import { ApiError } from "./utils/api-response";
@@ -125,7 +125,7 @@ export async function getSharedTrip(database: Database, input: { token: string; 
       and(
         eq(tripShareLink.tokenHash, await sha256Hex(input.token)),
         isNull(tripShareLink.revokedAt),
-        eq(seatBooking.status, "accepted"),
+        inArray(seatBooking.status, ["accepted", "completed"]),
         ne(tripOffer.status, "cancelled"),
         gt(tripShareLink.expiresAt, input.now),
       ),
@@ -140,7 +140,7 @@ export async function getSharedTrip(database: Database, input: { token: string; 
       places.meetingPoints.find((point) => point.id === row.meetingPointId)?.name ??
       row.meetingPointId,
     estimatedTime: row.pickupAt.slice(0, 5),
-    // US-025 records both moments; until then every trip reads as not started.
+    // US-025 records both moments: started_at when the trip begins, arrived_at on "Llegué bien".
     status: row.arrivedAt
       ? ("arrived" as const)
       : row.startedAt

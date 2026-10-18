@@ -33,7 +33,8 @@ export async function measureMyImpact(
     .where(eq(community.id, input.communityId))
     .limit(1);
 
-  // Accepted seats count whether or not the trip was marked completed: the app never marks it.
+  // Accepted seats count whether or not the trip was marked completed (US-025): the plan is
+  // the potential impact, and the verified one is only what the passengers confirmed.
   const asPassenger = measureImpact(
     withoutTeamFilter(
       await loadCommunityActivity(database, org!, input.now, { passengerId: input.userId }),
