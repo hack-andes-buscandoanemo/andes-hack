@@ -64,6 +64,20 @@
       "when": 1792308488427,
       "tag": "0008_light_leper_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792313126731,
+      "tag": "0009_conscious_hex",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792313126732,
+      "tag": "0010_preserve_trip_day_history",
+      "breakpoints": true
     }
   ]
 }

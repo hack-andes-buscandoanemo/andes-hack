@@ -588,6 +588,7 @@ describe("POST /bookings/{id}/accept (US-020)", () => {
         message: "Estaré en la estación.",
         avoidsCar: true,
         recommended: false,
+        today: null,
       },
     ]);
     expect(JSON.stringify(body)).not.toContain("@alfa.pe");

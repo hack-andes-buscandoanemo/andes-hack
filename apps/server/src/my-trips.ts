@@ -7,13 +7,16 @@ import { vehicle } from "@andes-hack/db/schema/vehicle";
 import { places } from "@andes-hack/matching";
 import { and, desc, eq, inArray, ne } from "drizzle-orm";
 
+import { currentDay, isUnderway, loadDays, progressOf } from "./trip-days";
 import { acceptedCountByOffer, fuelEstimateFor, occupantsSharingFuel } from "./fuel-estimate";
 import { destinationOf } from "./search";
 import {
+  BOOKING,
   canSeePlate,
   displayName,
   hasPassed,
   limaClock,
+  type PassengerTripStatus,
   passengerStatus,
   seatsFree,
 } from "./trip-rules";
@@ -53,7 +56,7 @@ function passengerRequestOf(
   };
 }
 
-async function passengerTrips(database: Database, userId: string, scope: TripScope) {
+async function passengerTrips(database: Database, userId: string, scope: TripScope, now: Date) {
   const rows = await database
     .select({
       id: seatBooking.id,
@@ -128,62 +131,98 @@ async function passengerTrips(database: Database, userId: string, scope: TripSco
     database,
     rows.map((row) => row.offerId),
   );
-  const clock = limaClock();
-  return rows
-    .map((row) => {
-      const passed = hasPassed({ date: row.date, time: row.pickupAt }, clock);
-      return { ...row, passed, derived: passengerStatus({ ...row, passed }) };
-    })
-    .filter((row) => (isOpen(row.derived) && !row.passed) === (scope === "upcoming"))
-    .map((row) => {
-      const destination = destinationOf({ destinationName: row.destinationName });
-      return {
-        id: row.id,
-        offerId: row.offerId,
-        role: "passenger" as const,
-        status: row.derived,
+  const clock = limaClock(now);
+  const daysByBooking = await loadDays(
+    database,
+    rows.map((row) => row.id),
+    clock.today,
+  );
+  type Row = (typeof rows)[number] & { passed: boolean; derived: PassengerTripStatus };
+  const toTrip = (
+    row: Row,
+    view: { progress: ReturnType<typeof progressOf>; date: string | null },
+  ) => {
+    const destination = destinationOf({ destinationName: row.destinationName });
+    return {
+      id: row.id,
+      offerId: row.offerId,
+      role: "passenger" as const,
+      status: row.derived,
+      progress: view.progress,
+      direction: row.direction,
+      date: view.date,
+      daysOfWeek: row.daysOfWeek,
+      time: row.pickupAt,
+      originZoneName: row.originZoneName,
+      destinationName: destination.name,
+      meetingPointName:
+        places.meetingPoints.find((point) => point.id === row.meetingPointId)?.name ??
+        row.meetingPointId,
+      // The other person is revealed only once the request is accepted.
+      driver:
+        row.derived === BOOKING.accepted
+          ? {
+              alias: displayName(row.driverAlias, row.accountName),
+              plate: canSeePlate({ ...row, isOwn: false, bookingStatus: row.status })
+                ? row.plate
+                : null,
+            }
+          : null,
+      seatsTotal: null,
+      seatsFree: null,
+      pendingRequests: null,
+      acceptedPassengers: null,
+      passengerRequest: passengerRequestOf(
+        row,
+        returnNeedByPlace.get(`${row.communityId}:${row.requestOriginZoneId}`),
+      ),
+      fuelEstimate: fuelEstimateFor({
         direction: row.direction,
-        date: row.date,
-        daysOfWeek: row.daysOfWeek,
-        time: row.pickupAt,
-        originZoneName: row.originZoneName,
-        destinationName: destination.name,
-        meetingPointName:
-          places.meetingPoints.find((point) => point.id === row.meetingPointId)?.name ??
-          row.meetingPointId,
-        // The other person is revealed only once the request is accepted.
-        driver:
-          row.derived === "accepted"
-            ? {
-                alias: displayName(row.driverAlias, row.accountName),
-                plate: canSeePlate({ ...row, isOwn: false, bookingStatus: row.status })
-                  ? row.plate
-                  : null,
-              }
-            : null,
-        seatsTotal: null,
-        seatsFree: null,
-        pendingRequests: null,
-        acceptedPassengers: null,
-        passengerRequest: passengerRequestOf(
-          row,
-          returnNeedByPlace.get(`${row.communityId}:${row.requestOriginZoneId}`),
+        originZoneId: row.originZoneId,
+        destinationId: destination.id,
+        // An accepted passenger is already among those counted aboard.
+        occupants: occupantsSharingFuel(
+          acceptedCount.get(row.offerId) ?? 0,
+          row.status === BOOKING.accepted,
         ),
-        fuelEstimate: fuelEstimateFor({
-          direction: row.direction,
-          originZoneId: row.originZoneId,
-          destinationId: destination.id,
-          // An accepted passenger is already among those counted aboard.
-          occupants: occupantsSharingFuel(
-            acceptedCount.get(row.offerId) ?? 0,
-            row.status === "accepted",
+      }),
+    };
+  };
+  return rows.flatMap((booking) => {
+    const passed = hasPassed({ date: booking.date, time: booking.pickupAt }, clock);
+    const row: Row = { ...booking, passed, derived: passengerStatus({ ...booking, passed }) };
+    const days = daysByBooking.get(row.id) ?? [];
+    const current = currentDay(days, clock.today);
+    const closed = days
+      .filter((day) => day.outcome)
+      .toSorted((a, b) => b.tripDate.localeCompare(a.tripDate));
+    const trips = [];
+    // A one-off trip that has an outcome is over: only its outcome is shown. A weekly seat
+    // stays upcoming, because next week it travels again.
+    const settled = row.date !== null && closed.length > 0;
+    // A trip under way stays upcoming past its pickup time until the passenger arrives.
+    const upcoming =
+      isOpen(row.derived) &&
+      (!row.passed || (row.derived === BOOKING.accepted && isUnderway(current)));
+    if (!settled && upcoming === (scope === "upcoming")) {
+      trips.push(toTrip(row, { progress: progressOf(row.derived, current), date: row.date }));
+    }
+    if (scope === "past") {
+      for (const day of closed) {
+        const status = day.outcome!;
+        trips.push(
+          toTrip(
+            { ...row, derived: status },
+            { progress: progressOf(BOOKING.accepted, day), date: day.tripDate },
           ),
-        }),
-      };
-    });
+        );
+      }
+    }
+    return trips;
+  });
 }
 
-async function driverTrips(database: Database, userId: string, scope: TripScope) {
+async function driverTrips(database: Database, userId: string, scope: TripScope, now: Date) {
   const offers = await database
     .select({
       id: tripOffer.id,
@@ -208,6 +247,7 @@ async function driverTrips(database: Database, userId: string, scope: TripScope)
   // One query for every offer's requests, not one per offer.
   const bookings = await database
     .select({
+      id: seatBooking.id,
       offerId: seatBooking.offerId,
       status: seatBooking.status,
       alias: communityMember.alias,
@@ -233,10 +273,21 @@ async function driverTrips(database: Database, userId: string, scope: TripScope)
       ),
     );
 
-  const clock = limaClock();
+  const clock = limaClock(now);
+  const daysByBooking = await loadDays(
+    database,
+    bookings.map((booking) => booking.id),
+    clock.today,
+  );
   return offers
     .map((offer) => {
-      const status = driverStatus(offer, clock);
+      const underway = bookings.some(
+        (booking) =>
+          booking.offerId === offer.id &&
+          booking.status === BOOKING.accepted &&
+          isUnderway(currentDay(daysByBooking.get(booking.id) ?? [], clock.today)),
+      );
+      const status = driverStatus(offer, clock, underway);
       // A cancelled offer reveals nobody: its requests were released.
       const mine =
         status === "cancelled" ? [] : bookings.filter((booking) => booking.offerId === offer.id);
@@ -247,6 +298,7 @@ async function driverTrips(database: Database, userId: string, scope: TripScope)
         offerId: offer.id,
         role: "driver" as const,
         status,
+        progress: underway && status !== "cancelled" ? ("in_progress" as const) : null,
         direction: offer.direction,
         date: offer.date,
         daysOfWeek: offer.daysOfWeek,
@@ -278,20 +330,22 @@ async function driverTrips(database: Database, userId: string, scope: TripScope)
 function driverStatus(
   offer: { status: "active" | "paused" | "cancelled"; date: string | null; departureTime: string },
   clock: ReturnType<typeof limaClock>,
+  underway: boolean,
 ) {
   if (offer.status === "cancelled") return "cancelled" as const;
-  if (hasPassed({ date: offer.date, time: offer.departureTime }, clock))
+  if (!underway && hasPassed({ date: offer.date, time: offer.departureTime }, clock))
     return "completed" as const;
   return offer.status;
 }
 
 export async function listMyTrips(
   database: Database,
-  input: { userId: string; role: "passenger" | "driver"; scope: TripScope },
+  input: { userId: string; role: "passenger" | "driver"; scope: TripScope; now?: Date },
 ) {
+  const now = input.now ?? new Date();
   const trips =
     input.role === "driver"
-      ? await driverTrips(database, input.userId, input.scope)
-      : await passengerTrips(database, input.userId, input.scope);
+      ? await driverTrips(database, input.userId, input.scope, now)
+      : await passengerTrips(database, input.userId, input.scope, now);
   return { trips };
 }

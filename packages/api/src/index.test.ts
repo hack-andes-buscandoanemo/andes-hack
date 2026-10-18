@@ -150,3 +150,13 @@ it("publishes the travel preferences route with every error it returns", () => {
 
   expect(Object.keys(responses).sort()).toEqual(["200", "401", "403", "422"]);
 });
+
+it("publishes the day-of-trip routes with every error they return", () => {
+  const doc = createOpenApiDocument();
+  const codes = (path: string) => Object.keys(doc.paths?.[path]?.post?.responses ?? {}).sort();
+
+  expect(codes("/offers/{id}/start")).toEqual(["200", "401", "404", "409", "422"]);
+  expect(codes("/bookings/{id}/board")).toEqual(["200", "401", "404", "409", "422"]);
+  expect(codes("/bookings/{id}/arrive")).toEqual(["200", "401", "404", "409", "422"]);
+  expect(codes("/bookings/{id}/no-show")).toEqual(["200", "401", "404", "409", "422"]);
+});

@@ -2,14 +2,14 @@ import type * as schema from "@andes-hack/db/schema/index";
 import { communityMember } from "@andes-hack/db/schema/community";
 import { matchRun, matchSuggestion } from "@andes-hack/db/schema/matching";
 import { zone } from "@andes-hack/db/schema/places";
-import { seatBooking, tripOffer, tripRequest } from "@andes-hack/db/schema/trips";
+import { seatBooking, seatBookingDay, tripOffer, tripRequest } from "@andes-hack/db/schema/trips";
 import {
   haversineKm,
   sources,
   type CommunityActivity,
   type OfferActivity,
 } from "@andes-hack/matching";
-import { and, desc, eq, isNull, or } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, isNull, or } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { alias } from "drizzle-orm/pg-core";
 
@@ -111,6 +111,7 @@ export async function loadCommunityActivity(
 
   const seatRows = await db
     .select({
+      id: seatBooking.id,
       offerId: seatBooking.offerId,
       status: seatBooking.status,
       detourMinutes: seatBooking.detourMinutes,
@@ -143,27 +144,59 @@ export async function loadCommunityActivity(
     )
     .where(and(eq(tripRequest.communityId, community.id), eq(tripRequest.status, "open")));
 
-  const offers: OfferActivity[] = offerRows.map((offer) => {
-    return {
-      driverUsualMode: offer.driverUsualMode,
-      driverIsTeam: offer.driverIsTeam ?? false,
-      seats: seatRows
-        .filter((seat) => seat.offerId === offer.id)
-        .map((seat) => ({
-          status: seat.status,
+  // A weekly seat is reused every week, so it counts once per day that ended (completed or
+  // no-show, from seat_booking_day); a seat with no ended day yet counts once, as accepted.
+  const closedDays = await db
+    .select({
+      bookingId: seatBookingDay.bookingId,
+      tripDate: seatBookingDay.tripDate,
+      outcome: seatBookingDay.outcome,
+    })
+    .from(seatBookingDay)
+    .where(
+      and(
+        inArray(
+          seatBookingDay.bookingId,
+          seatRows.map((seat) => seat.id),
+        ),
+        isNotNull(seatBookingDay.outcome),
+      ),
+    );
+  const statusesOf = (seat: (typeof seatRows)[number]) => {
+    const ended = closedDays.filter((day) => day.bookingId === seat.id);
+    return ended.length === 0
+      ? [{ status: seat.status, ended: false, tripDate: null }]
+      : ended.map((day) => ({ status: day.outcome!, ended: true, tripDate: day.tripDate }));
+  };
+
+  const offers: OfferActivity[] = offerRows.flatMap((offer) => {
+    // An induced vehicle trip belongs to an occurrence, not to the reusable weekly offer.
+    const occurrences = new Map<string, Array<OfferActivity["seats"][number]>>();
+    for (const seat of seatRows.filter((seat) => seat.offerId === offer.id)) {
+      for (const { status, ended, tripDate } of statusesOf(seat)) {
+        const key = tripDate ?? offer.date ?? "planned";
+        const seats = occurrences.get(key) ?? [];
+        seats.push({
+          status,
           fallbackMode: seat.fallbackMode,
           passengerIsTeam: seat.passengerIsTeam ?? false,
-          datePassed: offer.date !== null && offer.date < today,
+          datePassed: ended || (offer.date !== null && offer.date < today),
           distanceKm:
             haversineKm(
               { lat: seat.zoneLat, lng: seat.zoneLng },
               { lat: community.destinationLat, lng: community.destinationLng },
             ) * sources.circuityFactor.value,
-          // The booking keeps minutes, not km. Read at the free-flow speed, which is the
-          // fastest, the detour comes out long and the km saved are never overstated.
+          // Read detour minutes at free-flow speed to avoid overstating saved km.
           detourKm: (seat.detourMinutes / 60) * sources.freeFlowSpeed.value,
-        })),
-    };
+        });
+        occurrences.set(key, seats);
+      }
+    }
+    return [...occurrences.values()].map((seats) => ({
+      driverUsualMode: offer.driverUsualMode,
+      driverIsTeam: offer.driverIsTeam ?? false,
+      seats,
+    }));
   });
 
   return {

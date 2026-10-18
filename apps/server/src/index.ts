@@ -1,5 +1,7 @@
 import {
   acceptBookingRoute,
+  arriveBookingRoute,
+  boardBookingRoute,
   cancelBookingRoute,
   cancelOfferRoute,
   createCommunityOfferRoute,
@@ -21,6 +23,7 @@ import {
   listCommunityZonesRoute,
   listMyChatsRoute,
   listMyTripsRoute,
+  noShowBookingRoute,
   listProposalsRoute,
   listVehiclesRoute,
   OPENAPI_DOCUMENT_CONFIG,
@@ -28,6 +31,7 @@ import {
   runMatchingRoute,
   profilePhotoUploadRoute,
   rejectBookingRoute,
+  startTripRoute,
   revokeShareLinkRoute,
   sharedTripRoute,
   searchTripsRoute,
@@ -80,6 +84,7 @@ import {
 import { createPublicStatsRoutes, type StatsCache } from "./public-stats";
 import { searchTrips } from "./search";
 import { getTripMessages, listMyChats, sendTripMessage } from "./chat";
+import { arriveTrip, boardTrip, markNoShow, startTrip } from "./trip-progress";
 import { createShareLink, getSharedTrip, revokeShareLink } from "./trip-share";
 import { ApiError } from "./utils/api-response";
 import { deletePersonalData } from "./privacy";
@@ -324,6 +329,7 @@ export function createApp(deps: AppDeps = {}) {
   openApiApp.use("/offers/:id/status", requireSession(deps.getSession));
   openApiApp.use("/offers/:id", requireSession(deps.getSession));
   openApiApp.use("/offers/:id/cancel", requireSession(deps.getSession));
+  openApiApp.use("/offers/:id/start", requireSession(deps.getSession));
   openApiApp.use("/offers/:id/bookings", requireSession(deps.getSession));
   openApiApp.use("/me/chats", requireSession(deps.getSession));
   openApiApp.use("/offers/:id/messages", requireSession(deps.getSession));
@@ -331,6 +337,9 @@ export function createApp(deps: AppDeps = {}) {
   openApiApp.use("/bookings/:id/cancel", requireSession(deps.getSession));
   openApiApp.use("/bookings/:id/accept", requireSession(deps.getSession));
   openApiApp.use("/bookings/:id/reject", requireSession(deps.getSession));
+  openApiApp.use("/bookings/:id/board", requireSession(deps.getSession));
+  openApiApp.use("/bookings/:id/arrive", requireSession(deps.getSession));
+  openApiApp.use("/bookings/:id/no-show", requireSession(deps.getSession));
   openApiApp.use("/bookings/:id/share-links", requireSession(deps.getSession));
   openApiApp.use("/share-links/:id", requireSession(deps.getSession));
   openApiApp.use("/me", requireSession(deps.getSession));
@@ -626,7 +635,10 @@ export function createApp(deps: AppDeps = {}) {
 
   openApiApp.openapi(listMyTripsRoute, async (c) => {
     const { role, scope } = c.req.valid("query");
-    return c.json(await listMyTrips(database, { userId: c.get("user").id, role, scope }), 200);
+    return c.json(
+      await listMyTrips(database, { userId: c.get("user").id, role, scope, now: getNow() }),
+      200,
+    );
   });
 
   openApiApp.openapi(deleteMeRoute, async (c) => {
@@ -1190,12 +1202,44 @@ export function createApp(deps: AppDeps = {}) {
     return c.json(await rejectSeatRequest(database, { bookingId, userId: c.get("user").id }), 200);
   });
 
+  openApiApp.openapi(startTripRoute, async (c) => {
+    const { id: offerId } = c.req.valid("param");
+    return c.json(
+      await startTrip(database, { offerId, userId: c.get("user").id, now: getNow() }),
+      200,
+    );
+  });
+
+  openApiApp.openapi(boardBookingRoute, async (c) => {
+    const { id: bookingId } = c.req.valid("param");
+    return c.json(
+      await boardTrip(database, { bookingId, userId: c.get("user").id, now: getNow() }),
+      200,
+    );
+  });
+
+  openApiApp.openapi(arriveBookingRoute, async (c) => {
+    const { id: bookingId } = c.req.valid("param");
+    return c.json(
+      await arriveTrip(database, { bookingId, userId: c.get("user").id, now: getNow() }),
+      200,
+    );
+  });
+
+  openApiApp.openapi(noShowBookingRoute, async (c) => {
+    const { id: bookingId } = c.req.valid("param");
+    return c.json(
+      await markNoShow(database, { bookingId, userId: c.get("user").id, now: getNow() }),
+      200,
+    );
+  });
+
   openApiApp.openapi(listOfferBookingsRoute, async (c) => {
     const { id: offerId } = c.req.valid("param");
     return c.json(
       await listSeatRequests(
         database,
-        { offerId, userId: c.get("user").id },
+        { offerId, userId: c.get("user").id, now: getNow() },
         getProfilePhotoStorage,
       ),
       200,
