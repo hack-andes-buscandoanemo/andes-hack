@@ -19,6 +19,7 @@ import { meetingPoint, zone } from "@andes-hack/db/schema/places";
 import { seatBooking, tripOffer, tripRequest } from "@andes-hack/db/schema/trips";
 import { vehicle } from "@andes-hack/db/schema/vehicle";
 import { createTestDb } from "@andes-hack/db/test-db";
+import { eq } from "drizzle-orm";
 
 import { createApp } from "./index";
 
@@ -381,5 +382,21 @@ describe("GET /me/trips", () => {
       acceptedPassengers: [],
     });
     expect(JSON.stringify(body)).not.toContain("Lucía");
+  });
+
+  it("keeps the passenger's trip when the driver left the community", async () => {
+    const org = await seedWorld();
+    const driver = await createMember(org.id, "driver-1", "Carlos Quispe", "Carlos Q.");
+    const passenger = await createMember(org.id, "pax-1", "Lucía Ramos");
+    const { offer } = await createOffer(org.id, driver.id);
+    await book(offer, passenger.id, "accepted");
+    await testDb.delete(communityMember).where(eq(communityMember.userId, driver.id));
+
+    const body = await (
+      await requestAs(passenger, "/me/trips?role=passenger&scope=upcoming")
+    ).json();
+
+    expect(body.trips).toHaveLength(1);
+    expect(body.trips[0]).toMatchObject({ driver: { alias: "Carlos Quispe" } });
   });
 });

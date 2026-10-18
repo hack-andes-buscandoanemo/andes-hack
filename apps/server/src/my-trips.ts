@@ -55,7 +55,7 @@ async function passengerTrips(database: Database, userId: string, scope: TripSco
     .innerJoin(community, eq(tripOffer.communityId, community.id))
     .innerJoin(zone, eq(tripOffer.originZoneId, zone.id))
     .innerJoin(userTable, eq(tripOffer.driverId, userTable.id))
-    .innerJoin(
+    .leftJoin(
       communityMember,
       and(
         eq(communityMember.userId, tripOffer.driverId),
