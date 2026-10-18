@@ -78,6 +78,7 @@ import {
 import { placeOf } from "./free-trips";
 import { osrmRoute, type RouteFinder } from "./lib/routing";
 import { latestMatchRuns, listProposals, runMatching } from "./match-runs";
+import { createVoiceRoutes } from "./voice-search";
 import {
   rateLimitMiddleware,
   requireOnboardedMember,
@@ -1570,6 +1571,7 @@ export function createApp(deps: AppDeps = {}) {
     }),
   );
   openApiApp.route("/", createDataSourcesRoutes());
+  openApiApp.route("/", createVoiceRoutes({ getSession: deps.getSession, now: deps.now }));
   openApiApp.route("/", createIncidentReportRoutes({ db: deps.db, now: deps.now }));
 
   openApiApp.doc31("/openapi.json", OPENAPI_DOCUMENT_CONFIG);

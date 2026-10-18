@@ -13,6 +13,9 @@ export const env = createEnv({
     R2_ACCESS_KEY_ID: z.string().min(1).optional(),
     R2_SECRET_ACCESS_KEY: z.string().min(1).optional(),
     R2_BUCKET_NAME: z.string().min(1).optional(),
+    // Voice search: Whisper turns the recording into text and a chat model fills the form.
+    OPENAI_API_KEY: z.string().min(1).optional(),
+    OPENAI_PARSE_MODEL: z.string().min(1).default("gpt-4o-mini"),
     CORS_ORIGIN: z.url(),
     TEAM_EMAILS: z.string().default(""),
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),

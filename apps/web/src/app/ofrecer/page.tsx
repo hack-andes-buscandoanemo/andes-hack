@@ -1,6 +1,11 @@
 "use client";
 
-import { CreateTripOfferBodySchema, CreateVehicleBodySchema } from "@andes-hack/api";
+import {
+  CreateTripOfferBodySchema,
+  CreateVehicleBodySchema,
+  type VoiceOfferResponse,
+  type VoiceVehicleResponse,
+} from "@andes-hack/api";
 import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useForm } from "@tanstack/react-form";
@@ -12,17 +17,21 @@ import CommunityContext from "@/components/community-context";
 import PlacePicker from "@/components/place-picker";
 import RouteMap from "@/components/route-map";
 import StandaloneHeader from "@/components/standalone-header";
-import { paymentMethodOptions } from "@/components/trip-price";
+import { paymentMethodOptions, soles } from "@/components/trip-price";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import VoiceFab from "@/components/voice-fab";
 import {
   communitiesApi,
   type MembershipSummary,
   type PaymentMethod,
   type VehicleSummary,
 } from "@/lib/communities-api";
-import type { Place } from "@/lib/geo";
+import { currentPlace, findPlaces, type Place } from "@/lib/geo";
+import { dictateOffer, dictateVehicle } from "@/lib/voice-api";
+
+import { limaToday, WEEKDAYS as WEEKDAY_NAMES } from "@/app/(app)/buscar/schedule";
 
 type ScheduleMode = "recurring" | "single";
 
@@ -53,6 +62,8 @@ export default function OfferPage() {
   const router = useRouter();
   const [membership, setMembership] = useState<MembershipSummary | null>(null);
   const [vehicles, setVehicles] = useState<VehicleSummary[]>([]);
+  // The cars arrive after the rest of the page: until then there is no form to dictate.
+  const [vehiclesLoaded, setVehiclesLoaded] = useState(false);
   // Where the trip starts and where it ends, chosen on the map; the street route between
   // them is drawn when the trip is published.
   const [origin, setOrigin] = useState<Place | null>(null);
@@ -190,6 +201,7 @@ export default function OfferPage() {
         const loadedVehicles = await communitiesApi.listVehicles();
         if (!active) return;
         setVehicles(loadedVehicles);
+        setVehiclesLoaded(true);
         if (loadedVehicles[0]) {
           offerForm.setFieldValue("vehicleId", loadedVehicles[0].id);
           offerForm.setFieldValue("seatsTotal", String(loadedVehicles[0].seats));
@@ -216,6 +228,136 @@ export default function OfferPage() {
 
   const activeVehicle = vehicles[0] ?? null;
 
+  // Fills the car registration with what the driver dictated; what was not said stays empty.
+  function applyVoiceVehicle({ fields }: VoiceVehicleResponse): string[] {
+    const notes: string[] = [];
+    if (fields.plate) {
+      const plate = fields.plate.toUpperCase().replace(/\s+/g, "");
+      vehicleForm.setFieldValue("plate", plate);
+      notes.push(`Placa: ${plate}`);
+    }
+    if (fields.makeModel) {
+      vehicleForm.setFieldValue("makeModel", fields.makeModel);
+      notes.push(`Marca y modelo: ${fields.makeModel}`);
+    }
+    if (fields.color) {
+      vehicleForm.setFieldValue("color", fields.color);
+      notes.push(`Color: ${fields.color}`);
+    }
+    if (fields.seats !== null) {
+      vehicleForm.setFieldValue("seats", String(fields.seats));
+      notes.push(`Asientos: ${fields.seats}`);
+    }
+    setVehicleError(null);
+    if (notes.length === 0) notes.push("No detecté datos del auto en lo que dijiste.");
+    return notes;
+  }
+
+  // The departure times the form offers are every 15 minutes: what was said snaps to the nearest.
+  function snapToSlot(clock: string) {
+    const [hours = 0, minutes = 0] = clock.split(":").map(Number);
+    const total = Math.round((hours * 60 + minutes) / 15) * 15;
+    const clamped = Math.min(22 * 60 + 45, Math.max(5 * 60, total));
+    return `${String(Math.floor(clamped / 60)).padStart(2, "0")}:${String(clamped % 60).padStart(2, "0")}`;
+  }
+
+  // Fills the form with what the driver dictated and says what it did, one line each. Places
+  // are looked up on the map; what was not said stays as it was.
+  async function applyVoice({ fields }: VoiceOfferResponse): Promise<string[]> {
+    const notes: string[] = [];
+
+    if (fields.departureTime) {
+      const slot = snapToSlot(fields.departureTime);
+      offerForm.setFieldValue("departureTime", slot);
+      notes.push(`Hora de salida: ${slot}`);
+    }
+
+    if (
+      fields.when === "single" ||
+      (fields.when === null && fields.days.length === 0 && fields.date)
+    ) {
+      if (fields.date && fields.date >= limaToday()) {
+        setScheduleMode("single");
+        offerForm.setFieldValue("date", fields.date);
+        notes.push(`Un solo día: ${fields.date}`);
+      }
+    } else if (fields.when === "recurring" || fields.days.length > 0) {
+      const days = fields.days.length > 0 ? [...new Set(fields.days)].toSorted() : [1, 2, 3, 4, 5];
+      setScheduleMode("recurring");
+      offerForm.setFieldValue("daysOfWeek", days);
+      notes.push(
+        `Días: ${days.map((iso) => WEEKDAY_NAMES.find((day) => day.iso === iso)?.name ?? iso).join(", ")}`,
+      );
+    }
+
+    if (fields.seatsTotal !== null && activeVehicle) {
+      const seats = Math.min(fields.seatsTotal, activeVehicle.seats);
+      offerForm.setFieldValue("seatsTotal", String(seats));
+      notes.push(
+        seats < fields.seatsTotal
+          ? `Asientos: ${seats} (tu auto solo tiene ${activeVehicle.seats})`
+          : `Asientos: ${seats}`,
+      );
+    }
+    if (fields.priceSoles !== null) {
+      offerForm.setFieldValue("price", String(fields.priceSoles));
+      notes.push(`Precio: ${soles(Math.round(fields.priceSoles * 100))} por asiento`);
+      if (fields.paymentMethods.length > 0) {
+        offerForm.setFieldValue("paymentMethods", fields.paymentMethods);
+        notes.push(
+          `Pago: ${fields.paymentMethods.map((method) => (method === "yape" ? "Yape" : "Efectivo")).join(" y ")}`,
+        );
+      } else if (fields.priceSoles > 0) {
+        notes.push("Falta decir cómo te pagan: Yape o efectivo");
+      }
+    }
+    if (fields.womenOnly !== null && membership?.identifiesAsWoman) {
+      offerForm.setFieldValue("womenOnly", fields.womenOnly);
+      notes.push(`Solo pasajeras mujeres: ${fields.womenOnly ? "sí" : "no"}`);
+    }
+    if (fields.maxDetourMinutes !== null) {
+      offerForm.setFieldValue("maxDetourMinutes", fields.maxDetourMinutes);
+      notes.push(
+        fields.maxDetourMinutes === 0
+          ? "Sin desvío"
+          : `Desvío de hasta ${fields.maxDetourMinutes} min`,
+      );
+    }
+    if (fields.note) {
+      offerForm.setFieldValue("note", fields.note.slice(0, 280));
+      notes.push(`Nota: ${fields.note}`);
+    }
+
+    // The two places, looked up at once: neither waits for the other.
+    const lookup = (text: string | null) =>
+      text
+        ? findPlaces(text, 1)
+            .then(([place]) => ({ place: place ?? null, said: text }))
+            .catch(() => ({ place: null, said: text }))
+        : null;
+    const [from, to] = await Promise.all([
+      fields.originIsCurrentLocation
+        ? currentPlace().then((place) => ({ place, said: "tu ubicación" }))
+        : lookup(fields.origin),
+      lookup(fields.destination),
+    ]);
+    if (from) {
+      if (from.place) {
+        setOrigin(from.place);
+        notes.push(`Sales de: ${from.place.label}`);
+      } else notes.push(`No encontré “${from.said}”: escribe de dónde sales`);
+    }
+    if (to) {
+      if (to.place) {
+        setDestination(to.place);
+        notes.push(`Vas a: ${to.place.label}`);
+      } else notes.push(`No encontré “${to.said}”: escribe a dónde vas`);
+    }
+    if (notes.length === 0) notes.push("No detecté campos del formulario en lo que dijiste.");
+    setOfferError(null);
+    return notes;
+  }
+
   return (
     <main className="mx-auto flex w-full max-w-md flex-col gap-6 px-4 pt-5 pb-10 md:max-w-xl">
       <StandaloneHeader />
@@ -233,6 +375,24 @@ export default function OfferPage() {
         communityName={membership.communityName}
         destinationName={membership.destinationName}
       />
+      {vehiclesLoaded && !activeVehicle ? (
+        <VoiceFab
+          hint="“Mi placa es A B C, 1 2 3, un Toyota Corolla blanco con cuatro asientos”"
+          process={async (audio) => {
+            const result = await dictateVehicle(audio);
+            return { heard: result.text, notes: applyVoiceVehicle(result) };
+          }}
+        />
+      ) : null}
+      {activeVehicle ? (
+        <VoiceFab
+          hint="“Salgo de La Molina a la sede a las siete, de lunes a viernes, tres asientos, cinco soles por Yape”"
+          process={async (audio) => {
+            const result = await dictateOffer(audio, membership.destinationName);
+            return { heard: result.text, notes: await applyVoice(result) };
+          }}
+        />
+      ) : null}
 
       {!activeVehicle ? (
         <section className="flex flex-col gap-4 rounded-2xl border bg-card p-5 shadow-sm">
