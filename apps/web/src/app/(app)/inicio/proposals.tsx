@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { FUEL_NOTE, FuelShareLine } from "@/components/fuel-estimate";
 import { Button } from "@/components/ui/button";
 import { reasonOf } from "@/lib/api-error";
 import { communitiesApi, type MatchProposal } from "@/lib/communities-api";
@@ -66,6 +67,7 @@ export default function Proposals({ communityId }: { communityId: string }) {
             {`${proposal.direction === "outbound" ? "Ida" : "Regreso"} · ${dateLabel(proposal.date)}`}
           </p>
           <p>{`${proposal.meetingPointName} · Recogida ${clockLabel(proposal.pickupAt)}`}</p>
+          <FuelShareLine estimate={proposal.fuelEstimate} />
           {errors[proposal.suggestionId] ? (
             <p role="alert" className="font-medium text-destructive">
               {errors[proposal.suggestionId]}
@@ -95,6 +97,7 @@ export default function Proposals({ communityId }: { communityId: string }) {
           )}
         </article>
       ))}
+      <p className="text-xs text-muted-foreground">{FUEL_NOTE}</p>
     </section>
   );
 }

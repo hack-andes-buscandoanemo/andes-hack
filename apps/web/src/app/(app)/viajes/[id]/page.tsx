@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import EmptyState from "@/components/empty-state";
+import { FuelEstimateDetail } from "@/components/fuel-estimate";
 import SourceInfo from "@/components/source-info";
 import { Button } from "@/components/ui/button";
 import { reasonOf } from "@/lib/api-error";
@@ -238,6 +239,7 @@ export default function TripDetailPage() {
           </>
         ) : null}
       </section>
+      <FuelEstimateDetail estimate={detail.fuelEstimate} />
       <section className="space-y-2 rounded-2xl border bg-card p-4 text-sm shadow-sm">
         <h2 className="font-bold">Seguridad del viaje</h2>
         <ul className="space-y-1">

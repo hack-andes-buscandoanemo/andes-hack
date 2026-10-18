@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { clockLabel, dateLabel, daysLabel } from "@/app/(app)/buscar/schedule";
+import { FuelShareLine } from "@/components/fuel-estimate";
 import type { MyTrip } from "@/lib/communities-api";
 
 const STATUS_LABELS: Record<MyTrip["status"], string> = {
@@ -66,6 +67,7 @@ export default function TripSummaryCard({
       {trip.acceptedPassengers?.length ? (
         <p className="text-sm">{`Pasajeros: ${trip.acceptedPassengers.join(", ")}`}</p>
       ) : null}
+      <FuelShareLine estimate={trip.fuelEstimate} />
       <Link href={`/viajes/${trip.offerId}`} className="w-fit text-sm font-bold underline">
         Ver viaje
       </Link>

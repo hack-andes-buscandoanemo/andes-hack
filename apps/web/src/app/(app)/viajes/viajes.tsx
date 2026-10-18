@@ -7,6 +7,7 @@ import EmptyState from "@/components/empty-state";
 import { pairReturns, type PairedReturn } from "@/components/return-pairs";
 import ReturnTripCard from "@/components/return-trip-card";
 import TripSummaryCard from "@/components/trip-summary-card";
+import { FUEL_NOTE } from "@/components/fuel-estimate";
 import { Button } from "@/components/ui/button";
 import { communitiesApi, type MyTrip } from "@/lib/communities-api";
 
@@ -199,18 +200,21 @@ export default function Viajes() {
         ) : trips.length === 0 ? (
           <EmptyState>Aún no tienes viajes. Busca uno o publica el que ya haces.</EmptyState>
         ) : (
-          <ul className="space-y-3">
-            {trips.map((trip) => (
-              <TripCard
-                key={trip.id}
-                trip={trip}
-                busy={togglingId === trip.id}
-                onToggle={toggle}
-                coordinateReturn={scope === "upcoming"}
-                returns={returnsByTrip.get(trip.id) ?? []}
-              />
-            ))}
-          </ul>
+          <>
+            <ul className="space-y-3">
+              {trips.map((trip) => (
+                <TripCard
+                  key={trip.id}
+                  trip={trip}
+                  busy={togglingId === trip.id}
+                  onToggle={toggle}
+                  coordinateReturn={scope === "upcoming"}
+                  returns={returnsByTrip.get(trip.id) ?? []}
+                />
+              ))}
+            </ul>
+            <p className="text-xs text-muted-foreground">{FUEL_NOTE}</p>
+          </>
         )}
       </div>
     </main>
