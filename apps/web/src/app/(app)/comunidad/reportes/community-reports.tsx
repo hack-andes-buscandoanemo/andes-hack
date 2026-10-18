@@ -64,7 +64,7 @@ export default function CommunityReports({ communityId }: { communityId: string 
       {reports.map((report) => (
         <article key={report.id} className="space-y-2 rounded-2xl border bg-card p-4 shadow-sm">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="font-bold">{incidentLabels[report.type]}</h2>
+            <h3 className="font-bold">{incidentLabels[report.type]}</h3>
             <span className="rounded-full bg-muted px-2 py-1 text-xs font-semibold">
               {report.status === "open" ? "Abierto" : "Revisado"}
             </span>
