@@ -1,0 +1,744 @@
+{
+  "source": "OpenStreetMap vía Nominatim",
+  "license": "© OpenStreetMap contributors, ODbL 1.0 (https://www.openstreetmap.org/copyright)",
+  "zones": [
+    {
+      "id": "la-molina",
+      "name": "La Molina",
+      "district": "La Molina",
+      "lat": -12.077983,
+      "lng": -76.9172838,
+      "osm": "node/2099879337",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "santiago-de-surco",
+      "name": "Santiago de Surco",
+      "district": "Santiago de Surco",
+      "lat": -12.1278182,
+      "lng": -76.9863774,
+      "osm": "node/678989722",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "san-borja",
+      "name": "San Borja",
+      "district": "San Borja",
+      "lat": -12.107075,
+      "lng": -76.9988421,
+      "osm": "node/3780174725",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "miraflores",
+      "name": "Miraflores",
+      "district": "Miraflores",
+      "lat": -12.1206214,
+      "lng": -77.0294993,
+      "osm": "node/316636169",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "barranco",
+      "name": "Barranco",
+      "district": "Barranco",
+      "lat": -12.1496977,
+      "lng": -77.0212908,
+      "osm": "node/7847639273",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "chorrillos",
+      "name": "Chorrillos",
+      "district": "Chorrillos",
+      "lat": -12.1709478,
+      "lng": -77.02126,
+      "osm": "node/3265211045",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "surquillo",
+      "name": "Surquillo",
+      "district": "Surquillo",
+      "lat": -12.1144446,
+      "lng": -77.011978,
+      "osm": "node/3780174723",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "san-isidro",
+      "name": "San Isidro",
+      "district": "San Isidro",
+      "lat": -12.0989209,
+      "lng": -77.0346439,
+      "osm": "node/3265219208",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "lince",
+      "name": "Lince",
+      "district": "Lince",
+      "lat": -12.0825223,
+      "lng": -77.0310016,
+      "osm": "node/3265219206",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "jesus-maria",
+      "name": "Jesús María",
+      "district": "Jesús María",
+      "lat": -12.0751522,
+      "lng": -77.043904,
+      "osm": "node/3780174724",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "magdalena-del-mar",
+      "name": "Magdalena del Mar",
+      "district": "Magdalena del Mar",
+      "lat": -12.0923688,
+      "lng": -77.0733086,
+      "osm": "node/3265219207",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "pueblo-libre",
+      "name": "Pueblo Libre",
+      "district": "Pueblo Libre",
+      "lat": -12.0778372,
+      "lng": -77.062246,
+      "osm": "node/3780174740",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "san-miguel",
+      "name": "San Miguel",
+      "district": "San Miguel",
+      "lat": -12.0727512,
+      "lng": -77.095353,
+      "osm": "node/605673203",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "cercado-de-lima",
+      "name": "Cercado de Lima",
+      "district": "Lima",
+      "lat": -12.0459808,
+      "lng": -77.0305912,
+      "osm": "node/4289361265",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "brena",
+      "name": "Breña",
+      "district": "Breña",
+      "lat": -12.0588096,
+      "lng": -77.0458829,
+      "osm": "node/3780174738",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "la-victoria",
+      "name": "La Victoria",
+      "district": "La Victoria",
+      "lat": -12.0641355,
+      "lng": -77.0295563,
+      "osm": "node/3780174726",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "san-luis",
+      "name": "San Luis",
+      "district": "San Luis",
+      "lat": -12.0736464,
+      "lng": -76.9941006,
+      "osm": "node/3780174739",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "ate",
+      "name": "Ate",
+      "district": "Ate",
+      "lat": -12.0259643,
+      "lng": -76.9188901,
+      "osm": "node/4376593149",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "santa-anita",
+      "name": "Santa Anita",
+      "district": "Santa Anita",
+      "lat": -12.0494148,
+      "lng": -76.9645757,
+      "osm": "node/3780174728",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "san-juan-de-lurigancho",
+      "name": "San Juan de Lurigancho",
+      "district": "San Juan de Lurigancho",
+      "lat": -12.0017252,
+      "lng": -77.0084106,
+      "osm": "node/821375121",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "san-martin-de-porres",
+      "name": "San Martín de Porres",
+      "district": "San Martín de Porres",
+      "lat": -11.9814786,
+      "lng": -77.0963114,
+      "osm": "node/3780174730",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "los-olivos",
+      "name": "Los Olivos",
+      "district": "Los Olivos",
+      "lat": -11.9916722,
+      "lng": -77.0709115,
+      "osm": "node/3780174731",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "callao",
+      "name": "Callao",
+      "district": "Callao",
+      "lat": -12.0522626,
+      "lng": -77.1391133,
+      "osm": "node/107988853",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "villa-el-salvador",
+      "name": "Villa El Salvador",
+      "district": "Villa El Salvador",
+      "lat": -12.2135031,
+      "lng": -76.9370262,
+      "osm": "node/3760527045",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "san-juan-de-miraflores",
+      "name": "San Juan de Miraflores",
+      "district": "San Juan de Miraflores",
+      "lat": -12.1628581,
+      "lng": -76.9635192,
+      "osm": "node/3265211046",
+      "retrievedAt": "2026-10-17"
+    }
+  ],
+  "meetingPoints": [
+    {
+      "id": "la-molina-plaza-de-armas",
+      "zoneId": "la-molina",
+      "name": "Plaza de Armas de La Molina",
+      "kind": "park",
+      "lat": -12.0780067,
+      "lng": -76.917343,
+      "osm": "way/444841148",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "la-molina-parque-la-balsa",
+      "zoneId": "la-molina",
+      "name": "Parque La Balsa",
+      "kind": "park",
+      "lat": -12.0839519,
+      "lng": -76.9209402,
+      "osm": "way/561881500",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "santiago-de-surco-parque-de-la-amistad",
+      "zoneId": "santiago-de-surco",
+      "name": "Parque de la Amistad",
+      "kind": "park",
+      "lat": -12.1317603,
+      "lng": -76.9816871,
+      "osm": "way/127709119",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "santiago-de-surco-cc-el-trigal",
+      "zoneId": "santiago-de-surco",
+      "name": "Centro Comercial El Trigal",
+      "kind": "mall",
+      "lat": -12.1276394,
+      "lng": -76.9879884,
+      "osm": "relation/6524746",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "san-borja-estacion-san-borja-sur",
+      "zoneId": "san-borja",
+      "name": "Estación San Borja Sur (Línea 1)",
+      "kind": "rail_station",
+      "lat": -12.1004192,
+      "lng": -77.001846,
+      "osm": "way/549606670",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "san-borja-municipalidad",
+      "zoneId": "san-borja",
+      "name": "Municipalidad de San Borja",
+      "kind": "other",
+      "lat": -12.1071567,
+      "lng": -76.9991313,
+      "osm": "node/7557801913",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "miraflores-parque-kennedy",
+      "zoneId": "miraflores",
+      "name": "Parque Kennedy",
+      "kind": "park",
+      "lat": -12.1217806,
+      "lng": -77.0304221,
+      "osm": "way/28798160",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "miraflores-estacion-ricardo-palma",
+      "zoneId": "miraflores",
+      "name": "Estación Ricardo Palma (Metropolitano)",
+      "kind": "bus_stop",
+      "lat": -12.1189574,
+      "lng": -77.0259296,
+      "osm": "node/4437314087",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "barranco-parque-municipal",
+      "zoneId": "barranco",
+      "name": "Parque Municipal de Barranco",
+      "kind": "park",
+      "lat": -12.1494807,
+      "lng": -77.0211974,
+      "osm": "way/436583900",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "barranco-estacion-bulevar",
+      "zoneId": "barranco",
+      "name": "Estación Bulevar (Metropolitano)",
+      "kind": "bus_stop",
+      "lat": -12.1484921,
+      "lng": -77.0201384,
+      "osm": "node/1418826159",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "chorrillos-estacion-teran",
+      "zoneId": "chorrillos",
+      "name": "Estación Terán (Metropolitano)",
+      "kind": "bus_stop",
+      "lat": -12.1686435,
+      "lng": -77.0186235,
+      "osm": "node/1418826350",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "chorrillos-plaza-lima-sur",
+      "zoneId": "chorrillos",
+      "name": "Plaza Lima Sur",
+      "kind": "mall",
+      "lat": -12.1729316,
+      "lng": -77.0130451,
+      "osm": "way/201423252",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "surquillo-municipalidad",
+      "zoneId": "surquillo",
+      "name": "Municipalidad de Surquillo",
+      "kind": "other",
+      "lat": -12.1127387,
+      "lng": -77.0108894,
+      "osm": "way/562838855",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "surquillo-parque-melvin-jones",
+      "zoneId": "surquillo",
+      "name": "Parque Melvin Jones N.° 1",
+      "kind": "park",
+      "lat": -12.1186969,
+      "lng": -77.014294,
+      "osm": "way/377735982",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "san-isidro-parque-el-olivar",
+      "zoneId": "san-isidro",
+      "name": "Parque El Olivar",
+      "kind": "park",
+      "lat": -12.101203,
+      "lng": -77.0347585,
+      "osm": "relation/3570374",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "san-isidro-estacion-aramburu",
+      "zoneId": "san-isidro",
+      "name": "Estación Aramburú (Metropolitano)",
+      "kind": "bus_stop",
+      "lat": -12.1026563,
+      "lng": -77.0273261,
+      "osm": "node/4437310150",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "lince-municipalidad",
+      "zoneId": "lince",
+      "name": "Municipalidad de Lince",
+      "kind": "other",
+      "lat": -12.0833313,
+      "lng": -77.0318518,
+      "osm": "node/8083051062",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "lince-parque-santos-dumont",
+      "zoneId": "lince",
+      "name": "Parque Santos Dumont",
+      "kind": "park",
+      "lat": -12.0872441,
+      "lng": -77.0270487,
+      "osm": "way/39413635",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "jesus-maria-campo-de-marte",
+      "zoneId": "jesus-maria",
+      "name": "Campo de Marte",
+      "kind": "park",
+      "lat": -12.0681181,
+      "lng": -77.0418936,
+      "osm": "relation/6142740",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "jesus-maria-parque-de-los-proceres",
+      "zoneId": "jesus-maria",
+      "name": "Parque de los Próceres de la Independencia",
+      "kind": "park",
+      "lat": -12.0818972,
+      "lng": -77.0428388,
+      "osm": "way/318312598",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "magdalena-del-mar-mercado",
+      "zoneId": "magdalena-del-mar",
+      "name": "Mercado de Magdalena",
+      "kind": "other",
+      "lat": -12.0909253,
+      "lng": -77.0731484,
+      "osm": "way/129898309",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "magdalena-del-mar-parque-costa-verde",
+      "zoneId": "magdalena-del-mar",
+      "name": "Parque Costa Verde",
+      "kind": "park",
+      "lat": -12.0997355,
+      "lng": -77.0714013,
+      "osm": "way/295320372",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "pueblo-libre-plaza-bolivar",
+      "zoneId": "pueblo-libre",
+      "name": "Plaza Bolívar",
+      "kind": "park",
+      "lat": -12.0777445,
+      "lng": -77.0622459,
+      "osm": "way/73887717",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "pueblo-libre-parque-puente-y-cortez",
+      "zoneId": "pueblo-libre",
+      "name": "Parque Puente y Cortéz",
+      "kind": "park",
+      "lat": -12.0809332,
+      "lng": -77.0647098,
+      "osm": "way/195406834",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "san-miguel-parque-domingo-nieto",
+      "zoneId": "san-miguel",
+      "name": "Parque Domingo Nieto",
+      "kind": "park",
+      "lat": -12.0727464,
+      "lng": -77.0903908,
+      "osm": "way/50979440",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "san-miguel-parque-simon-bolivar",
+      "zoneId": "san-miguel",
+      "name": "Parque Simón Bolívar",
+      "kind": "park",
+      "lat": -12.079507,
+      "lng": -77.0982894,
+      "osm": "way/46480632",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "cercado-de-lima-plaza-mayor",
+      "zoneId": "cercado-de-lima",
+      "name": "Plaza Mayor de Lima",
+      "kind": "park",
+      "lat": -12.0459394,
+      "lng": -77.030568,
+      "osm": "way/172097116",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "cercado-de-lima-estacion-colmena",
+      "zoneId": "cercado-de-lima",
+      "name": "Estación Colmena (Metropolitano)",
+      "kind": "bus_stop",
+      "lat": -12.052287,
+      "lng": -77.032845,
+      "osm": "node/13613341425",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "brena-municipalidad",
+      "zoneId": "brena",
+      "name": "Municipalidad de Breña",
+      "kind": "other",
+      "lat": -12.058728,
+      "lng": -77.0459586,
+      "osm": "node/8223418247",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "brena-parque-murillo",
+      "zoneId": "brena",
+      "name": "Parque Murillo",
+      "kind": "park",
+      "lat": -12.0565692,
+      "lng": -77.0517613,
+      "osm": "way/194875200",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "la-victoria-plaza-manco-capac",
+      "zoneId": "la-victoria",
+      "name": "Plaza Manco Cápac",
+      "kind": "park",
+      "lat": -12.0641742,
+      "lng": -77.0300054,
+      "osm": "way/39412615",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "la-victoria-estadio-alejandro-villanueva",
+      "zoneId": "la-victoria",
+      "name": "Estadio Alejandro Villanueva",
+      "kind": "venue",
+      "lat": -12.0685041,
+      "lng": -77.0229272,
+      "osm": "way/40300870",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "san-luis-parque-horacio-patino",
+      "zoneId": "san-luis",
+      "name": "Parque Horacio Patiño",
+      "kind": "park",
+      "lat": -12.0734209,
+      "lng": -76.9941841,
+      "osm": "way/397692264",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "san-luis-municipalidad",
+      "zoneId": "san-luis",
+      "name": "Municipalidad de San Luis",
+      "kind": "other",
+      "lat": -12.0756878,
+      "lng": -76.9934991,
+      "osm": "way/166264197",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "ate-plaza-de-armas",
+      "zoneId": "ate",
+      "name": "Plaza de Armas de Ate",
+      "kind": "park",
+      "lat": -12.0259895,
+      "lng": -76.9188718,
+      "osm": "way/318783826",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "ate-parque-cultural-de-ceres",
+      "zoneId": "ate",
+      "name": "Parque Cultural de Ceres",
+      "kind": "park",
+      "lat": -12.0280609,
+      "lng": -76.9268331,
+      "osm": "way/162864800",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "santa-anita-estacion-ovalo-santa-anita",
+      "zoneId": "santa-anita",
+      "name": "Estación Óvalo Santa Anita (Línea 2)",
+      "kind": "rail_station",
+      "lat": -12.0543281,
+      "lng": -76.9638076,
+      "osm": "way/1239169750",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "santa-anita-parque-virgen-del-carmen",
+      "zoneId": "santa-anita",
+      "name": "Parque Virgen del Carmen",
+      "kind": "park",
+      "lat": -12.0490124,
+      "lng": -76.9692868,
+      "osm": "way/456122207",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "san-juan-de-lurigancho-estacion-los-jardines",
+      "zoneId": "san-juan-de-lurigancho",
+      "name": "Estación Los Jardines (Línea 1)",
+      "kind": "rail_station",
+      "lat": -12.0069696,
+      "lng": -77.0052868,
+      "osm": "way/549570797",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "san-juan-de-lurigancho-estacion-los-postes",
+      "zoneId": "san-juan-de-lurigancho",
+      "name": "Estación Los Postes (Línea 1)",
+      "kind": "rail_station",
+      "lat": -11.9961956,
+      "lng": -77.0100207,
+      "osm": "way/409122297",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "san-martin-de-porres-mercado-santa-rosa",
+      "zoneId": "san-martin-de-porres",
+      "name": "Mercado Santa Rosa",
+      "kind": "other",
+      "lat": -11.9856311,
+      "lng": -77.0945073,
+      "osm": "way/795769956",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "san-martin-de-porres-mercado-paraiso-florido",
+      "zoneId": "san-martin-de-porres",
+      "name": "Mercado Paraíso Florido",
+      "kind": "other",
+      "lat": -11.9867346,
+      "lng": -77.0990474,
+      "osm": "way/795775125",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "los-olivos-municipalidad",
+      "zoneId": "los-olivos",
+      "name": "Municipalidad de Los Olivos",
+      "kind": "other",
+      "lat": -11.9915707,
+      "lng": -77.0706068,
+      "osm": "way/458784129",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "los-olivos-parque-los-gemelos",
+      "zoneId": "los-olivos",
+      "name": "Parque Los Gemelos",
+      "kind": "park",
+      "lat": -11.9938455,
+      "lng": -77.0706571,
+      "osm": "way/121372547",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "callao-mercado-san-rafael",
+      "zoneId": "callao",
+      "name": "Mercado San Rafael",
+      "kind": "other",
+      "lat": -12.0519988,
+      "lng": -77.1348868,
+      "osm": "way/621622161",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "callao-parque-ramon-castilla",
+      "zoneId": "callao",
+      "name": "Parque Ramón Castilla",
+      "kind": "park",
+      "lat": -12.0569159,
+      "lng": -77.1339188,
+      "osm": "way/409324180",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "villa-el-salvador-municipalidad",
+      "zoneId": "villa-el-salvador",
+      "name": "Municipalidad de Villa El Salvador",
+      "kind": "other",
+      "lat": -12.2131656,
+      "lng": -76.9371893,
+      "osm": "node/7050865097",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "villa-el-salvador-estacion-villa-el-salvador",
+      "zoneId": "villa-el-salvador",
+      "name": "Estación Villa El Salvador (Línea 1)",
+      "kind": "rail_station",
+      "lat": -12.2074601,
+      "lng": -76.9331388,
+      "osm": "way/409091017",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "san-juan-de-miraflores-parque-ramon-castilla",
+      "zoneId": "san-juan-de-miraflores",
+      "name": "Parque Gran Mariscal Ramón Castilla",
+      "kind": "park",
+      "lat": -12.1649792,
+      "lng": -76.9628488,
+      "osm": "way/437627048",
+      "retrievedAt": "2026-10-17"
+    },
+    {
+      "id": "san-juan-de-miraflores-estacion-san-juan",
+      "zoneId": "san-juan-de-miraflores",
+      "name": "Estación San Juan (Línea 1)",
+      "kind": "rail_station",
+      "lat": -12.156498,
+      "lng": -76.9658806,
+      "osm": "way/409097752",
+      "retrievedAt": "2026-10-17"
+    }
+  ],
+  "destinations": [
+    {
+      "id": "centro-empresarial-real",
+      "name": "Centro Empresarial Real",
+      "district": "San Isidro",
+      "lat": -12.0975459,
+      "lng": -77.0375707,
+      "osm": "way/457103449",
+      "retrievedAt": "2026-10-17"
+    }
+  ]
+}
