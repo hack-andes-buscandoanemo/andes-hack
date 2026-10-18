@@ -7,6 +7,7 @@ import { vehicle } from "@andes-hack/db/schema/vehicle";
 import { places } from "@andes-hack/matching";
 import { and, desc, eq, inArray, ne } from "drizzle-orm";
 
+import { acceptedCountByOffer, fuelEstimateFor, occupantsSharingFuel } from "./fuel-estimate";
 import { destinationOf } from "./search";
 import {
   canSeePlate,
@@ -69,6 +70,7 @@ async function passengerTrips(database: Database, userId: string, scope: TripSco
       daysOfWeek: tripOffer.daysOfWeek,
       pickupAt: seatBooking.pickupAt,
       meetingPointId: seatBooking.meetingPointId,
+      originZoneId: tripOffer.originZoneId,
       originZoneName: zone.name,
       destinationName: community.destinationName,
       driverAlias: communityMember.alias,
@@ -122,6 +124,10 @@ async function passengerTrips(database: Database, userId: string, scope: TripSco
     const key = `${need.communityId}:${need.originZoneId}`;
     if (!returnNeedByPlace.has(key)) returnNeedByPlace.set(key, need);
   }
+  const acceptedCount = await acceptedCountByOffer(
+    database,
+    rows.map((row) => row.offerId),
+  );
   const clock = limaClock();
   return rows
     .map((row) => {
@@ -129,39 +135,52 @@ async function passengerTrips(database: Database, userId: string, scope: TripSco
       return { ...row, passed, derived: passengerStatus({ ...row, passed }) };
     })
     .filter((row) => (isOpen(row.derived) && !row.passed) === (scope === "upcoming"))
-    .map((row) => ({
-      id: row.id,
-      offerId: row.offerId,
-      role: "passenger" as const,
-      status: row.derived,
-      direction: row.direction,
-      date: row.date,
-      daysOfWeek: row.daysOfWeek,
-      time: row.pickupAt,
-      originZoneName: row.originZoneName,
-      destinationName: destinationOf({ destinationName: row.destinationName }).name,
-      meetingPointName:
-        places.meetingPoints.find((point) => point.id === row.meetingPointId)?.name ??
-        row.meetingPointId,
-      // The other person is revealed only once the request is accepted.
-      driver:
-        row.derived === "accepted"
-          ? {
-              alias: displayName(row.driverAlias, row.accountName),
-              plate: canSeePlate({ ...row, isOwn: false, bookingStatus: row.status })
-                ? row.plate
-                : null,
-            }
-          : null,
-      seatsTotal: null,
-      seatsFree: null,
-      pendingRequests: null,
-      acceptedPassengers: null,
-      passengerRequest: passengerRequestOf(
-        row,
-        returnNeedByPlace.get(`${row.communityId}:${row.requestOriginZoneId}`),
-      ),
-    }));
+    .map((row) => {
+      const destination = destinationOf({ destinationName: row.destinationName });
+      return {
+        id: row.id,
+        offerId: row.offerId,
+        role: "passenger" as const,
+        status: row.derived,
+        direction: row.direction,
+        date: row.date,
+        daysOfWeek: row.daysOfWeek,
+        time: row.pickupAt,
+        originZoneName: row.originZoneName,
+        destinationName: destination.name,
+        meetingPointName:
+          places.meetingPoints.find((point) => point.id === row.meetingPointId)?.name ??
+          row.meetingPointId,
+        // The other person is revealed only once the request is accepted.
+        driver:
+          row.derived === "accepted"
+            ? {
+                alias: displayName(row.driverAlias, row.accountName),
+                plate: canSeePlate({ ...row, isOwn: false, bookingStatus: row.status })
+                  ? row.plate
+                  : null,
+              }
+            : null,
+        seatsTotal: null,
+        seatsFree: null,
+        pendingRequests: null,
+        acceptedPassengers: null,
+        passengerRequest: passengerRequestOf(
+          row,
+          returnNeedByPlace.get(`${row.communityId}:${row.requestOriginZoneId}`),
+        ),
+        fuelEstimate: fuelEstimateFor({
+          direction: row.direction,
+          originZoneId: row.originZoneId,
+          destinationId: destination.id,
+          // An accepted passenger is already among those counted aboard.
+          occupants: occupantsSharingFuel(
+            acceptedCount.get(row.offerId) ?? 0,
+            row.status === "accepted",
+          ),
+        }),
+      };
+    });
 }
 
 async function driverTrips(database: Database, userId: string, scope: TripScope) {
@@ -175,6 +194,7 @@ async function driverTrips(database: Database, userId: string, scope: TripScope)
       daysOfWeek: tripOffer.daysOfWeek,
       departureTime: tripOffer.departureTime,
       seatsTotal: tripOffer.seatsTotal,
+      originZoneId: tripOffer.originZoneId,
       originZoneName: zone.name,
       destinationName: community.destinationName,
     })
@@ -220,6 +240,8 @@ async function driverTrips(database: Database, userId: string, scope: TripScope)
       // A cancelled offer reveals nobody: its requests were released.
       const mine =
         status === "cancelled" ? [] : bookings.filter((booking) => booking.offerId === offer.id);
+      const accepted = mine.filter((booking) => booking.status === "accepted");
+      const destination = destinationOf({ destinationName: offer.destinationName });
       return {
         id: offer.id,
         offerId: offer.id,
@@ -230,19 +252,22 @@ async function driverTrips(database: Database, userId: string, scope: TripScope)
         daysOfWeek: offer.daysOfWeek,
         time: offer.departureTime,
         originZoneName: offer.originZoneName,
-        destinationName: destinationOf({ destinationName: offer.destinationName }).name,
+        destinationName: destination.name,
         meetingPointName: null,
         driver: null,
         seatsTotal: offer.seatsTotal,
-        seatsFree: seatsFree(
-          offer.seatsTotal,
-          mine.filter((booking) => booking.status === "accepted").length,
-        ),
+        seatsFree: seatsFree(offer.seatsTotal, accepted.length),
         pendingRequests: mine.filter((booking) => booking.status === "pending").length,
         // Aliases only, and only of people the driver already accepted.
-        acceptedPassengers: mine
-          .filter((booking) => booking.status === "accepted")
-          .map((booking) => displayName(booking.alias, booking.accountName)),
+        acceptedPassengers: accepted.map((booking) =>
+          displayName(booking.alias, booking.accountName),
+        ),
+        fuelEstimate: fuelEstimateFor({
+          direction: offer.direction,
+          originZoneId: offer.originZoneId,
+          destinationId: destination.id,
+          occupants: occupantsSharingFuel(accepted.length, true),
+        }),
       };
     })
     .filter(
