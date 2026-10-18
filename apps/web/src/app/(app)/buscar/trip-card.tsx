@@ -1,5 +1,7 @@
 import type { TripMatch } from "@/lib/communities-api";
 
+import { clockLabel } from "./schedule";
+
 function initialsOf(name: string) {
   return name
     .split(/\s+/)
@@ -44,8 +46,9 @@ export default function TripCard({
       <p className="text-xs text-muted-foreground">
         {outbound ? "Punto de encuentro" : "Punto de bajada"}: {match.meetingPointName}
       </p>
-      <p className="text-sm">
-        {match.seatsFree === 1 ? "1 asiento" : `${match.seatsFree} asientos`}
+      <p className="flex gap-4 text-sm">
+        <span>{clockLabel(match.departureTime.slice(0, 5))}</span>
+        <span>{match.seatsFree === 1 ? "1 asiento" : `${match.seatsFree} asientos`}</span>
       </p>
       <ul className="flex flex-wrap gap-2 text-xs font-medium">
         <li className="rounded-full bg-muted px-2.5 py-0.5">{`+${match.detourMinutes} min de desvío`}</li>

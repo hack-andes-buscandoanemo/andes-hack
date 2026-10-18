@@ -94,6 +94,9 @@ describe("search page /buscar (US-013)", () => {
     expect(screen.getByText("Mejor coincidencia")).toBeInTheDocument();
     expect(screen.getByText("Mateo Q.")).toBeInTheDocument();
     expect(screen.getByText("La Molina → Centro Empresarial Real")).toBeInTheDocument();
+    expect(
+      within(screen.getByText("Mateo Q.").closest("li")!).getByText("7:00 a. m."),
+    ).toBeInTheDocument();
     expect(screen.getByText("3 asientos")).toBeInTheDocument();
     expect(screen.getByText("+6 min de desvío")).toBeInTheDocument();
     expect(screen.getByText("14 min a pie")).toBeInTheDocument();
