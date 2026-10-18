@@ -26,6 +26,7 @@ const TRIP: MyTrip = {
   seatsFree: null,
   pendingRequests: null,
   acceptedPassengers: null,
+  fuelEstimate: null,
   passengerRequest: {
     communityId: "33333333-3333-4333-8333-333333333333",
     originZoneId: "san-borja",
@@ -45,7 +46,11 @@ describe("return coordination card", () => {
         trip={{
           ...TRIP,
           daysOfWeek: [2, 4],
-          passengerRequest: { ...TRIP.passengerRequest!, date: "2099-03-02", daysOfWeek: null },
+          passengerRequest: {
+            ...TRIP.passengerRequest!,
+            date: "2099-03-02",
+            daysOfWeek: null,
+          },
         }}
       />,
     );
@@ -58,7 +63,11 @@ describe("return coordination card", () => {
           ...TRIP,
           date: "2099-03-02",
           daysOfWeek: null,
-          passengerRequest: { ...TRIP.passengerRequest!, date: "2099-03-04", daysOfWeek: null },
+          passengerRequest: {
+            ...TRIP.passengerRequest!,
+            date: "2099-03-04",
+            daysOfWeek: null,
+          },
         }}
       />,
     );
@@ -83,7 +92,10 @@ describe("return coordination card", () => {
   it("requires an ordered editable departure window without inventing a time", async () => {
     render(
       <ReturnTripCard
-        trip={{ ...TRIP, passengerRequest: { ...TRIP.passengerRequest!, returnWindow: null } }}
+        trip={{
+          ...TRIP,
+          passengerRequest: { ...TRIP.passengerRequest!, returnWindow: null },
+        }}
       />,
     );
     expect(screen.getByLabelText("Desde")).toHaveValue("");

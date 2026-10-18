@@ -14,6 +14,7 @@ import {
 import { and, asc, eq, inArray, ne, type SQL } from "drizzle-orm";
 import type { z } from "zod";
 
+import { fuelEstimateFor, occupantsSharingFuel } from "./fuel-estimate";
 import { logEvent } from "./lib/logger";
 import { displayName, seatsFree } from "./trip-rules";
 import { ApiError } from "./utils/api-response";
@@ -80,6 +81,7 @@ export async function loadOfferRoutes(
     ? await database
         .select({
           offerId: seatBooking.offerId,
+          passengerId: seatBooking.passengerId,
           meetingPointId: seatBooking.meetingPointId,
           windowStart: tripRequest.windowStart,
           windowEnd: tripRequest.windowEnd,
@@ -294,6 +296,7 @@ export async function searchTrips(
     reason: ranking.reason,
     matches: ranking.matches.map((match) => {
       const offer = byId.get(match.offerId)!;
+      const accepted = acceptedByOffer.get(offer.id) ?? [];
       return {
         offerId: match.offerId,
         driverName: displayName(offer.driverName, offer.accountName),
@@ -302,12 +305,22 @@ export async function searchTrips(
         direction: offer.direction,
         departureTime: offer.departureTime,
         // Same count the engine uses for its seat check: accepted passengers.
-        seatsFree: seatsFree(offer.seatsTotal, acceptedByOffer.get(offer.id)?.length ?? 0),
+        seatsFree: seatsFree(offer.seatsTotal, accepted.length),
         meetingPointName: meetingPointNames.get(match.meetingPointId) ?? match.meetingPointId,
         pickupAt: match.pickupAt,
         arrivalAt: match.arrivalAt,
         detourMinutes: match.detourMinutes,
         walkMinutes: match.walkMinutes,
+        // Someone already accepted on this trip who searches again is not counted twice.
+        fuelEstimate: fuelEstimateFor({
+          direction: offer.direction,
+          originZoneId: offer.originZoneId,
+          destinationId: destination.id,
+          occupants: occupantsSharingFuel(
+            accepted.length,
+            accepted.some((booking) => booking.passengerId === userId),
+          ),
+        }),
       };
     }),
   };

@@ -28,6 +28,7 @@ const PROPOSAL = {
   pickupAt: "07:29",
   arrivalAt: "07:44",
   walkMinutes: 14,
+  fuelEstimate: { tripSoles: 10.04, perOccupantSoles: 5.02, occupants: 2 },
 };
 
 beforeEach(() => {
@@ -60,6 +61,23 @@ describe("proposals on Inicio (US-019)", () => {
       "Solicitud enviada. Te avisaremos cuando Mateo Q. responda.",
     );
     expect(screen.queryByRole("button", { name: "Solicitar asiento" })).not.toBeInTheDocument();
+  });
+
+  it("shows the estimated fuel contribution of the proposed trip (US-034)", async () => {
+    render(<Proposals communityId={COMMUNITY_ID} />);
+
+    expect(
+      await screen.findByText("Aporte de combustible estimado: S/ 5,02 por persona"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "De dónde sale esta cifra" })).toHaveAttribute(
+      "href",
+      "/datos#impacto",
+    );
+    expect(
+      screen.getByText(
+        "Referencial. Te Jalo no cobra ni procesa pagos; cualquier aporte es voluntario y nunca mayor al costo.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("explains why a seat could not be requested and renders nothing without proposals", async () => {

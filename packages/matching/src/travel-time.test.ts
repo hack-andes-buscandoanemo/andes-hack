@@ -94,6 +94,43 @@ describe("travel times between places of Lima", () => {
   });
 });
 
+describe("distances between places of Lima", () => {
+  it("reads the street kilometres of a pair from the matrix and labels them as data", () => {
+    const model = createTravelTimeModel({
+      places,
+      matrix: {
+        ...matrix,
+        km: [
+          [0, 15.5],
+          [16.1, 0],
+        ],
+      },
+    });
+
+    expect(model.distanceKm("la-molina", "san-isidro")).toEqual({ km: 15.5, kind: "dato" });
+    expect(model.distanceKm("san-isidro", "la-molina")).toEqual({ km: 16.1, kind: "dato" });
+  });
+
+  it("estimates a pair without kilometres in the matrix from the straight line", () => {
+    const model = createTravelTimeModel({ places, matrix });
+
+    // 12.971 km in a straight line × 1.29 road km per straight km.
+    const distance = model.distanceKm("la-molina", "san-isidro");
+
+    expect(distance.km).toBeCloseTo(16.73, 2);
+    expect(distance.kind).toBe("estimado");
+  });
+
+  it("knows the OSRM kilometres from La Molina to the Centro Empresarial Real", () => {
+    const model = createTravelTimeModel();
+
+    expect(model.distanceKm("la-molina", "centro-empresarial-real")).toEqual({
+      km: 15.77,
+      kind: "dato",
+    });
+  });
+});
+
 describe("travel times with the real places of Lima", () => {
   it("takes about 42 minutes from La Molina to the Centro Empresarial Real at 8:00 on a weekday", () => {
     const model = createTravelTimeModel();
