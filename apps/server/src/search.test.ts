@@ -302,6 +302,41 @@ describe("POST /communities/{id}/search (US-013)", () => {
     expect(back).not.toBe(first);
   });
 
+  it("keeps a single open need when two searches in the same direction arrive together", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    await createZones();
+    const passenger = await createMember(alfa.id, "u-lucia", "Lucía");
+
+    const responses = await Promise.all([
+      searchAs(passenger, alfa.id, weekdayMorning),
+      searchAs(passenger, alfa.id, { ...weekdayMorning, windowStart: "07:45", windowEnd: "08:15" }),
+    ]);
+    const requestIds = await Promise.all(
+      responses.map(async (res) => ((await res.json()) as { requestId: string }).requestId),
+    );
+
+    expect(responses.map((res) => res.status)).toEqual([200, 200]);
+    expect(requestIds[1]).toBe(requestIds[0]);
+  });
+
+  it("records on the saved need whether the last search had at least one result", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    await createZones();
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const passenger = await createMember(alfa.id, "u-lucia", "Lucía");
+    const hadResults = async () =>
+      (await testDb.select({ value: tripRequest.hadResults }).from(tripRequest)).map(
+        (row) => row.value,
+      );
+
+    await searchAs(passenger, alfa.id, weekdayMorning);
+    expect(await hadResults()).toEqual([false]);
+
+    await morningOffer(alfa.id, driver.id);
+    await searchAs(passenger, alfa.id, weekdayMorning);
+    expect(await hadResults()).toEqual([true]);
+  });
+
   it("shows a Solo mujeres offer to a woman who identifies as such", async () => {
     const alfa = await createCommunity("comunidad-alfa");
     await createZones();
@@ -511,5 +546,30 @@ describe("POST /communities/{id}/search (US-013)", () => {
 
     expect(res.status).toBe(200);
     expect(elapsed).toBeLessThan(1000);
+  });
+});
+
+describe("POST /communities/{id}/search validation (US-013)", () => {
+  async function statusOf(body: Record<string, unknown>) {
+    const alfa = await createCommunity("comunidad-alfa");
+    await createZones();
+    const passenger = await createMember(alfa.id, "u-lucia", "Lucía");
+    return (await searchAs(passenger, alfa.id, { ...weekdayMorning, ...body })).status;
+  }
+
+  it("rejects a time of day that does not exist", async () => {
+    expect(await statusOf({ windowEnd: "24:30" })).toBe(422);
+  });
+
+  it("rejects repeated days", async () => {
+    expect(await statusOf({ daysOfWeek: [1, 1, 2] })).toBe(422);
+  });
+
+  it("rejects a date that already passed", async () => {
+    expect(await statusOf({ daysOfWeek: null, date: "2020-01-01" })).toBe(422);
+  });
+
+  it("rejects a window that ends when it starts", async () => {
+    expect(await statusOf({ windowStart: "07:30", windowEnd: "07:30" })).toBe(422);
   });
 });

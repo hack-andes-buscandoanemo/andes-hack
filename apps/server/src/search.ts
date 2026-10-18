@@ -43,7 +43,10 @@ export async function searchTrips(
     .from(community)
     .where(eq(community.id, communityId))
     .limit(1);
-  const destination = destinationOf(destinationRow!);
+  if (!destinationRow) {
+    throw new ApiError(404, "No encontramos esta comunidad.", { code: "community_not_found" });
+  }
+  const destination = destinationOf(destinationRow);
 
   const [passenger] = await database
     .select({ identifiesAsWoman: communityMember.identifiesAsWoman })
@@ -51,7 +54,13 @@ export async function searchTrips(
     .where(and(eq(communityMember.communityId, communityId), eq(communityMember.userId, userId)))
     .limit(1);
 
-  if (body.womenOnly && !passenger!.identifiesAsWoman) {
+  if (!passenger) {
+    throw new ApiError(403, "Únete a esta comunidad para buscar viajes.", {
+      code: "not_a_member",
+    });
+  }
+
+  if (body.womenOnly && !passenger.identifiesAsWoman) {
     throw new ApiError(
       403,
       "Esta preferencia solo está disponible para quienes la activaron en su perfil.",
@@ -78,30 +87,6 @@ export async function searchTrips(
     maxWalkMinutes: body.maxWalkMinutes,
     fallbackMode: body.fallbackMode,
   };
-  // One open need per person and direction. ponytail: no unique index, so two searches at the same instant could save two.
-  const [open] = await database
-    .select({ id: tripRequest.id })
-    .from(tripRequest)
-    .where(
-      and(
-        eq(tripRequest.communityId, communityId),
-        eq(tripRequest.passengerId, userId),
-        eq(tripRequest.direction, body.direction),
-        eq(tripRequest.status, "open"),
-      ),
-    )
-    .limit(1);
-  const [saved] = open
-    ? await database
-        .update(tripRequest)
-        .set(need)
-        .where(eq(tripRequest.id, open.id))
-        .returning({ id: tripRequest.id })
-    : await database
-        .insert(tripRequest)
-        .values({ ...need, communityId, passengerId: userId, direction: body.direction })
-        .returning({ id: tripRequest.id });
-
   const rows = await database
     .select({
       id: tripOffer.id,
@@ -187,8 +172,10 @@ export async function searchTrips(
     daysOfWeek: body.daysOfWeek ?? null,
     maxWalkMinutes: body.maxWalkMinutes,
     womenOnly: body.womenOnly,
-    passengerIsWoman: passenger!.identifiesAsWoman,
+    passengerIsWoman: passenger.identifiesAsWoman,
   };
+  const acceptedByOffer = Map.groupBy(accepted, (booking) => booking.offerId);
+  const rejectedOffers = new Set(rejected.map((booking) => booking.offerId));
   const routes: OfferRoute[] = rows.map((row) => ({
     id: row.id,
     communityId,
@@ -202,22 +189,32 @@ export async function searchTrips(
     maxDetourMinutes: row.maxDetourMinutes,
     womenOnly: row.womenOnly,
     driverIsWoman: row.driverIsWoman,
-    rejectedPassengerIds: rejected.some((booking) => booking.offerId === row.id) ? [userId] : [],
-    passengers: accepted
-      .filter((booking) => booking.offerId === row.id)
-      .map((booking) => ({
-        meetingPointId: booking.meetingPointId,
-        windowStart: booking.windowStart.slice(0, 5),
-        windowEnd: booking.windowEnd.slice(0, 5),
-      })),
+    rejectedPassengerIds: rejectedOffers.has(row.id) ? [userId] : [],
+    passengers: (acceptedByOffer.get(row.id) ?? []).map((booking) => ({
+      meetingPointId: booking.meetingPointId,
+      windowStart: booking.windowStart.slice(0, 5),
+      windowEnd: booking.windowEnd.slice(0, 5),
+    })),
   }));
 
   const ranking = rankOffersForRequest(request, routes, model);
+  const hadResults = ranking.matches.length > 0;
+  // One open need per person and direction, enforced by a partial unique index: searching again updates it.
+  const [saved] = await database
+    .insert(tripRequest)
+    .values({ ...need, hadResults, communityId, passengerId: userId, direction: body.direction })
+    .onConflictDoUpdate({
+      target: [tripRequest.communityId, tripRequest.passengerId, tripRequest.direction],
+      targetWhere: eq(tripRequest.status, "open"),
+      set: { ...need, hadResults },
+    })
+    .returning({ id: tripRequest.id });
+
   const byId = new Map(rows.map((row) => [row.id, row]));
   const meetingPointNames = new Map(places.meetingPoints.map((point) => [point.id, point.name]));
 
   // For the coverage panel (US-030, US-031): only the outcome, never who searched or from where.
-  logEvent("search.completed", { communityId, hadResults: ranking.matches.length > 0 });
+  logEvent("search.completed", { communityId, hadResults });
 
   return {
     requestId: saved!.id,
@@ -231,8 +228,8 @@ export async function searchTrips(
         destinationName: destination.name,
         direction: offer.direction,
         departureTime: offer.departureTime,
-        seatsFree:
-          offer.seatsTotal - accepted.filter((booking) => booking.offerId === offer.id).length,
+        // Same count the engine uses for its seat check: accepted passengers.
+        seatsFree: offer.seatsTotal - (acceptedByOffer.get(offer.id)?.length ?? 0),
         meetingPointName: meetingPointNames.get(match.meetingPointId) ?? match.meetingPointId,
         pickupAt: match.pickupAt,
         arrivalAt: match.arrivalAt,

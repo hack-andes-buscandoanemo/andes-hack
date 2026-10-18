@@ -1,7 +1,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { expect, it } from "vitest";
 
-import { createOpenApiDocument, HealthResponseSchema } from "./index";
+import { createOpenApiDocument, HealthResponseSchema, searchTripsRoute } from "./index";
 
 it("generates the OpenAPI 3.1 contract from registered routes with the public API server and domain tags", () => {
   const doc = createOpenApiDocument();
@@ -113,5 +113,15 @@ it("passes verification when the committed openapi.json matches the generated ro
   expect(result).toEqual({
     ok: true,
     message: "OpenAPI document is up to date.",
+  });
+});
+
+it("documents the error responses of the search route with the shared error body", () => {
+  const doc = createOpenApiDocument([searchTripsRoute]);
+  const responses = doc.paths?.["/communities/{id}/search"]?.post?.responses ?? {};
+
+  expect(Object.keys(responses).sort()).toEqual(["200", "400", "401", "403", "409", "422"]);
+  expect(doc.components?.schemas?.ApiError).toMatchObject({
+    required: ["success", "status", "error"],
   });
 });

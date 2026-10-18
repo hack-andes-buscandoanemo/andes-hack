@@ -532,7 +532,11 @@ export const InfeasibleReasonSchema = z.enum([
   "detour_exceeded",
 ]);
 
-const clockTime = z.string().regex(/^\d{2}:\d{2}$/, "Ingresa una hora válida.");
+const clockTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Ingresa una hora válida.");
+
+// Calendar date in Lima (UTC−5, no daylight saving time); en-CA formats as YYYY-MM-DD.
+const todayInLima = () =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "America/Lima" }).format(new Date());
 
 export const SearchTripsBodySchema = z
   .object({
@@ -540,10 +544,17 @@ export const SearchTripsBodySchema = z
     originZoneId: z.string().min(1, "Selecciona tu zona."),
     windowStart: clockTime,
     windowEnd: clockTime,
-    daysOfWeek: z.array(z.number().int().min(1).max(7)).min(1).nullable().optional(),
+    daysOfWeek: z
+      .array(z.number().int().min(1).max(7))
+      .min(1)
+      .max(7)
+      .refine((days) => new Set(days).size === days.length, "No repitas los días.")
+      .nullable()
+      .optional(),
     date: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, "Ingresa una fecha válida.")
+      .refine((date) => date >= todayInLima(), "La fecha no puede ser anterior a hoy.")
       .nullable()
       .optional(),
     maxWalkMinutes: z.number().int().min(1).max(30).default(15),
@@ -589,6 +600,24 @@ export const SearchTripsResponseSchema = z
   })
   .openapi("SearchTripsResponse");
 
+// Body of every error the server answers: a readable Spanish message plus a stable `details.code`.
+export const ApiErrorSchema = z
+  .object({
+    success: z.literal(false),
+    status: z.number().int(),
+    error: z.string(),
+    details: z
+      .object({ code: z.string(), fields: z.array(z.string()).optional() })
+      .passthrough()
+      .optional(),
+  })
+  .openapi("ApiError");
+
+const apiErrorResponse = (description: string) => ({
+  description,
+  content: { "application/json": { schema: ApiErrorSchema } },
+});
+
 export const searchTripsRoute = createRoute({
   method: "post",
   path: "/communities/{id}/search",
@@ -612,6 +641,15 @@ export const searchTripsRoute = createRoute({
         },
       },
     },
+    400: apiErrorResponse("La zona elegida no existe (`zone_not_found`)"),
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    403: apiErrorResponse(
+      "No es miembro de la comunidad o no activó Solo mujeres (`women_only_not_allowed`)",
+    ),
+    409: apiErrorResponse(
+      "La sede de la comunidad no se puede usar para buscar (`unknown_destination`)",
+    ),
+    422: apiErrorResponse("Los datos enviados no son válidos (`validation_error`)"),
   },
 });
 
