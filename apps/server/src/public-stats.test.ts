@@ -484,6 +484,118 @@ describe("GET /public/communities/{slug}/stats", () => {
     expect(seen).toEqual(["public-stats:203.0.113.7"]);
   });
 
+  it("keys the limit on the first forwarded address when Cloudflare's header is missing", async () => {
+    await seedCommunity();
+    const seen: string[] = [];
+    const app = statsApp({
+      limit: async (identifier) => {
+        seen.push(identifier);
+        return { success: true, reset: 0 };
+      },
+    });
+
+    await app.request("/public/communities/alfa/stats", {
+      headers: { "x-forwarded-for": "198.51.100.4, 10.0.0.1" },
+    });
+    await app.request("/public/communities/alfa/stats", {
+      headers: { "x-real-ip": "198.51.100.9" },
+    });
+
+    expect(seen).toEqual(["public-stats:198.51.100.4", "public-stats:198.51.100.9"]);
+  });
+
+  it("does not rate limit a request whose address is unknown, so one bucket never locks everyone out", async () => {
+    await seedCommunity();
+    const limit = vi.fn(async () => ({ success: false, reset: 0 }));
+
+    const response = await statsApp({ limit }).request("/public/communities/alfa/stats");
+
+    expect(response.status).toBe(200);
+    expect(limit).not.toHaveBeenCalled();
+  });
+
+  it("answers from the database when the rate limiter is down", async () => {
+    const org = await seedCommunity();
+    await addMember(org.id, "ana");
+    const limit = async () => {
+      throw new Error("Redis unavailable");
+    };
+
+    const response = await statsApp({ limit }).request("/public/communities/alfa/stats", {
+      headers: { "cf-connecting-ip": "203.0.113.7" },
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ activity: { enrolled: 1 } });
+  });
+
+  it("answers 200 when the cache rejects the write", async () => {
+    await seedCommunity();
+    const cache = {
+      get: async () => null,
+      set: async () => {
+        throw new Error("Redis unavailable");
+      },
+    };
+
+    const response = await statsApp({ cache }).request("/public/communities/alfa/stats");
+
+    expect(response.status).toBe(200);
+  });
+
+  it("does not wait for a slow cache write to answer", async () => {
+    await seedCommunity();
+    const cache = { get: async () => null, set: () => new Promise<void>(() => undefined) };
+
+    const response = await statsApp({ cache }).request("/public/communities/alfa/stats");
+
+    expect(response.status).toBe(200);
+  });
+
+  it("shares one computation between concurrent requests for the same community", async () => {
+    const org = await seedCommunity();
+    await addMember(org.id, "ana");
+    const writes: string[] = [];
+    const cache = {
+      get: async () => null,
+      set: async (key: string) => {
+        writes.push(key);
+      },
+    };
+    const app = statsApp({ cache });
+
+    const responses = await Promise.all([
+      app.request("/public/communities/alfa/stats"),
+      app.request("/public/communities/alfa/stats"),
+    ]);
+
+    expect(responses.map((response) => response.status)).toEqual([200, 200]);
+    expect(writes).toHaveLength(1);
+  });
+
+  it("rejects a slug that no community can have", async () => {
+    const limit = vi.fn(allowEverything);
+    for (const slug of ["Alfa", "a_b", `a${"b".repeat(64)}`]) {
+      const response = await statsApp({ limit }).request(`/public/communities/${slug}/stats`);
+      expect(response.status).toBe(422);
+    }
+  });
+
+  it("remembers an unknown community for 30 seconds, so scans do not reach the database", async () => {
+    const clock = { now: NOW };
+    const app = statsApp({ cache: fakeCache(clock), now: () => clock.now });
+    expect((await app.request("/public/communities/alfa/stats")).status).toBe(404);
+
+    await seedCommunity();
+    clock.now = new Date(NOW.getTime() + 29_000);
+    const remembered = await app.request("/public/communities/alfa/stats");
+    expect(remembered.status).toBe(404);
+    expect(await remembered.json()).toMatchObject({ details: { code: "community_not_found" } });
+
+    clock.now = new Date(NOW.getTime() + 31_000);
+    expect((await app.request("/public/communities/alfa/stats")).status).toBe(200);
+  });
+
   it("serves the second call within 30 seconds from the cache and recomputes after", async () => {
     const org = await seedCommunity();
     await addMember(org.id, "ana");

@@ -103,6 +103,18 @@ describe("Panel", () => {
     expect(within(fcfs).getByText("Viajes en auto evitados").nextSibling).toHaveTextContent("5");
     expect(within(fcfs).getByText("Personas emparejadas").nextSibling).toHaveTextContent("7");
   });
+  it("says the comparison is missing until a matching run has been saved", async () => {
+    render(<Panel />);
+
+    const comparison = await screen.findByRole("region", {
+      name: "Optimizador vs. primero en llegar",
+    });
+
+    expect(
+      within(comparison).getByText("Aún no hay una comparación para esta comunidad."),
+    ).toBeInTheDocument();
+    expect(within(comparison).queryByRole("group")).not.toBeInTheDocument();
+  });
   it("finishes loading when there are no communities", async () => {
     communitiesResponse.mockResolvedValue([]);
     render(<Panel />);
@@ -294,5 +306,69 @@ describe("Panel", () => {
     expect(statsResponse).toHaveBeenLastCalledWith("/public/communities/comunidad-alfa/stats");
     expect(await screen.findByText("13")).toBeInTheDocument();
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("does not start a refresh while the previous one is still pending", async () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    render(<Panel />);
+    await screen.findByText("Personas inscritas");
+    statsResponse.mockReturnValue(new Promise(() => {}));
+
+    await act(async () => {
+      vi.advanceTimersByTime(30_000);
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(60_000);
+    });
+
+    expect(statsResponse).toHaveBeenCalledTimes(2);
+  });
+
+  it("ignores the answer of a community that is no longer selected", async () => {
+    let answerAlfa: (value: unknown) => void = () => {};
+    statsResponse.mockImplementation((url: string) =>
+      url.includes("comunidad-alfa")
+        ? new Promise((resolve) => (answerAlfa = resolve))
+        : Promise.resolve({ ...STATS, activity: { ...STATS.activity, enrolled: 77 } }),
+    );
+    render(<Panel />);
+    await userEvent.selectOptions(
+      await screen.findByRole("combobox", { name: "Comunidad" }),
+      "Beta",
+    );
+    expect(await screen.findByText("77")).toBeInTheDocument();
+
+    await act(async () => answerAlfa(STATS));
+
+    expect(screen.getByText("77")).toBeInTheDocument();
+    expect(screen.queryByText("12")).not.toBeInTheDocument();
+  });
+
+  it("pauses the refresh while the tab is hidden and resumes when it is visible", async () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    const visibility = vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
+    render(<Panel />);
+    await screen.findByText("Personas inscritas");
+    const initial = statsResponse.mock.calls.length;
+
+    await act(async () => {
+      vi.advanceTimersByTime(90_000);
+    });
+    expect(statsResponse).toHaveBeenCalledTimes(initial);
+
+    visibility.mockReturnValue("visible");
+    await act(async () => {
+      vi.advanceTimersByTime(30_000);
+    });
+    expect(statsResponse).toHaveBeenCalledTimes(initial + 1);
+    visibility.mockRestore();
+  });
+
+  it("announces only the update time politely, not the whole panel on every refresh", async () => {
+    render(<Panel />);
+    const stamp = await screen.findByText("Actualizado a las 10:04:05 (hora del servidor)");
+
+    expect(stamp).toHaveAttribute("aria-live", "polite");
+    expect(screen.getByText("Personas inscritas").closest("[aria-live]")).toBeNull();
   });
 });
