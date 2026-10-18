@@ -1592,6 +1592,19 @@ export interface components {
       seatsFree: number | null;
       pendingRequests: number | null;
       acceptedPassengers: string[] | null;
+      passengerRequest?: {
+        /** Format: uuid */
+        communityId: string;
+        originZoneId: string;
+        date: string | null;
+        daysOfWeek: number[] | null;
+        /** @enum {string} */
+        fallbackMode: "drive_alone" | "taxi_app" | "public_transport" | "picked_up" | "other";
+        returnWindow: {
+          start: string;
+          end: string;
+        } | null;
+      };
       fuelEstimate: components["schemas"]["FuelEstimate"];
     };
     RequestSeatResponse: {
