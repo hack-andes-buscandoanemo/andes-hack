@@ -1,0 +1,202 @@
+"use client";
+
+import { isAxiosError } from "axios";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import EmptyState from "@/components/empty-state";
+import { Button } from "@/components/ui/button";
+import { communitiesApi, type OfferDetail } from "@/lib/communities-api";
+
+import { clockLabel } from "../../buscar/schedule";
+
+function initialsOf(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]!.toUpperCase())
+    .join("");
+}
+
+// The server answers in Spanish ("Ya solicitaste un asiento en este viaje."); fall back when it does not.
+function reasonOf(failure: unknown, fallback: string) {
+  const reason = isAxiosError(failure) ? failure.response?.data?.error : undefined;
+  return typeof reason === "string" ? reason : fallback;
+}
+
+// ISO weekdays: [1,2,3,4,5] -> "Lunes a viernes".
+function daysLabel(days: number[]) {
+  return days.join() === "1,2,3,4,5" ? "Lunes a viernes" : days.join(", ");
+}
+
+export default function TripDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const [detail, setDetail] = useState<OfferDetail | null>(null);
+  const [message, setMessage] = useState("");
+  const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    communitiesApi
+      .getOfferDetail(id)
+      .then((loaded) => {
+        if (active) setDetail(loaded);
+      })
+      .catch((failure: unknown) => {
+        if (active)
+          setLoadError(reasonOf(failure, "No pudimos cargar este viaje. Inténtalo de nuevo."));
+      });
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  if (loadError) {
+    return (
+      <main className="mx-auto w-full max-w-md px-4 py-6">
+        <p
+          role="alert"
+          className="rounded-2xl border bg-card p-4 text-sm font-medium text-destructive"
+        >
+          {loadError}
+        </p>
+      </main>
+    );
+  }
+  if (!detail) return null;
+
+  async function submit() {
+    if (sending) return;
+    setSending(true);
+    setError(null);
+    try {
+      await communitiesApi.requestSeat(id, message || undefined);
+      setSent(true);
+    } catch (failure) {
+      setError(reasonOf(failure, "No pudimos enviar tu solicitud. Inténtalo de nuevo."));
+    } finally {
+      setSending(false);
+    }
+  }
+
+  let action: React.ReactNode = null;
+  if (detail.isOwn) action = null;
+  else if (detail.booking?.status === "accepted")
+    action = <EmptyState>{`${detail.driverName} aceptó tu solicitud.`}</EmptyState>;
+  else if (sent || detail.booking?.status === "pending")
+    action = (
+      <EmptyState>{`Solicitud enviada. Te avisaremos cuando ${detail.driverName} responda.`}</EmptyState>
+    );
+  else if (detail.seatsFree <= 0)
+    action = <EmptyState>Este viaje ya no tiene asientos libres.</EmptyState>;
+  else
+    action = (
+      <form
+        className="space-y-3"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void submit();
+        }}
+      >
+        <label className="block space-y-1 text-sm font-medium">
+          Mensaje para el conductor (opcional)
+          <textarea
+            value={message}
+            maxLength={280}
+            onChange={(event) => setMessage(event.target.value)}
+            className="block w-full rounded-lg border border-input bg-background p-2 font-normal"
+          />
+        </label>
+        {error ? (
+          <p role="alert" className="text-sm font-medium text-destructive">
+            {error}
+          </p>
+        ) : null}
+        <Button type="submit" disabled={sending} className="h-11 w-full rounded-xl font-bold">
+          Solicitar asiento
+        </Button>
+      </form>
+    );
+
+  const outbound = detail.direction === "outbound";
+  const from = outbound ? detail.originZoneName : detail.destinationName;
+  const to = outbound ? detail.destinationName : detail.originZoneName;
+  const { match } = detail;
+  return (
+    <main className="mx-auto w-full max-w-md space-y-4 px-4 py-6">
+      <h1 className="text-2xl font-extrabold">Detalle del viaje</h1>
+      <section className="flex items-center gap-3 rounded-2xl border bg-card p-4 shadow-sm">
+        <span
+          aria-hidden
+          className="flex size-12 shrink-0 items-center justify-center rounded-full bg-brand-black font-bold text-white"
+        >
+          {initialsOf(detail.driverName)}
+        </span>
+        <div>
+          <p className="font-bold">{detail.driverName}</p>
+          <p className="w-fit rounded-full bg-brand-yellow px-2.5 py-0.5 text-xs font-bold text-brand-black">
+            Miembro verificado
+          </p>
+          <p className="text-xs text-muted-foreground">{detail.communityName}</p>
+        </div>
+      </section>
+      <section className="space-y-1 rounded-2xl border bg-card p-4 shadow-sm">
+        <p className="font-semibold">{`${from} → ${to}`}</p>
+        {detail.daysOfWeek ? <p className="text-sm">{daysLabel(detail.daysOfWeek)}</p> : null}
+        <p className="text-sm">{`Salida: ${clockLabel(detail.departureTime.slice(0, 5))}`}</p>
+        {match ? (
+          <>
+            <p className="text-sm">{`Llegada estimada: ${clockLabel(match.arrivalAt)}`}</p>
+            <div className="rounded-xl bg-brand-yellow/30 p-2 text-sm">
+              <p className="text-xs font-bold">Tu punto de encuentro</p>
+              <p>{match.meetingPointName}</p>
+              <p>{`Recogida: ${clockLabel(match.pickupAt)}`}</p>
+            </div>
+          </>
+        ) : null}
+      </section>
+      <section className="space-y-1 rounded-2xl border bg-card p-4 text-sm shadow-sm">
+        <p>
+          {detail.seatsFree === 1
+            ? "1 asiento disponible"
+            : `${detail.seatsFree} asientos disponibles`}
+        </p>
+        {match ? <p>{`Desvío estimado: ${match.detourMinutes} min`}</p> : null}
+        {detail.vehicle ? (
+          <>
+            <p>{`Vehículo: ${detail.vehicle.make} ${detail.vehicle.model}`}</p>
+            <p>
+              {detail.vehicle.plate
+                ? `Placa: ${detail.vehicle.plate}`
+                : "La placa se muestra cuando el conductor acepte."}
+            </p>
+          </>
+        ) : null}
+      </section>
+      <section className="space-y-2 rounded-2xl border bg-card p-4 text-sm shadow-sm">
+        <h2 className="font-bold">Seguridad del viaje</h2>
+        <ul className="space-y-1">
+          <li>Miembro verificado</li>
+          {detail.vehicle ? <li>Vehículo registrado</li> : null}
+          {detail.vehicle ? <li>Info del vehículo disponible</li> : null}
+        </ul>
+      </section>
+      {detail.note ? (
+        <section className="rounded-2xl border bg-card p-4 text-sm shadow-sm">
+          <h2 className="font-bold">Nota del conductor</h2>
+          <p>{detail.note}</p>
+        </section>
+      ) : null}
+      {action}
+      <EmptyState>
+        <span className="block">Espera máxima: 3 min</span>
+        <span className="block">Sin tarifa: Te Jalo no cobra</span>
+        <span className="block">Puedes cancelar cuando quieras</span>
+      </EmptyState>
+    </main>
+  );
+}

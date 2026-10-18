@@ -108,6 +108,21 @@ describe("search page /buscar (US-013)", () => {
     expect(screen.queryByText(/%/)).not.toBeInTheDocument();
   });
 
+  it("links each result to the trip detail", async () => {
+    searchTrips.mockResolvedValue({
+      requestId: "33333333-3333-4333-8333-333333333333",
+      matches: [MATCH],
+      reason: null,
+    });
+
+    await searchFromSanBorja();
+
+    expect(await screen.findByRole("link", { name: "Ver viaje" })).toHaveAttribute(
+      "href",
+      "/viajes/22222222-2222-4222-8222-222222222222",
+    );
+  });
+
   it.each([
     ["outside_time_window", "Ningún conductor sale en ese horario"],
     ["no_seats", "Los viajes cercanos ya están llenos"],

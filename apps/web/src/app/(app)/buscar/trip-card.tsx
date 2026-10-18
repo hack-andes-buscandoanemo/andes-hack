@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import type { TripMatch } from "@/lib/communities-api";
 
 import { clockLabel } from "./schedule";
@@ -55,6 +57,9 @@ export default function TripCard({
         <li className="rounded-full bg-muted px-2.5 py-0.5">{`${match.walkMinutes} min a pie`}</li>
         <li className="rounded-full bg-muted px-2.5 py-0.5">{`Llega ${match.arrivalAt}`}</li>
       </ul>
+      <Link href={`/viajes/${match.offerId}`} className="w-fit text-sm font-bold underline">
+        Ver viaje
+      </Link>
     </li>
   );
 }

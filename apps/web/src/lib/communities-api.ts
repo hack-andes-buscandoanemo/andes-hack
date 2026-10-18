@@ -15,6 +15,8 @@ export type CreateTripOfferResponse = components["schemas"]["CreateTripOfferResp
 export type SearchTripsRequest = components["schemas"]["SearchTripsRequest"];
 export type SearchTripsResponse = components["schemas"]["SearchTripsResponse"];
 export type TripMatch = components["schemas"]["TripMatch"];
+export type OfferDetail = components["schemas"]["OfferDetail"];
+export type RequestSeatResponse = components["schemas"]["RequestSeatResponse"];
 
 export const communitiesApi = {
   async listCommunities(): Promise<CommunitySummary[]> {
@@ -105,6 +107,17 @@ export const communitiesApi = {
     const response = await httpClient.post(
       `/communities/${communityId}/search` as "/communities/{id}/search",
       payload,
+    );
+    return response.data;
+  },
+  async getOfferDetail(offerId: string): Promise<OfferDetail> {
+    const response = await httpClient.get(`/offers/${offerId}` as "/offers/{id}");
+    return response.data;
+  },
+  async requestSeat(offerId: string, message?: string): Promise<RequestSeatResponse> {
+    const response = await httpClient.post(
+      `/offers/${offerId}/bookings` as "/offers/{id}/bookings",
+      { message },
     );
     return response.data;
   },
