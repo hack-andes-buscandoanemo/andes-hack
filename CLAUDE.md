@@ -282,6 +282,7 @@ andes-hack/
 - `bun db:studio` - Open database UI
 - `bun db:generate` - Generate database migrations
 - `bun db:migrate` - Run database migrations
+- `bun db:seed` - Load the real Lima places and the demo community (idempotent; needs `DEMO_JOIN_CODE` and `DEMO_ADMIN_EMAIL`)
 
 ## Better Fullstack project context
 

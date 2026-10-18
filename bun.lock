@@ -163,6 +163,7 @@
       },
       "devDependencies": {
         "@andes-hack/config": "workspace:*",
+        "@andes-hack/matching": "workspace:*",
         "@electric-sql/pglite": "0.5.8",
         "drizzle-kit": "^0.31.11",
         "typescript": "^6.0.3",
@@ -195,6 +196,14 @@
         "@andes-hack/config": "workspace:*",
         "alchemy": "catalog:",
         "typescript": "^6.0.3",
+      },
+    },
+    "packages/matching": {
+      "name": "@andes-hack/matching",
+      "devDependencies": {
+        "@andes-hack/config": "workspace:*",
+        "typescript": "^6.0.3",
+        "vitest": "catalog:",
       },
     },
   },
@@ -232,6 +241,8 @@
     "@andes-hack/env": ["@andes-hack/env@workspace:packages/env"],
 
     "@andes-hack/infra": ["@andes-hack/infra@workspace:packages/infra"],
+
+    "@andes-hack/matching": ["@andes-hack/matching@workspace:packages/matching"],
 
     "@asamuzakjp/css-color": ["@asamuzakjp/css-color@5.1.11", "", { "dependencies": { "@asamuzakjp/generational-cache": "^1.0.1", "@csstools/css-calc": "^3.2.0", "@csstools/css-color-parser": "^4.1.0", "@csstools/css-parser-algorithms": "^4.0.0", "@csstools/css-tokenizer": "^4.0.0" } }, "sha512-KVw6qIiCTUQhByfTd78h2yD1/00waTmm9uy/R7Ck/ctUyAPj+AEDLkQIdJW0T8+qGgj3j5bpNKK7Q3G+LedJWg=="],
 
