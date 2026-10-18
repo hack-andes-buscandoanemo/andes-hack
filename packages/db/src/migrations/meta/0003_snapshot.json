@@ -1,5 +1,5 @@
 {
-  "id": "132d8642-9229-41aa-b0c6-c4023ba8940d",
+  "id": "c4974696-286d-4e3d-8263-e03d7719bd0d",
   "prevId": "bc1d8af3-ad7f-4e7c-a4f8-7a93a3e61d8c",
   "version": "7",
   "dialect": "postgresql",
@@ -110,12 +110,8 @@
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -202,12 +198,8 @@
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -217,9 +209,7 @@
         "session_token_unique": {
           "name": "session_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
+          "columns": ["token"]
         }
       },
       "policies": {},
@@ -283,9 +273,7 @@
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -449,9 +437,7 @@
         "community_slug_unique": {
           "name": "community_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -593,12 +579,8 @@
           "name": "community_member_community_id_community_id_fk",
           "tableFrom": "community_member",
           "tableTo": "community",
-          "columnsFrom": [
-            "community_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["community_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -606,12 +588,8 @@
           "name": "community_member_user_id_user_id_fk",
           "tableFrom": "community_member",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -621,10 +599,7 @@
         "community_member_community_id_user_id_unique": {
           "name": "community_member_community_id_user_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "community_id",
-            "user_id"
-          ]
+          "columns": ["community_id", "user_id"]
         }
       },
       "policies": {},
@@ -685,12 +660,8 @@
           "name": "meeting_point_zone_id_zone_id_fk",
           "tableFrom": "meeting_point",
           "tableTo": "zone",
-          "columnsFrom": [
-            "zone_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["zone_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -903,12 +874,8 @@
           "name": "seat_booking_offer_id_trip_offer_id_fk",
           "tableFrom": "seat_booking",
           "tableTo": "trip_offer",
-          "columnsFrom": [
-            "offer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["offer_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -916,12 +883,8 @@
           "name": "seat_booking_request_id_trip_request_id_fk",
           "tableFrom": "seat_booking",
           "tableTo": "trip_request",
-          "columnsFrom": [
-            "request_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["request_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -929,12 +892,8 @@
           "name": "seat_booking_passenger_id_user_id_fk",
           "tableFrom": "seat_booking",
           "tableTo": "user",
-          "columnsFrom": [
-            "passenger_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["passenger_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -942,12 +901,8 @@
           "name": "seat_booking_meeting_point_id_meeting_point_id_fk",
           "tableFrom": "seat_booking",
           "tableTo": "meeting_point",
-          "columnsFrom": [
-            "meeting_point_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["meeting_point_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1115,12 +1070,8 @@
           "name": "trip_offer_community_id_community_id_fk",
           "tableFrom": "trip_offer",
           "tableTo": "community",
-          "columnsFrom": [
-            "community_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["community_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1128,12 +1079,8 @@
           "name": "trip_offer_driver_id_user_id_fk",
           "tableFrom": "trip_offer",
           "tableTo": "user",
-          "columnsFrom": [
-            "driver_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["driver_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1141,12 +1088,8 @@
           "name": "trip_offer_vehicle_id_vehicle_id_fk",
           "tableFrom": "trip_offer",
           "tableTo": "vehicle",
-          "columnsFrom": [
-            "vehicle_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["vehicle_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1154,12 +1097,8 @@
           "name": "trip_offer_origin_zone_id_zone_id_fk",
           "tableFrom": "trip_offer",
           "tableTo": "zone",
-          "columnsFrom": [
-            "origin_zone_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["origin_zone_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1272,12 +1211,6 @@
           "notNull": true,
           "default": "'open'"
         },
-        "had_results": {
-          "name": "had_results",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -1323,34 +1256,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "trip_request_open_need_idx": {
-          "name": "trip_request_open_need_idx",
-          "columns": [
-            {
-              "expression": "community_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "passenger_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "direction",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "where": "\"trip_request\".\"status\" = 'open'",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -1358,12 +1263,8 @@
           "name": "trip_request_community_id_community_id_fk",
           "tableFrom": "trip_request",
           "tableTo": "community",
-          "columnsFrom": [
-            "community_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["community_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1371,12 +1272,8 @@
           "name": "trip_request_passenger_id_user_id_fk",
           "tableFrom": "trip_request",
           "tableTo": "user",
-          "columnsFrom": [
-            "passenger_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["passenger_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1384,12 +1281,8 @@
           "name": "trip_request_origin_zone_id_zone_id_fk",
           "tableFrom": "trip_request",
           "tableTo": "zone",
-          "columnsFrom": [
-            "origin_zone_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["origin_zone_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1493,12 +1386,8 @@
           "name": "vehicle_owner_id_user_id_fk",
           "tableFrom": "vehicle",
           "tableTo": "user",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1508,9 +1397,7 @@
         "vehicle_plate_unique": {
           "name": "vehicle_plate_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "plate"
-          ]
+          "columns": ["plate"]
         }
       },
       "policies": {},
@@ -1525,35 +1412,115 @@
         }
       },
       "isRLSEnabled": false
+    },
+    "public.waitlist_entry": {
+      "name": "waitlist_entry",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "kind": {
+          "name": "kind",
+          "type": "waitlist_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "institution": {
+          "name": "institution",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "on_site_count": {
+          "name": "on_site_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "wants_pilot": {
+          "name": "wants_pilot",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "consent": {
+          "name": "consent",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "waitlist_entry_kind_email_idx": {
+          "name": "waitlist_entry_kind_email_idx",
+          "columns": [
+            {
+              "expression": "kind",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     }
   },
   "enums": {
     "public.community_kind": {
       "name": "community_kind",
       "schema": "public",
-      "values": [
-        "company",
-        "university",
-        "public_entity",
-        "event"
-      ]
+      "values": ["company", "university", "public_entity", "event"]
     },
     "public.member_role": {
       "name": "member_role",
       "schema": "public",
-      "values": [
-        "member",
-        "admin"
-      ]
+      "values": ["member", "admin"]
     },
     "public.travel_role": {
       "name": "travel_role",
       "schema": "public",
-      "values": [
-        "driver",
-        "passenger",
-        "both"
-      ]
+      "values": ["driver", "passenger", "both"]
     },
     "public.usual_mode": {
       "name": "usual_mode",
@@ -1570,22 +1537,12 @@
     "public.verification_method": {
       "name": "verification_method",
       "schema": "public",
-      "values": [
-        "join_code",
-        "email_domain"
-      ]
+      "values": ["join_code", "email_domain"]
     },
     "public.meeting_point_kind": {
       "name": "meeting_point_kind",
       "schema": "public",
-      "values": [
-        "park",
-        "mall",
-        "rail_station",
-        "bus_stop",
-        "venue",
-        "other"
-      ]
+      "values": ["park", "mall", "rail_station", "bus_stop", "venue", "other"]
     },
     "public.booking_status": {
       "name": "booking_status",
@@ -1603,39 +1560,27 @@
     "public.fallback_mode": {
       "name": "fallback_mode",
       "schema": "public",
-      "values": [
-        "drive_alone",
-        "taxi_app",
-        "public_transport",
-        "picked_up",
-        "other"
-      ]
+      "values": ["drive_alone", "taxi_app", "public_transport", "picked_up", "other"]
     },
     "public.offer_status": {
       "name": "offer_status",
       "schema": "public",
-      "values": [
-        "active",
-        "paused",
-        "cancelled"
-      ]
+      "values": ["active", "paused", "cancelled"]
     },
     "public.request_status": {
       "name": "request_status",
       "schema": "public",
-      "values": [
-        "open",
-        "matched",
-        "cancelled"
-      ]
+      "values": ["open", "matched", "cancelled"]
     },
     "public.trip_direction": {
       "name": "trip_direction",
       "schema": "public",
-      "values": [
-        "outbound",
-        "return"
-      ]
+      "values": ["outbound", "return"]
+    },
+    "public.waitlist_kind": {
+      "name": "waitlist_kind",
+      "schema": "public",
+      "values": ["institution", "individual"]
     }
   },
   "schemas": {},
