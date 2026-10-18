@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "test": "vitest run --passWithNoTests",
-    "codegen:openapi": "bun -e \"const s = process.env.OPENAPI_SCHEMA_URL || '../../packages/api/src/openapi.json'; Bun.spawnSync(['bunx', 'openapi-typescript', s, '-o', 'src/lib/api-schema.d.ts'], { stdio: ['inherit', 'inherit', 'inherit'] })\""
+    "codegen:openapi": "bun -e \"const s = process.env.OPENAPI_SCHEMA_URL || '../../packages/api/src/openapi.json'; const r = Bun.spawnSync(['bunx', 'openapi-typescript', s, '-o', 'src/lib/api-schema.d.ts'], { stdio: ['inherit', 'inherit', 'inherit'] }); process.exit(r.exitCode ?? 1)\""
   },
   "dependencies": {
     "@andes-hack/api": "workspace:*",
