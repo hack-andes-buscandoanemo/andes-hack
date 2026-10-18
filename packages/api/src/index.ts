@@ -872,6 +872,48 @@ export const VoiceSearchResponseSchema = z.object({
 export type VoiceSearchFields = z.infer<typeof VoiceSearchFieldsSchema>;
 export type VoiceSearchResponse = z.infer<typeof VoiceSearchResponseSchema>;
 
+// What the driver said when they dictated the offer of a trip, as the fields of that form.
+export const VoiceOfferFieldsSchema = z.object({
+  origin: z.string().nullable(),
+  originIsCurrentLocation: z.boolean(),
+  destination: z.string().nullable(),
+  departureTime: clockTime.nullable(),
+  // A trip that repeats on some weekdays, or a single day.
+  when: z.enum(["recurring", "single"]).nullable(),
+  days: z.array(z.number().int().min(1).max(7)),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable(),
+  seatsTotal: z.number().int().min(1).max(6).nullable(),
+  priceSoles: z.number().min(0).max(200).nullable(),
+  paymentMethods: z.array(PaymentMethodSchema),
+  womenOnly: z.boolean().nullable(),
+  maxDetourMinutes: z.union([z.literal(0), z.literal(5), z.literal(10)]).nullable(),
+  note: z.string().max(280).nullable(),
+});
+export const VoiceOfferResponseSchema = z.object({
+  text: z.string(),
+  fields: VoiceOfferFieldsSchema,
+});
+// What the driver said when they dictated the car they register, as the fields of that form.
+export const VoiceVehicleFieldsSchema = z.object({
+  // Letters and digits as the plate reads, e.g. "ABC-123".
+  plate: z.string().nullable(),
+  // Brand and model together, e.g. "Toyota Corolla".
+  makeModel: z.string().nullable(),
+  color: z.string().nullable(),
+  seats: z.number().int().min(1).max(6).nullable(),
+});
+export const VoiceVehicleResponseSchema = z.object({
+  text: z.string(),
+  fields: VoiceVehicleFieldsSchema,
+});
+export type VoiceVehicleResponse = z.infer<typeof VoiceVehicleResponseSchema>;
+
+export type VoiceOfferFields = z.infer<typeof VoiceOfferFieldsSchema>;
+export type VoiceOfferResponse = z.infer<typeof VoiceOfferResponseSchema>;
+
 export const SearchTripsResponseSchema = z
   .object({
     // The passenger's saved need, one per direction; kept even when nothing matched.

@@ -1,5 +1,13 @@
-import { VoiceSearchResponseSchema, type VoiceSearchResponse } from "@andes-hack/api";
+import {
+  VoiceOfferResponseSchema,
+  VoiceSearchResponseSchema,
+  VoiceVehicleResponseSchema,
+  type VoiceOfferResponse,
+  type VoiceSearchResponse,
+  type VoiceVehicleResponse,
+} from "@andes-hack/api";
 import { env } from "@andes-hack/env/web";
+import type { ZodType } from "zod";
 
 // A failure the person can read as it is.
 export class VoiceError extends Error {}
@@ -8,18 +16,20 @@ const extensionOf = (type: string) =>
   type.includes("mp4") ? "mp4" : type.includes("ogg") ? "ogg" : "webm";
 
 // Sends the recording to the server, which transcribes it with Whisper and returns the fields
-// of the search form the person dictated. The key of OpenAI stays on the server.
-export async function dictateSearch(
+// of the form the person dictated. The key of OpenAI stays on the server.
+async function dictate<T>(
+  kind: "search" | "offer" | "vehicle",
+  schema: ZodType<T>,
   audio: Blob,
   headquarters?: string,
-): Promise<VoiceSearchResponse> {
+): Promise<T> {
   const form = new FormData();
   form.append("audio", audio, `voz.${extensionOf(audio.type)}`);
   if (headquarters) form.append("headquarters", headquarters);
 
   let response: Response;
   try {
-    response = await fetch(`${env.NEXT_PUBLIC_SERVER_URL}/voice/search`, {
+    response = await fetch(`${env.NEXT_PUBLIC_SERVER_URL}/voice/${kind}`, {
       method: "POST",
       body: form,
       credentials: "include",
@@ -35,8 +45,17 @@ export async function dictateSearch(
       typeof message === "string" ? message : "No pudimos procesar tu voz. Inténtalo de nuevo.",
     );
   }
-  const parsed = VoiceSearchResponseSchema.safeParse(body);
+  const parsed = schema.safeParse(body);
   if (!parsed.success)
     throw new VoiceError("No pudimos entender la respuesta. Inténtalo de nuevo.");
   return parsed.data;
 }
+
+export const dictateSearch = (audio: Blob, headquarters?: string): Promise<VoiceSearchResponse> =>
+  dictate("search", VoiceSearchResponseSchema, audio, headquarters);
+
+export const dictateVehicle = (audio: Blob): Promise<VoiceVehicleResponse> =>
+  dictate("vehicle", VoiceVehicleResponseSchema, audio);
+
+export const dictateOffer = (audio: Blob, headquarters?: string): Promise<VoiceOfferResponse> =>
+  dictate("offer", VoiceOfferResponseSchema, audio, headquarters);

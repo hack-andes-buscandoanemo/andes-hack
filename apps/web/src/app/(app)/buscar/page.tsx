@@ -12,6 +12,7 @@ import PlacePicker from "@/components/place-picker";
 import SearchRouteMap from "@/components/search-route-map";
 import { Button } from "@/components/ui/button";
 import VoiceFab from "@/components/voice-fab";
+import { dictateSearch } from "@/lib/voice-api";
 import {
   communitiesApi,
   type MembershipSummary,
@@ -240,7 +241,13 @@ export default function SearchPage() {
   return (
     <main className="flex flex-col gap-6 px-4 pt-2 pb-6">
       <PageHeader title="Buscar viaje" description="Encuentra personas que van en tu dirección" />
-      <VoiceFab headquarters={membership?.destinationName} onResult={applyVoice} />
+      <VoiceFab
+        hint="“De Parque Kennedy a la sede, mañana de siete a ocho de la mañana”"
+        process={async (audio) => {
+          const result = await dictateSearch(audio, membership?.destinationName);
+          return { heard: result.text, notes: await applyVoice(result) };
+        }}
+      />
       {membership ? (
         <CommunityContext
           communityName={membership.communityName}
