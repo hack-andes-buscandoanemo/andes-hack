@@ -1,21 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import EmptyState from "@/components/empty-state";
+import PlacePicker from "@/components/place-picker";
 import SearchRouteMap from "@/components/search-route-map";
 import { Button } from "@/components/ui/button";
 import {
   communitiesApi,
   type MembershipSummary,
   type SearchTripsResponse,
-  type ZoneSummary,
 } from "@/lib/communities-api";
-import { findPlace } from "@/lib/geo";
+import { streetAt, type Place } from "@/lib/geo";
 
 import { addDays, clockLabel, limaToday, shiftClock, TIME_SLOTS, WEEKDAYS } from "./schedule";
 import { FALLBACK_FOR_USUAL_MODE, FALLBACK_OPTIONS, REASON_MESSAGES } from "./reasons";
-import { parseReturnPrefill, type ReturnPrefill } from "./return-prefill";
 import { FUEL_NOTE } from "@/components/fuel-estimate";
 
 import TripCard from "./trip-card";
@@ -26,36 +25,19 @@ const selectClass =
 type DayChoice = "today" | "tomorrow" | "other" | "days";
 
 export default function SearchPage() {
-  const initialSearch = useRef<ReturnPrefill | null>(null);
   const [memberships, setMemberships] = useState<MembershipSummary[]>([]);
   const [communityId, setCommunityId] = useState("");
-  const [zones, setZones] = useState<ZoneSummary[]>([]);
-  const [zoneId, setZoneId] = useState("");
-  // Where the person is now, when they let the app use their location; the server turns it into
-  // the nearest zone and the coordinates are not kept.
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [locating, setLocating] = useState(false);
-  // Where the person is going, when it is not the community's headquarters; kept only on screen.
-  const [destination, setDestination] = useState<{
-    lat: number;
-    lng: number;
-    name: string;
-  } | null>(null);
-  const [destinationQuery, setDestinationQuery] = useState("");
-  const [findingDestination, setFindingDestination] = useState(false);
-  const [destinationError, setDestinationError] = useState<string | null>(null);
+  // Where the person leaves from and where they are going, chosen on the map. The origin starts
+  // as the device's location when it is allowed; neither is kept after the search.
+  const [origin, setOrigin] = useState<Place | null>(null);
+  const [destination, setDestination] = useState<Place | null>(null);
   const [mapOfferId, setMapOfferId] = useState<string | null>(null);
-  const [outbound, setOutbound] = useState(true);
   const [dayChoice, setDayChoice] = useState<DayChoice>("today");
   const [days, setDays] = useState<number[]>([]);
   const [otherDate, setOtherDate] = useState("");
   const [windowStart, setWindowStart] = useState("07:30");
   const [windowEnd, setWindowEnd] = useState("08:30");
   const [result, setResult] = useState<SearchTripsResponse | null>(null);
-  const [completedSearch, setCompletedSearch] = useState<{
-    outbound: boolean;
-    fallback: string;
-  } | null>(null);
   const [fallbackMode, setFallbackMode] =
     useState<(typeof FALLBACK_OPTIONS)[number]["value"]>("other");
   const [womenOnly, setWomenOnly] = useState(false);
@@ -63,7 +45,6 @@ export default function SearchPage() {
   const [error, setError] = useState<string | null>(null);
   const [dateError, setDateError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [prefillNotice, setPrefillNotice] = useState(false);
 
   const membership = memberships.find((item) => item.communityId === communityId) ?? null;
 
@@ -75,13 +56,8 @@ export default function SearchPage() {
         const first = me.memberships[0];
         if (!active || !first) return;
         const query = new URLSearchParams(window.location.search);
-        const linkedMembership = me.memberships.find(
-          (item) => item.communityId === query.get("communityId"),
-        );
-        const selected = linkedMembership ?? first;
-        const linkedReturn = linkedMembership && query.get("direction") === "return";
-        initialSearch.current = linkedReturn ? parseReturnPrefill(query) : null;
-        if (linkedReturn && !initialSearch.current) setPrefillNotice(true);
+        const selected =
+          me.memberships.find((item) => item.communityId === query.get("communityId")) ?? first;
         setMemberships(me.memberships);
         setCommunityId(selected.communityId);
         setFallbackMode(FALLBACK_FOR_USUAL_MODE[selected.usualMode ?? "other"] ?? "other");
@@ -96,51 +72,23 @@ export default function SearchPage() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!communityId) return;
-    let active = true;
-    communitiesApi
-      .listCommunityZones(communityId)
-      .then((list) => {
-        if (!active) return;
-        setZones(list);
-        const prefill = initialSearch.current;
-        initialSearch.current = null;
-        if (!prefill) return;
-        if (
-          prefill.communityId !== communityId ||
-          !list.some((zone) => zone.id === prefill.originZoneId)
-        ) {
-          setPrefillNotice(true);
-          return;
-        }
-        setOutbound(false);
-        setZoneId(prefill.originZoneId);
-        setWindowStart(prefill.windowStart);
-        setWindowEnd(prefill.windowEnd);
-        setFallbackMode(prefill.fallbackMode);
-        setDayChoice(prefill.date ? "other" : "days");
-        setOtherDate(prefill.date ?? "");
-        setDays(prefill.days);
-      })
-      .catch(() => {
-        if (active) setLoadError("No pudimos cargar tus zonas. Inténtalo de nuevo.");
-      });
-    return () => {
-      active = false;
-    };
-  }, [communityId]);
-
-  // The location is asked for as soon as the screen opens; a refusal leaves the zone list.
+  // The location is asked for as soon as the screen opens; a refusal leaves the box to write.
   useEffect(() => {
     if (!("geolocation" in navigator)) return;
     let active = true;
     navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        if (active) setLocation({ lat: coords.latitude, lng: coords.longitude });
+      async ({ coords }) => {
+        const point = { lat: coords.latitude, lng: coords.longitude };
+        const street = await streetAt(point);
+        if (!active) return;
+        // A place the person already wrote is not replaced.
+        setOrigin(
+          (current) =>
+            current ?? { ...point, label: street ? `Mi ubicación, ${street}` : "Mi ubicación" },
+        );
       },
       () => {
-        // Denied or unavailable: the person picks their zone.
+        // Denied or unavailable: the person writes where they are.
       },
       { enableHighAccuracy: true, timeout: 10_000 },
     );
@@ -148,44 +96,6 @@ export default function SearchPage() {
       active = false;
     };
   }, []);
-
-  async function fixDestination() {
-    const text = destinationQuery.trim();
-    if (!text || findingDestination) return;
-    setFindingDestination(true);
-    setDestinationError(null);
-    try {
-      const place = await findPlace(text);
-      if (place) setDestination(place);
-      else setDestinationError("No encontramos ese lugar en Lima. Prueba con otra dirección.");
-    } catch {
-      setDestinationError("No pudimos buscar ese lugar ahora. Inténtalo de nuevo.");
-    } finally {
-      setFindingDestination(false);
-    }
-  }
-
-  function useMyLocation() {
-    if (locating) return;
-    if (!("geolocation" in navigator)) {
-      setError("Tu navegador no permite usar la ubicación. Elige tu zona de la lista.");
-      return;
-    }
-    setError(null);
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        setLocation({ lat: coords.latitude, lng: coords.longitude });
-        setZoneId("");
-        setLocating(false);
-      },
-      () => {
-        setError("No pudimos obtener tu ubicación. Elige tu zona de la lista.");
-        setLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 10_000 },
-    );
-  }
 
   function tripDate() {
     if (dayChoice === "days") return null;
@@ -195,8 +105,8 @@ export default function SearchPage() {
 
   async function handleSearch(range = { start: windowStart, end: windowEnd }) {
     if (!membership || searching) return;
-    if (!zoneId && !location) {
-      setError("Selecciona tu zona o usa tu ubicación.");
+    if (!origin || !destination) {
+      setError("Elige dónde estás y a dónde vas.");
       return;
     }
     if (dayChoice === "other" && !otherDate) {
@@ -211,15 +121,13 @@ export default function SearchPage() {
     setDateError(null);
     setSearching(true);
     setResult(null);
-    const submittedSearch = {
-      outbound,
-      fallback: FALLBACK_OPTIONS.find((option) => option.value === fallbackMode)!.label,
-    };
     try {
       const response = await communitiesApi.searchTrips(membership.communityId, {
-        direction: outbound ? "outbound" : "return",
-        ...(zoneId ? { originZoneId: zoneId } : location ? { location } : {}),
-        ...(destination ? { destination: { lat: destination.lat, lng: destination.lng } } : {}),
+        direction: "outbound",
+        location: { lat: origin.lat, lng: origin.lng },
+        locationLabel: origin.label,
+        destination: { lat: destination.lat, lng: destination.lng },
+        destinationLabel: destination.label,
         windowStart: range.start,
         windowEnd: range.end,
         date: tripDate(),
@@ -230,9 +138,6 @@ export default function SearchPage() {
       });
       setResult(response);
       setMapOfferId(response.matches[0]?.offerId ?? null);
-      // The zone the server found from the coordinates is shown in the selector.
-      if (!zoneId) setZoneId(response.originZoneId);
-      setCompletedSearch(submittedSearch);
     } catch (err: unknown) {
       const apiError = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       setError(apiError ?? "No pudimos buscar viajes. Inténtalo de nuevo.");
@@ -255,11 +160,6 @@ export default function SearchPage() {
         <h1 className="text-3xl font-extrabold">Buscar viaje</h1>
         <p className="text-muted-foreground">Encuentra personas que van en tu dirección</p>
       </header>
-      {prefillNotice ? (
-        <p role="status" className="text-sm font-medium">
-          No pudimos aplicar el regreso del enlace. Completa tu búsqueda para continuar.
-        </p>
-      ) : null}
       {loadError ? (
         <p role="alert" className="text-sm font-medium text-destructive">
           {loadError}
@@ -267,68 +167,24 @@ export default function SearchPage() {
       ) : null}
       <div className="flex flex-col gap-3 rounded-2xl border bg-card p-4 shadow-sm">
         <div className="flex flex-col divide-y">
-          <div className="flex items-start gap-2 pb-3">
-            <div className="flex flex-1 flex-col gap-3">
-              {(outbound ? ["Origen", "Destino"] : ["Destino", "Origen"]).map((name) => {
-                const isCommunityEnd = outbound ? name === "Destino" : name === "Origen";
-                return (
-                  <div
-                    key={name}
-                    role="group"
-                    aria-label={name}
-                    className="flex items-center justify-between gap-3 text-sm"
-                  >
-                    <span className="font-bold">{name}</span>
-                    {isCommunityEnd ? (
-                      <span className="text-right font-medium">{membership?.destinationName}</span>
-                    ) : (
-                      <div className="flex flex-col items-end gap-1">
-                        <select
-                          className={selectClass}
-                          aria-label="Mi zona"
-                          value={zoneId}
-                          onChange={(event) => setZoneId(event.target.value)}
-                        >
-                          <option value="">
-                            {location ? "Tu ubicación actual" : "Elige tu zona"}
-                          </option>
-                          {zones.map((zone) => (
-                            <option key={zone.id} value={zone.id}>
-                              {zone.name}
-                            </option>
-                          ))}
-                        </select>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="h-8 rounded-lg text-xs font-bold"
-                          disabled={locating}
-                          onClick={useMyLocation}
-                        >
-                          {locating ? "Ubicando…" : "Usar mi ubicación"}
-                        </Button>
-                        <span className="text-xs text-muted-foreground">
-                          {location
-                            ? "Buscaremos desde tu zona más cercana"
-                            : "No guardamos tu dirección exacta"}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="rounded-full"
-              aria-label="Invertir sentido"
-              onClick={() => setOutbound((value) => !value)}
-            >
-              ⇅
-            </Button>
+          <div className="flex flex-col gap-3 pb-3">
+            <PlacePicker
+              id="origin-point"
+              label="Dónde estás"
+              value={origin}
+              onChange={setOrigin}
+              withLocation
+            />
+            <PlacePicker
+              id="destination-point"
+              label="A dónde vas"
+              value={destination}
+              onChange={setDestination}
+            />
+            <p className="text-xs text-muted-foreground">
+              Buscamos viajes cuya ruta pase cerca de los dos puntos y ordenamos por cuál te deja
+              más cerca de tu destino. No guardamos tu dirección exacta.
+            </p>
           </div>
           <div className="flex flex-col gap-2 py-3">
             <label className="flex items-center justify-between gap-3 text-sm font-bold">
@@ -423,7 +279,6 @@ export default function SearchPage() {
                 value={communityId}
                 onChange={(event) => {
                   setCommunityId(event.target.value);
-                  setZoneId("");
                   setResult(null);
                 }}
               >
@@ -460,60 +315,6 @@ export default function SearchPage() {
             </select>
           </label>
         </div>
-        <div className="flex flex-col gap-1.5 border-t pt-3">
-          <label htmlFor="destination-point" className="text-sm font-bold">
-            ¿A dónde vas? (opcional)
-          </label>
-          {destination ? (
-            <div className="flex items-center justify-between gap-2 rounded-xl bg-brand-yellow/30 p-2 text-sm">
-              <span className="font-medium">{`Destino: ${destination.name}`}</span>
-              <button
-                type="button"
-                className="px-2 text-xs font-bold underline"
-                onClick={() => {
-                  setDestination(null);
-                  setDestinationQuery("");
-                }}
-              >
-                Quitar
-              </button>
-            </div>
-          ) : (
-            <form
-              className="flex gap-2"
-              onSubmit={(event) => {
-                event.preventDefault();
-                void fixDestination();
-              }}
-            >
-              <input
-                id="destination-point"
-                value={destinationQuery}
-                maxLength={120}
-                placeholder="Ej. Av. Javier Prado, San Isidro"
-                onChange={(event) => setDestinationQuery(event.target.value)}
-                className="h-10 min-w-0 flex-1 rounded-md border bg-background px-3 text-sm"
-              />
-              <Button
-                type="submit"
-                variant="outline"
-                disabled={findingDestination || !destinationQuery.trim()}
-                className="h-10 rounded-xl font-bold"
-              >
-                {findingDestination ? "Buscando…" : "Fijar"}
-              </Button>
-            </form>
-          )}
-          {destinationError ? (
-            <p role="alert" className="text-xs font-medium text-destructive">
-              {destinationError}
-            </p>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              Ordenamos los viajes por cuál te deja más cerca de tu destino.
-            </p>
-          )}
-        </div>
         <Button
           type="button"
           size="lg"
@@ -538,14 +339,7 @@ export default function SearchPage() {
                 ? "1 coincidencia encontrada"
                 : `${result.matches.length} coincidencias encontradas`}
             </h2>
-            {result.matches.length === 0 && completedSearch?.outbound === false ? (
-              <EmptyState>
-                <span className="block font-medium text-foreground">
-                  Aún no hay un regreso compatible. Te incluiremos en el emparejamiento del regreso.
-                </span>
-                <span className="block text-xs">Tu alternativa: {completedSearch.fallback}</span>
-              </EmptyState>
-            ) : result.reason ? (
+            {result.reason ? (
               <EmptyState>
                 <span className="block font-medium text-foreground">
                   {REASON_MESSAGES[result.reason]}
@@ -571,7 +365,7 @@ export default function SearchPage() {
                 result.matches.find((match) => match.offerId === mapOfferId) ?? result.matches[0];
               return onMap ? (
                 <div className="space-y-1 rounded-2xl border bg-card p-3 shadow-sm">
-                  <SearchRouteMap match={onMap} me={location} destination={destination} />
+                  <SearchRouteMap match={onMap} me={origin} destination={destination} />
                 </div>
               ) : null;
             })()}

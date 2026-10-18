@@ -30,16 +30,27 @@ const nominatim = "https://nominatim.openstreetmap.org";
 // Lima and Callao, so "Av. Javier Prado" does not resolve to another city.
 const limaViewbox = "-77.20,-11.80,-76.80,-12.30";
 
-export async function findPlace(query: string): Promise<(Coordinates & { name: string }) | null> {
+// A place the person can pick: what OpenStreetMap calls it and where it is.
+export type Place = Coordinates & { label: string };
+
+export async function findPlaces(query: string, limit = 5): Promise<Place[]> {
   const url =
-    `${nominatim}/search?format=jsonv2&limit=1&countrycodes=pe&bounded=1` +
+    `${nominatim}/search?format=jsonv2&limit=${limit}&countrycodes=pe&bounded=1` +
     `&viewbox=${limaViewbox}&q=${encodeURIComponent(query)}`;
   const response = await fetch(url, { headers: { "Accept-Language": "es" } });
   if (!response.ok) throw new Error("No pudimos buscar ese lugar.");
-  const [hit] = (await response.json()) as { lat: string; lon: string; display_name: string }[];
-  return hit
-    ? { lat: Number(hit.lat), lng: Number(hit.lon), name: hit.display_name.split(",")[0]! }
-    : null;
+  const hits = (await response.json()) as { lat: string; lon: string; display_name: string }[];
+  return hits.map((hit) => ({
+    lat: Number(hit.lat),
+    lng: Number(hit.lon),
+    // The first parts of the name are the place and its street; the rest is the whole region.
+    label: hit.display_name.split(",").slice(0, 3).join(",").trim(),
+  }));
+}
+
+export async function findPlace(query: string): Promise<(Coordinates & { name: string }) | null> {
+  const [hit] = await findPlaces(query, 1);
+  return hit ? { lat: hit.lat, lng: hit.lng, name: hit.label.split(",")[0]! } : null;
 }
 
 // The street a point is on, or null when OpenStreetMap does not know one.

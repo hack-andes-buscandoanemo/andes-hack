@@ -2925,6 +2925,8 @@ export interface components {
             direction: "outbound" | "return";
             originZoneId: string;
             originZoneName?: string;
+            origin: components["schemas"]["Place"];
+            destination: components["schemas"]["Place"];
             departureTime: string;
             daysOfWeek: number[] | null;
             date: string | null;
@@ -2939,6 +2941,11 @@ export interface components {
             /** @enum {string} */
             status: "active" | "paused" | "cancelled";
         };
+        Place: {
+            lat: number;
+            lng: number;
+            label: string;
+        } | null;
         CreateTripOfferResponse: {
             offer: components["schemas"]["TripOfferSummary"];
             message: string;
@@ -2946,9 +2953,11 @@ export interface components {
         CreateTripOfferRequest: {
             /** Format: uuid */
             vehicleId: string;
+            origin?: components["schemas"]["Place"];
+            destination?: components["schemas"]["Place"];
             /** @enum {string} */
-            direction: "outbound" | "return";
-            originZoneId: string;
+            direction?: "outbound" | "return";
+            originZoneId?: string;
             departureTime: string;
             daysOfWeek?: number[] | null;
             date?: string | null;
@@ -2972,7 +2981,7 @@ export interface components {
             originZoneName: string;
             matches: components["schemas"]["TripMatch"][];
             /** @enum {string|null} */
-            reason: "different_community" | "days_mismatch" | "women_only" | "previously_rejected" | "no_seats" | "no_walkable_meeting_point" | "outside_time_window" | "detour_exceeded" | null;
+            reason: "different_community" | "days_mismatch" | "women_only" | "previously_rejected" | "no_seats" | "no_walkable_meeting_point" | "outside_time_window" | "detour_exceeded" | "too_far_from_route" | "wrong_direction" | null;
         };
         TripMatch: {
             /** Format: uuid */
@@ -3019,11 +3028,16 @@ export interface components {
             }[];
         };
         SearchTripsRequest: {
-            /** @enum {string} */
+            /**
+             * @default outbound
+             * @enum {string}
+             */
             direction: "outbound" | "return";
             originZoneId?: string;
             location?: components["schemas"]["LatLng"];
             destination?: components["schemas"]["LatLng"];
+            locationLabel?: string;
+            destinationLabel?: string;
             windowStart: string;
             windowEnd: string;
             daysOfWeek?: number[] | null;

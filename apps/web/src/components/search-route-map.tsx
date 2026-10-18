@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import { clockLabel } from "@/app/(app)/buscar/schedule";
 import RouteMap from "@/components/route-map";
 import type { RouteMap as RouteMapData, TripMatch } from "@/lib/communities-api";
-import type { Coordinates } from "@/lib/geo";
+import type { Place } from "@/lib/geo";
 
 // The trip of a search result on the map: where it starts and ends, the time it leaves, the
 // person's meeting point, and, when known, where the person is and where they are going.
@@ -15,8 +15,8 @@ export default function SearchRouteMap({
   destination,
 }: {
   match: TripMatch;
-  me: Coordinates | null;
-  destination: (Coordinates & { name: string }) | null;
+  me: Place | null;
+  destination: Place | null;
 }) {
   const route = useMemo<RouteMapData>(() => {
     const leaves = `sale ${clockLabel(match.departureTime.slice(0, 5))}`;
@@ -24,11 +24,11 @@ export default function SearchRouteMap({
       marker.role === "start" ? { ...marker, name: `${marker.name} · ${leaves}` } : marker,
     );
     // The person's own pins use the highlighted style of "my meeting point".
-    if (me) markers.push({ role: "meeting", name: "Tú", ...me, mine: true });
+    if (me) markers.push({ role: "meeting", name: "Tú", lat: me.lat, lng: me.lng, mine: true });
     if (destination) {
       markers.push({
         role: "meeting",
-        name: `Tu destino: ${destination.name}`,
+        name: `Tu destino: ${destination.label}`,
         lat: destination.lat,
         lng: destination.lng,
         mine: true,
