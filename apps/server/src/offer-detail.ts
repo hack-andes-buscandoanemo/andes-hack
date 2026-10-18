@@ -6,7 +6,12 @@ import { matchRun, matchSuggestion } from "@andes-hack/db/schema/matching";
 import { meetingPoint, zone } from "@andes-hack/db/schema/places";
 import { seatBooking, tripOffer, tripRequest } from "@andes-hack/db/schema/trips";
 import { vehicle } from "@andes-hack/db/schema/vehicle";
-import { createTravelTimeModel, places, rankOffersForRequest } from "@andes-hack/matching";
+import {
+  createTravelTimeModel,
+  places,
+  rankOffersForRequest,
+  routeMapFor,
+} from "@andes-hack/matching";
 import { and, asc, desc, eq, inArray, ne, sql } from "drizzle-orm";
 
 import { fuelEstimateFor, occupantsSharingFuel } from "./fuel-estimate";
@@ -17,6 +22,38 @@ import { ApiError } from "./utils/api-response";
 
 type Database = typeof defaultDb;
 const model = createTravelTimeModel();
+
+// The stops the map shows (US-037): where the accepted passengers board, and where the
+// person would, from their request or else from the engine's pickup for their need, in
+// pickup order. A point several people share is one stop, the person's own if it is theirs.
+function mapStops(
+  bookings: {
+    passengerId: string | null;
+    status: string;
+    meetingPointId: string;
+    pickupAt: string;
+  }[],
+  userId: string,
+  match: { meetingPointId: string; pickupAt: string } | null,
+) {
+  const own = bookings.find(
+    (booking) =>
+      booking.passengerId === userId &&
+      (booking.status === "pending" || booking.status === "accepted"),
+  );
+  const mine = own ?? match;
+  const stops = [
+    ...bookings
+      .filter((booking) => booking.status === "accepted" && booking.passengerId !== userId)
+      .map((booking) => ({ ...booking, mine: false })),
+    ...(mine ? [{ ...mine, mine: true }] : []),
+  ].toSorted((a, b) => a.pickupAt.slice(0, 5).localeCompare(b.pickupAt.slice(0, 5)));
+  const byPoint = new Map<string, boolean>();
+  for (const stop of stops) {
+    byPoint.set(stop.meetingPointId, (byPoint.get(stop.meetingPointId) ?? false) || stop.mine);
+  }
+  return [...byPoint].map(([meetingPointId, mine]) => ({ meetingPointId, mine }));
+}
 
 async function loadOfferDetail(database: Database, input: { offerId: string; userId: string }) {
   const [row] = await database
@@ -83,6 +120,8 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
       passengerId: seatBooking.passengerId,
       requestId: seatBooking.requestId,
       status: seatBooking.status,
+      meetingPointId: seatBooking.meetingPointId,
+      pickupAt: seatBooking.pickupAt,
     })
     .from(seatBooking)
     .where(
@@ -168,6 +207,12 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
       originZoneId: row.originZoneId,
       destinationId: destination.id,
       occupants: occupantsSharingFuel(acceptedCount, isOwn || mine?.status === "accepted"),
+    }),
+    routeMap: routeMapFor({
+      direction: row.direction,
+      originZoneId: row.originZoneId,
+      destinationId: destination.id,
+      stops: mapStops(bookings, input.userId, match),
     }),
     alternatives: undefined as TripMatch[] | undefined,
   };

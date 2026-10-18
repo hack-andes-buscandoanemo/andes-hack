@@ -2322,7 +2322,23 @@ export interface components {
                 status: "pending" | "accepted" | "rejected" | "cancelled_by_passenger" | "cancelled_by_driver" | "completed" | "no_show";
             } | null;
             fuelEstimate: components["schemas"]["FuelEstimate"];
+            routeMap: components["schemas"]["RouteMap"];
             alternatives?: components["schemas"]["TripMatch"][];
+        };
+        RouteMap: {
+            path: [
+                number,
+                number
+            ][];
+            approximate: boolean;
+            markers: {
+                /** @enum {string} */
+                role: "start" | "end" | "meeting";
+                name: string;
+                lat: number;
+                lng: number;
+                mine: boolean;
+            }[];
         };
         MyTripsResponse: {
             trips: components["schemas"]["MyTrip"][];

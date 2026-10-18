@@ -4,6 +4,8 @@ export * from "./insertion";
 export * from "./metrics";
 export * from "./optimizer";
 export * from "./places";
+export * from "./route-map";
+export * from "./route-shapes";
 export * from "./sources";
 export * from "./strategies";
 export * from "./travel-matrix";

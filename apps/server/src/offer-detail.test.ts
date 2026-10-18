@@ -243,6 +243,20 @@ describe("GET /offers/{id} (US-014)", () => {
       match: null,
       booking: null,
       fuelEstimate: { tripSoles: 10.04, perOccupantSoles: 5.02, occupants: 2 },
+      routeMap: {
+        path: expect.any(Array),
+        approximate: false,
+        markers: [
+          { role: "start", name: "La Molina", lat: -12.077983, lng: -76.9172838, mine: false },
+          {
+            role: "end",
+            name: "Centro Empresarial Real",
+            lat: -12.0975459,
+            lng: -77.0375707,
+            mine: false,
+          },
+        ],
+      },
     });
   });
 
@@ -393,6 +407,105 @@ describe("GET /offers/{id} (US-014)", () => {
       detourMinutes: 6,
       walkMinutes: 14,
     });
+  });
+
+  it("marks on the map the pickup the engine calculates before the person asks for a seat (US-037)", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const lucia = await createMember(alfa.id, "u-lucia", "Lucía");
+    const offer = await seedOffer(alfa.id, driver.id);
+    await seedMeetingPoint();
+    await seedNeed(alfa.id, lucia.id);
+
+    const body = (await (await requestAs(lucia, `/offers/${offer.id}`)).json()) as {
+      routeMap: { markers: { role: string; name: string; mine: boolean }[] };
+    };
+
+    expect(body.routeMap.markers.map(({ role, name, mine }) => [role, name, mine])).toEqual([
+      ["start", "La Molina", false],
+      ["meeting", "Estación San Borja Sur (Línea 1)", true],
+      ["end", "Centro Empresarial Real", false],
+    ]);
+  });
+
+  it("marks a meeting point shared with another passenger once, as the person's own (US-037)", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const lucia = await createMember(alfa.id, "u-lucia", "Lucía");
+    const rosa = await createMember(alfa.id, "u-rosa", "Rosa");
+    const offer = await seedOffer(alfa.id, driver.id);
+    await bookSeat(offer, rosa.id, "accepted");
+    await bookSeat(offer, lucia.id, "pending");
+
+    const body = (await (await requestAs(lucia, `/offers/${offer.id}`)).json()) as {
+      routeMap: { markers: { role: string; name: string; mine: boolean }[] };
+    };
+
+    expect(body.routeMap.markers.map(({ role, name, mine }) => [role, name, mine])).toEqual([
+      ["start", "La Molina", false],
+      ["meeting", "Estación San Borja Sur (Línea 1)", true],
+      ["end", "Centro Empresarial Real", false],
+    ]);
+  });
+
+  it("maps the meeting points of the accepted passengers and the person's own, highlighted (US-037)", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const lucia = await createMember(alfa.id, "u-lucia", "Lucía");
+    const rosa = await createMember(alfa.id, "u-rosa", "Rosa");
+    const offer = await seedOffer(alfa.id, driver.id);
+    await bookSeat(offer, lucia.id, "pending");
+    const rosaNeed = await seedNeed(alfa.id, rosa.id);
+    await testDb.insert(meetingPoint).values({
+      id: "la-molina-plaza-de-armas",
+      zoneId: "la-molina",
+      name: "Plaza de Armas de La Molina",
+      kind: "park",
+      lat: -12.0780067,
+      lng: -76.917343,
+      source: "test",
+    });
+    await testDb.insert(seatBooking).values({
+      offerId: offer.id,
+      requestId: rosaNeed.id,
+      passengerId: rosa.id,
+      meetingPointId: "la-molina-plaza-de-armas",
+      pickupAt: "07:05",
+      detourMinutes: 0,
+      walkMinutes: 5,
+      status: "accepted",
+    });
+
+    const body = (await (await requestAs(lucia, `/offers/${offer.id}`)).json()) as {
+      routeMap: { approximate: boolean; markers: unknown };
+    };
+
+    expect(body.routeMap.markers).toEqual([
+      { role: "start", name: "La Molina", lat: -12.077983, lng: -76.9172838, mine: false },
+      {
+        role: "meeting",
+        name: "Plaza de Armas de La Molina",
+        lat: -12.0780067,
+        lng: -76.917343,
+        mine: false,
+      },
+      {
+        role: "meeting",
+        name: "Estación San Borja Sur (Línea 1)",
+        lat: -12.1004192,
+        lng: -77.001846,
+        mine: true,
+      },
+      {
+        role: "end",
+        name: "Centro Empresarial Real",
+        lat: -12.0975459,
+        lng: -77.0375707,
+        mine: false,
+      },
+    ]);
+    // San Borja is off La Molina's drive to the sede: part of the line is straight.
+    expect(body.routeMap.approximate).toBe(true);
   });
 
   it("answers 404 for an unknown trip and 401 without a session", async () => {
