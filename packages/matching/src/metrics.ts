@@ -81,9 +81,9 @@ export interface ImpactMetrics {
   averagePassengers: number | null;
 }
 
-// Whoever would otherwise take a taxi or an app also leaves a car trip undone.
-const avoidsCarTrip = (seat: SeatActivity) =>
-  seat.fallbackMode === "drive_alone" || seat.fallbackMode === "taxi_app";
+// Whoever would otherwise take a taxi or an app also leaves a car trip undone. The
+// optimizer (US-017) maximises the passengers this holds for.
+export const avoidsCarTrip = (mode: FallbackMode) => mode === "drive_alone" || mode === "taxi_app";
 
 // For the same reason a driver who came by taxi or app adds no car. An unknown mode, from
 // a deleted account, counts as induced: the figure never claims an impact it cannot back.
@@ -107,7 +107,7 @@ function carTripsAvoided(
   trips: readonly SeatActivity[],
   pickups: readonly SeatActivity[],
 ): CarTripsAvoided {
-  const avoided = trips.filter(avoidsCarTrip);
+  const avoided = trips.filter((seat) => avoidsCarTrip(seat.fallbackMode));
   const km =
     avoided.reduce((sum, seat) => sum + seat.distanceKm, 0) -
     pickups.reduce((sum, seat) => sum + seat.detourKm, 0);

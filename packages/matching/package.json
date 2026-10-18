@@ -12,6 +12,7 @@
   "scripts": {
     "check-types": "tsc --noEmit",
     "matrix:build": "bun scripts/build-travel-matrix.ts",
+    "optima:build": "bun scripts/exhaustive-optima.ts",
     "test": "vitest run"
   },
   "devDependencies": {
