@@ -271,6 +271,291 @@
           }
         },
         "required": ["consentAccepted", "usualMode", "travelRole"]
+      },
+      "VehiclesResponse": {
+        "type": "object",
+        "properties": {
+          "vehicles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VehicleSummary"
+            }
+          }
+        },
+        "required": ["vehicles"]
+      },
+      "VehicleSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "plate": {
+            "type": "string"
+          },
+          "make": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "seats": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          }
+        },
+        "required": ["id", "plate", "make", "model", "color", "seats"]
+      },
+      "CreateVehicleRequest": {
+        "type": "object",
+        "properties": {
+          "plate": {
+            "type": "string"
+          },
+          "makeModel": {
+            "type": "string",
+            "minLength": 1
+          },
+          "make": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1
+          },
+          "color": {
+            "type": "string",
+            "minLength": 1
+          },
+          "seats": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          }
+        },
+        "required": ["plate", "color", "seats"]
+      },
+      "ZonesResponse": {
+        "type": "object",
+        "properties": {
+          "zones": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ZoneSummary"
+            }
+          }
+        },
+        "required": ["zones"]
+      },
+      "ZoneSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "district": {
+            "type": "string"
+          },
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          }
+        },
+        "required": ["id", "name", "district", "lat", "lng"]
+      },
+      "TripOffersResponse": {
+        "type": "object",
+        "properties": {
+          "offers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TripOfferSummary"
+            }
+          }
+        },
+        "required": ["offers"]
+      },
+      "TripOfferSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "communityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "driverId": {
+            "type": ["string", "null"]
+          },
+          "vehicleId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "direction": {
+            "type": "string",
+            "enum": ["outbound", "return"]
+          },
+          "originZoneId": {
+            "type": "string"
+          },
+          "originZoneName": {
+            "type": "string"
+          },
+          "departureTime": {
+            "type": "string"
+          },
+          "daysOfWeek": {
+            "type": ["array", "null"],
+            "items": {
+              "type": "integer"
+            }
+          },
+          "date": {
+            "type": ["string", "null"]
+          },
+          "seatsTotal": {
+            "type": "integer"
+          },
+          "seatsTaken": {
+            "type": "integer"
+          },
+          "maxDetourMinutes": {
+            "type": "integer"
+          },
+          "womenOnly": {
+            "type": "boolean"
+          },
+          "note": {
+            "type": ["string", "null"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "paused", "cancelled"]
+          }
+        },
+        "required": [
+          "id",
+          "communityId",
+          "driverId",
+          "vehicleId",
+          "direction",
+          "originZoneId",
+          "departureTime",
+          "daysOfWeek",
+          "date",
+          "seatsTotal",
+          "seatsTaken",
+          "maxDetourMinutes",
+          "womenOnly",
+          "note",
+          "status"
+        ]
+      },
+      "CreateTripOfferResponse": {
+        "type": "object",
+        "properties": {
+          "offer": {
+            "$ref": "#/components/schemas/TripOfferSummary"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": ["offer", "message"]
+      },
+      "CreateTripOfferRequest": {
+        "type": "object",
+        "properties": {
+          "vehicleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "direction": {
+            "type": "string",
+            "enum": ["outbound", "return"]
+          },
+          "originZoneId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "departureTime": {
+            "type": "string",
+            "pattern": "^\\d{2}:\\d{2}(:\\d{2})?$"
+          },
+          "daysOfWeek": {
+            "type": ["array", "null"],
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 7
+            },
+            "minItems": 1
+          },
+          "date": {
+            "type": ["string", "null"],
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "seatsTotal": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          },
+          "maxDetourMinutes": {
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [0]
+              },
+              {
+                "type": "number",
+                "enum": [5]
+              },
+              {
+                "type": "number",
+                "enum": [10]
+              }
+            ]
+          },
+          "womenOnly": {
+            "type": "boolean",
+            "default": false
+          },
+          "note": {
+            "type": ["string", "null"],
+            "maxLength": 280
+          }
+        },
+        "required": [
+          "vehicleId",
+          "direction",
+          "originZoneId",
+          "departureTime",
+          "seatsTotal",
+          "maxDetourMinutes"
+        ]
+      },
+      "UpdateOfferStatusRequest": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["active", "paused"]
+          }
+        },
+        "required": ["status"]
       }
     },
     "parameters": {}
@@ -422,6 +707,175 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MembershipSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vehicles": {
+      "get": {
+        "tags": ["Ofertas"],
+        "responses": {
+          "200": {
+            "description": "Vehículos registrados por la persona autenticada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehiclesResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Ofertas"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVehicleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Vehículo registrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/communities/{id}/zones": {
+      "get": {
+        "tags": ["Ofertas"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Zonas disponibles para la comunidad",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZonesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/communities/{id}/offers": {
+      "get": {
+        "tags": ["Ofertas"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Viajes ofrecidos por la persona autenticada en la comunidad",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripOffersResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Ofertas"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTripOfferRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Viaje ofrecido creado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateTripOfferResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/offers/{id}/status": {
+      "patch": {
+        "tags": ["Ofertas"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOfferStatusRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Estado de la oferta actualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripOfferSummary"
                 }
               }
             }

@@ -250,6 +250,269 @@ export const updateMembershipRoute = createRoute({
   },
 });
 
+export function normalizePlate(raw: string): string {
+  return raw.replace(/[\s-]+/g, "").toUpperCase();
+}
+
+export const PERUVIAN_PLATE_REGEX = /^[A-Z0-9]{3}\d{3}$/;
+
+export const VehicleSummarySchema = z
+  .object({
+    id: z.string().uuid(),
+    plate: z.string(),
+    make: z.string(),
+    model: z.string(),
+    color: z.string(),
+    seats: z.number().int().min(1).max(6),
+  })
+  .openapi("VehicleSummary");
+
+export const VehiclesResponseSchema = z
+  .object({
+    vehicles: z.array(VehicleSummarySchema),
+  })
+  .openapi("VehiclesResponse");
+
+export const CreateVehicleBodySchema = z
+  .object({
+    plate: z
+      .string()
+      .transform(normalizePlate)
+      .refine((value) => PERUVIAN_PLATE_REGEX.test(value), {
+        message: "Ingresa una placa válida (ej. ABC-123).",
+      }),
+    makeModel: z.string().trim().min(1, "Ingresa la marca y modelo de tu vehículo.").optional(),
+    make: z.string().trim().min(1).optional(),
+    model: z.string().trim().min(1).optional(),
+    color: z.string().trim().min(1, "Ingresa el color de tu vehículo."),
+    seats: z.number().int().min(1).max(6),
+  })
+  .refine((data) => Boolean(data.makeModel || data.make), {
+    message: "Ingresa la marca y modelo de tu vehículo.",
+    path: ["makeModel"],
+  })
+  .openapi("CreateVehicleRequest");
+
+export const listVehiclesRoute = createRoute({
+  method: "get",
+  path: "/vehicles",
+  tags: ["Ofertas"],
+  responses: {
+    200: {
+      description: "Vehículos registrados por la persona autenticada",
+      content: {
+        "application/json": {
+          schema: VehiclesResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+export const createVehicleRoute = createRoute({
+  method: "post",
+  path: "/vehicles",
+  tags: ["Ofertas"],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: CreateVehicleBodySchema,
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: "Vehículo registrado",
+      content: {
+        "application/json": {
+          schema: VehicleSummarySchema,
+        },
+      },
+    },
+  },
+});
+
+export const ZoneSummarySchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    district: z.string(),
+    lat: z.number(),
+    lng: z.number(),
+  })
+  .openapi("ZoneSummary");
+
+export const ZonesResponseSchema = z
+  .object({
+    zones: z.array(ZoneSummarySchema),
+  })
+  .openapi("ZonesResponse");
+
+export const listCommunityZonesRoute = createRoute({
+  method: "get",
+  path: "/communities/{id}/zones",
+  tags: ["Ofertas"],
+  request: {
+    params: JoinCommunityParamsSchema,
+  },
+  responses: {
+    200: {
+      description: "Zonas disponibles para la comunidad",
+      content: {
+        "application/json": {
+          schema: ZonesResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+export const TripDirectionSchema = z.enum(["outbound", "return"]);
+export const OfferStatusSchema = z.enum(["active", "paused", "cancelled"]);
+
+export const CreateTripOfferBodySchema = z
+  .object({
+    vehicleId: z.string().uuid("Selecciona un vehículo."),
+    direction: TripDirectionSchema,
+    originZoneId: z.string().min(1, "Selecciona una zona."),
+    departureTime: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/, "Ingresa una hora de salida válida."),
+    daysOfWeek: z.array(z.number().int().min(1).max(7)).min(1).nullable().optional(),
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Ingresa una fecha válida.")
+      .nullable()
+      .optional(),
+    seatsTotal: z.number().int().min(1).max(6),
+    maxDetourMinutes: z.union([z.literal(0), z.literal(5), z.literal(10)]),
+    womenOnly: z.boolean().default(false),
+    note: z.string().max(280, "La nota no puede superar 280 caracteres.").nullable().optional(),
+  })
+  .refine(
+    (data) => {
+      const hasDate = Boolean(data.date);
+      const hasDays = Boolean(data.daysOfWeek && data.daysOfWeek.length > 0);
+      return hasDate !== hasDays;
+    },
+    {
+      message: "Elige una fecha puntual o días habituales, pero no ambos.",
+      path: ["date"],
+    },
+  )
+  .openapi("CreateTripOfferRequest");
+
+export const TripOfferSummarySchema = z
+  .object({
+    id: z.string().uuid(),
+    communityId: z.string().uuid(),
+    driverId: z.string().nullable(),
+    vehicleId: z.string().uuid().nullable(),
+    direction: TripDirectionSchema,
+    originZoneId: z.string(),
+    originZoneName: z.string().optional(),
+    departureTime: z.string(),
+    daysOfWeek: z.array(z.number().int()).nullable(),
+    date: z.string().nullable(),
+    seatsTotal: z.number().int(),
+    seatsTaken: z.number().int(),
+    maxDetourMinutes: z.number().int(),
+    womenOnly: z.boolean(),
+    note: z.string().nullable(),
+    status: OfferStatusSchema,
+  })
+  .openapi("TripOfferSummary");
+
+export const CreateTripOfferResponseSchema = z
+  .object({
+    offer: TripOfferSummarySchema,
+    message: z.string(),
+  })
+  .openapi("CreateTripOfferResponse");
+
+export const TripOffersResponseSchema = z
+  .object({
+    offers: z.array(TripOfferSummarySchema),
+  })
+  .openapi("TripOffersResponse");
+
+export const listCommunityOffersRoute = createRoute({
+  method: "get",
+  path: "/communities/{id}/offers",
+  tags: ["Ofertas"],
+  request: {
+    params: JoinCommunityParamsSchema,
+  },
+  responses: {
+    200: {
+      description: "Viajes ofrecidos por la persona autenticada en la comunidad",
+      content: {
+        "application/json": {
+          schema: TripOffersResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+export const createCommunityOfferRoute = createRoute({
+  method: "post",
+  path: "/communities/{id}/offers",
+  tags: ["Ofertas"],
+  request: {
+    params: JoinCommunityParamsSchema,
+    body: {
+      content: {
+        "application/json": {
+          schema: CreateTripOfferBodySchema,
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: "Viaje ofrecido creado",
+      content: {
+        "application/json": {
+          schema: CreateTripOfferResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+export const UpdateOfferStatusBodySchema = z
+  .object({
+    status: z.enum(["active", "paused"]),
+  })
+  .openapi("UpdateOfferStatusRequest");
+
+export const updateOfferStatusRoute = createRoute({
+  method: "patch",
+  path: "/offers/{id}/status",
+  tags: ["Ofertas"],
+  request: {
+    params: JoinCommunityParamsSchema,
+    body: {
+      content: {
+        "application/json": {
+          schema: UpdateOfferStatusBodySchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Estado de la oferta actualizado",
+      content: {
+        "application/json": {
+          schema: TripOfferSummarySchema,
+        },
+      },
+    },
+  },
+});
+
 export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   healthRoute,
   listCommunitiesRoute,
@@ -257,6 +520,12 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   verifyEmailCommunityRoute,
   getMeRoute,
   updateMembershipRoute,
+  listVehiclesRoute,
+  createVehicleRoute,
+  listCommunityZonesRoute,
+  listCommunityOffersRoute,
+  createCommunityOfferRoute,
+  updateOfferStatusRoute,
 ];
 
 export function createOpenApiDocument(routes: readonly RouteConfig[] = registeredOpenApiRoutes) {
