@@ -2305,6 +2305,17 @@
                 "type": "string",
                 "format": "uuid"
               },
+              "tripDate": {
+                "type": "string"
+              },
+              "tripState": {
+                "type": "string",
+                "enum": [
+                  "confirmed",
+                  "in_progress",
+                  "completed"
+                ]
+              },
               "communityName": {
                 "type": "string"
               },
@@ -2369,6 +2380,9 @@
                   ]
                 }
               },
+              "routeMap": {
+                "$ref": "#/components/schemas/RouteMap"
+              },
               "meetingPoints": {
                 "type": "array",
                 "items": {
@@ -2379,17 +2393,27 @@
                     },
                     "name": {
                       "type": "string"
+                    },
+                    "lat": {
+                      "type": "number"
+                    },
+                    "lng": {
+                      "type": "number"
                     }
                   },
                   "required": [
                     "participantName",
-                    "name"
+                    "name",
+                    "lat",
+                    "lng"
                   ]
                 }
               }
             },
             "required": [
               "offerId",
+              "tripDate",
+              "tripState",
               "communityName",
               "origin",
               "destination",
@@ -2398,6 +2422,7 @@
               "daysOfWeek",
               "role",
               "participants",
+              "routeMap",
               "meetingPoints"
             ]
           },

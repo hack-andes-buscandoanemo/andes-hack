@@ -1254,6 +1254,8 @@ export const tripMessagesRoute = createRoute({
             .object({
               conversation: z.object({
                 offerId: z.string().uuid(),
+                tripDate: z.string(),
+                tripState: z.enum(["confirmed", "in_progress", "completed"]),
                 communityName: z.string(),
                 origin: z.string(),
                 destination: z.string(),
@@ -1268,7 +1270,15 @@ export const tripMessagesRoute = createRoute({
                     photoUrl: z.string().url().nullable(),
                   }),
                 ),
-                meetingPoints: z.array(z.object({ participantName: z.string(), name: z.string() })),
+                routeMap: RouteMapSchema,
+                meetingPoints: z.array(
+                  z.object({
+                    participantName: z.string(),
+                    name: z.string(),
+                    lat: z.number(),
+                    lng: z.number(),
+                  }),
+                ),
               }),
               messages: z.array(TripMessageSchema),
             })

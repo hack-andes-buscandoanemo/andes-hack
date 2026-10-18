@@ -2871,6 +2871,9 @@ export interface components {
             conversation: {
                 /** Format: uuid */
                 offerId: string;
+                tripDate: string;
+                /** @enum {string} */
+                tripState: "confirmed" | "in_progress" | "completed";
                 communityName: string;
                 origin: string;
                 destination: string;
@@ -2886,9 +2889,12 @@ export interface components {
                     /** Format: uri */
                     photoUrl: string | null;
                 }[];
+                routeMap: components["schemas"]["RouteMap"];
                 meetingPoints: {
                     participantName: string;
                     name: string;
+                    lat: number;
+                    lng: number;
                 }[];
             };
             messages: {
