@@ -125,3 +125,20 @@ it("documents the error responses of the search route with the shared error body
     required: ["success", "status", "error"],
   });
 });
+
+it("documents every error the offer detail, seat request and withdrawal routes return", () => {
+  const doc = createOpenApiDocument();
+  const codes = (path: string, method: "get" | "post") =>
+    Object.keys(doc.paths?.[path]?.[method]?.responses ?? {}).sort();
+
+  expect(codes("/offers/{id}", "get")).toEqual(["200", "401", "404", "422"]);
+  expect(codes("/offers/{id}/bookings", "post")).toEqual([
+    "201",
+    "401",
+    "403",
+    "404",
+    "409",
+    "422",
+  ]);
+  expect(codes("/bookings/{id}/cancel", "post")).toEqual(["200", "401", "404", "409", "422"]);
+});
