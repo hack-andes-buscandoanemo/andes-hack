@@ -174,6 +174,32 @@ async function givenNeed(
   return { passenger, need };
 }
 
+async function givenPassengerForOffer() {
+  const { team, point, offer } = await givenOffer();
+  const { passenger, need } = await givenNeed(team.id, point.zoneId);
+  return {
+    offerId: offer.id,
+    requestId: need.id,
+    passengerId: passenger.id,
+    meetingPointId: point.id,
+  };
+}
+
+type SeatRequest = Pick<
+  typeof seatBooking.$inferInsert,
+  "offerId" | "requestId" | "passengerId" | "meetingPointId"
+> &
+  Partial<typeof seatBooking.$inferInsert>;
+
+function requestSeat(seat: SeatRequest) {
+  return first(
+    db
+      .insert(seatBooking)
+      .values({ pickupAt: "07:05", detourMinutes: 4, walkMinutes: 6, ...seat })
+      .returning(),
+  );
+}
+
 // SQLSTATE codes from the PostgreSQL manual, appendix A.
 const checkViolation = (constraint: string) => ({ cause: { code: "23514", constraint } });
 const uniqueViolation = (constraint: string) => ({ cause: { code: "23505", constraint } });
@@ -185,23 +211,46 @@ describe("core domain schema on a freshly migrated database", () => {
     });
     const { passenger, need } = await givenNeed(team.id, point.zoneId);
 
-    const booking = await first(
-      db
-        .insert(seatBooking)
-        .values({
-          offerId: offer.id,
-          requestId: need.id,
-          passengerId: passenger.id,
-          meetingPointId: point.id,
-          pickupAt: "07:05",
-          detourMinutes: 4,
-          walkMinutes: 6,
-          message: "Llevo una mochila pequeña.",
-        })
-        .returning(),
-    );
+    const booking = await requestSeat({
+      offerId: offer.id,
+      requestId: need.id,
+      passengerId: passenger.id,
+      meetingPointId: point.id,
+      message: "Llevo una mochila pequeña.",
+    });
 
     expect(booking.status).toBe("pending");
+  });
+});
+
+describe("active seat bookings", () => {
+  test("rejects a second request from the same passenger while the first is pending", async () => {
+    const seat = await givenPassengerForOffer();
+    await requestSeat(seat);
+
+    await expect(requestSeat(seat)).rejects.toMatchObject(
+      uniqueViolation("seat_booking_active_passenger_idx"),
+    );
+  });
+
+  test("lets the passenger request the offer again once the driver rejected the first request", async () => {
+    const seat = await givenPassengerForOffer();
+    const earlier = await requestSeat(seat);
+    await db.update(seatBooking).set({ status: "rejected" }).where(eq(seatBooking.id, earlier.id));
+
+    const retry = await requestSeat(seat);
+
+    expect(retry.status).toBe("pending");
+  });
+
+  test("rejects a new request from a passenger the driver already accepted", async () => {
+    const seat = await givenPassengerForOffer();
+    const earlier = await requestSeat(seat);
+    await db.update(seatBooking).set({ status: "accepted" }).where(eq(seatBooking.id, earlier.id));
+
+    await expect(requestSeat(seat)).rejects.toMatchObject(
+      uniqueViolation("seat_booking_active_passenger_idx"),
+    );
   });
 });
 

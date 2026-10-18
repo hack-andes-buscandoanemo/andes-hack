@@ -10,6 +10,7 @@ import {
   text,
   time,
   timestamp,
+  uniqueIndex,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -158,6 +159,10 @@ export const seatBooking = pgTable(
   (table) => [
     index("seat_booking_offer_id_idx").on(table.offerId),
     index("seat_booking_passenger_id_idx").on(table.passengerId),
+    // One active booking per passenger and offer; after a rejection or a cancellation they can ask again.
+    uniqueIndex("seat_booking_active_passenger_idx")
+      .on(table.offerId, table.passengerId)
+      .where(sql`${table.status} IN ('pending', 'accepted')`),
   ],
 );
 

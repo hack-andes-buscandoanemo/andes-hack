@@ -157,6 +157,7 @@ ALTER TABLE "vehicle" ADD CONSTRAINT "vehicle_owner_id_user_id_fk" FOREIGN KEY (
 CREATE INDEX "community_member_user_id_idx" ON "community_member" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "seat_booking_offer_id_idx" ON "seat_booking" USING btree ("offer_id");--> statement-breakpoint
 CREATE INDEX "seat_booking_passenger_id_idx" ON "seat_booking" USING btree ("passenger_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "seat_booking_active_passenger_idx" ON "seat_booking" USING btree ("offer_id","passenger_id") WHERE "seat_booking"."status" IN ('pending', 'accepted');--> statement-breakpoint
 CREATE INDEX "trip_offer_community_id_idx" ON "trip_offer" USING btree ("community_id");--> statement-breakpoint
 CREATE INDEX "trip_offer_driver_id_idx" ON "trip_offer" USING btree ("driver_id");--> statement-breakpoint
 CREATE INDEX "trip_request_community_id_idx" ON "trip_request" USING btree ("community_id");--> statement-breakpoint

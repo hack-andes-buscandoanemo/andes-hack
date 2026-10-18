@@ -1,5 +1,5 @@
 {
-  "id": "cb1fe98a-adef-4f5c-b581-54c2f183db4f",
+  "id": "731c70f1-6336-4dfe-b228-cafda2c44be1",
   "prevId": "09a06024-4fa7-4879-9098-89738cb90bfa",
   "version": "7",
   "dialect": "postgresql",
@@ -842,6 +842,28 @@
             }
           ],
           "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "seat_booking_active_passenger_idx": {
+          "name": "seat_booking_active_passenger_idx",
+          "columns": [
+            {
+              "expression": "offer_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "passenger_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"seat_booking\".\"status\" IN ('pending', 'accepted')",
           "concurrently": false,
           "method": "btree",
           "with": {}
