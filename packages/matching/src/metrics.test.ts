@@ -34,6 +34,14 @@ describe("impact of a community's shared trips", () => {
     expect(metrics.peopleTransported).toBe(3);
   });
 
+  it("counts 2 car trips avoided when 3 of 4 colleagues share a car: from 4 cars to 2", () => {
+    // The fourth colleague keeps driving alone and is not on the platform.
+    const metrics = measureImpact({ offers: [offer([seat(), seat()])], openNeeds: [] });
+
+    expect(metrics.carTripsAvoided.potential.trips).toBe(2);
+    expect(metrics.netCarTripsAvoided).toBe(2);
+  });
+
   it("transports María, who would take the bus, without counting a car trip avoided", () => {
     const carlos = offer([seat({ fallbackMode: "public_transport" })]);
 
@@ -157,6 +165,69 @@ describe("impact of a community's shared trips", () => {
     // 25 km not driven, minus 2 + 3 km of detours: 20 km, or 4/7 of a gallon.
     expect(metrics.carTripsAvoided.verified.km).toBeCloseTo(20);
     expect(metrics.carTripsAvoided.verified.co2Kg).toBeCloseTo(5.078, 3);
+  });
+
+  it("averages 2 passengers over 3 trips with 1, 2 and 3, leaving out a trip nobody took", () => {
+    const metrics = measureImpact({
+      offers: [
+        offer([seat()]),
+        offer([seat(), seat()]),
+        offer([seat(), seat(), seat()]),
+        offer([]),
+      ],
+      openNeeds: [],
+    });
+
+    expect(metrics.averagePassengers).toBe(2);
+  });
+
+  it("covers 3 of 4 open needs when 3 have a compatible offer, leaving out the team's", () => {
+    const need = (hasCompatibleOffer: boolean, passengerIsTeam = false) => ({
+      hasCompatibleOffer,
+      passengerIsTeam,
+    });
+
+    const metrics = measureImpact({
+      offers: [],
+      openNeeds: [need(true), need(true), need(true), need(false), need(false, true)],
+    });
+
+    expect(metrics.coverage).toBe(0.75);
+  });
+
+  it("fulfils 2 of the 4 accepted trips whose date passed, not counting one still ahead", () => {
+    const metrics = measureImpact({
+      offers: [
+        offer([
+          seat({ status: "completed", datePassed: true }),
+          seat({ status: "completed", datePassed: true }),
+          seat({ status: "no_show", datePassed: true }),
+          seat({ status: "accepted", datePassed: true }),
+          seat({ status: "accepted", datePassed: false }),
+        ]),
+      ],
+      openNeeds: [],
+    });
+
+    expect(metrics.fulfilment).toBe(0.5);
+  });
+
+  it("counts a trip completed earlier today as fulfilled", () => {
+    const metrics = measureImpact({
+      offers: [offer([seat({ status: "completed", datePassed: false })])],
+      openNeeds: [],
+    });
+
+    expect(metrics.fulfilment).toBe(1);
+  });
+
+  it("gives no ratio, rather than a made-up one, for a community with no activity yet", () => {
+    const metrics = measureImpact({ offers: [], openNeeds: [] });
+
+    expect(metrics.peopleTransported).toBe(0);
+    expect(metrics.coverage).toBeNull();
+    expect(metrics.fulfilment).toBeNull();
+    expect(metrics.averagePassengers).toBeNull();
   });
 
   it("leaves out every trip with a team account on either side", () => {

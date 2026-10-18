@@ -71,6 +71,12 @@ export interface ImpactMetrics {
   netCarTripsAvoided: number;
   // A benefit for the person; it takes no car off the road.
   fromPublicTransport: number;
+  // Share of open needs with at least one compatible offer, from 0 to 1.
+  coverage: number | null;
+  // Share of accepted trips whose date passed that were completed, from 0 to 1.
+  fulfilment: number | null;
+  // Passengers per trip that had at least one; null when none had.
+  averagePassengers: number | null;
 }
 
 // Whoever would otherwise take a taxi or an app also leaves a car trip undone.
@@ -90,6 +96,9 @@ const acceptedStatuses: readonly BookingStatus[] = ["accepted", "completed", "no
 const acceptedSeats = (offer: OfferActivity) =>
   offer.seats.filter((seat) => acceptedStatuses.includes(seat.status) && !seat.passengerIsTeam);
 
+// Null rather than NaN when there is nothing to divide by.
+const ratio = (part: number, whole: number) => (whole > 0 ? part / whole : null);
+
 function carTripsAvoided(seats: readonly SeatActivity[]): CarTripsAvoided {
   const avoided = seats.filter(avoidsCarTrip);
   // Every detour is driven, even one for a passenger who takes no car off the road.
@@ -105,9 +114,11 @@ export function measureImpact(activity: CommunityActivity): ImpactMetrics {
   const offers = activity.offers.filter((offer) => !offer.driverIsTeam);
   const seats = offers.flatMap(acceptedSeats);
   const potential = carTripsAvoided(seats);
-  const induced = offers.filter(
-    (offer) => acceptedSeats(offer).length > 0 && !madeTripByCar(offer.driverUsualMode),
-  ).length;
+  const tripsTaken = offers.filter((offer) => acceptedSeats(offer).length > 0);
+  const induced = tripsTaken.filter((offer) => !madeTripByCar(offer.driverUsualMode)).length;
+  const openNeeds = activity.openNeeds.filter((need) => !need.passengerIsTeam);
+  // A trip completed today is due already, though its date has not passed.
+  const due = seats.filter((seat) => seat.datePassed || seat.status === "completed");
   return {
     peopleTransported: seats.length,
     carTripsAvoided: {
@@ -117,5 +128,8 @@ export function measureImpact(activity: CommunityActivity): ImpactMetrics {
     carTripsInduced: induced,
     netCarTripsAvoided: potential.trips - induced,
     fromPublicTransport: seats.filter((seat) => seat.fallbackMode === "public_transport").length,
+    coverage: ratio(openNeeds.filter((need) => need.hasCompatibleOffer).length, openNeeds.length),
+    fulfilment: ratio(due.filter((seat) => seat.status === "completed").length, due.length),
+    averagePassengers: ratio(seats.length, tripsTaken.length),
   };
 }
