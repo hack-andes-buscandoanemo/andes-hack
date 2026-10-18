@@ -47,11 +47,15 @@ describe("app route protection", () => {
     expect(await access()).toEqual({ redirectTo: "/ingresar" });
   });
 
-  it("sends members who skipped the consent to /comenzar", async () => {
+  it("sends members who skipped the consent or usual travel mode to /comenzar", async () => {
     fetchMock.mockReturnValue(
       meResponse({ user: ana, memberships: [{ ...readyMembership, consentAt: null }] }),
     );
+    expect(await access()).toEqual({ redirectTo: "/comenzar" });
 
+    fetchMock.mockReturnValue(
+      meResponse({ user: ana, memberships: [{ ...readyMembership, usualMode: null }] }),
+    );
     expect(await access()).toEqual({ redirectTo: "/comenzar" });
   });
 
@@ -66,10 +70,10 @@ describe("app route protection", () => {
     expect(new Headers(fetchMock.mock.calls[0]![1].headers).get("cookie")).toBe("s=1");
   });
 
-  it("falls back to the session while /me is not deployed (404)", async () => {
+  it("fails closed when /me returns 404", async () => {
     fetchMock.mockReturnValue(meResponse({}, 404));
 
-    expect(await access()).toEqual({ user: { name: "Ana", email: "ana@uni.pe" } });
+    expect(await access()).toEqual({ unavailable: true });
   });
 
   it("fails closed when /me answers with a server error", async () => {

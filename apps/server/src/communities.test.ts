@@ -459,3 +459,156 @@ describe("Institutional email OTP verification (US-010)", () => {
     expect(sentEmails).toHaveLength(0);
   });
 });
+
+describe("Onboarding consent, usual mode, and GET /me (US-011)", () => {
+  it("exposes GET /me, saves server-timestamped consent and baseline usualMode via PATCH /communities/{id}/membership, and enforces requireOnboardedMember", async () => {
+    await testDb.delete(communityMember);
+    await testDb.delete(user);
+
+    const [alfa] = await testDb
+      .insert(community)
+      .values({
+        slug: "comunidad-alfa",
+        name: "Comunidad Alfa",
+        kind: "company",
+        destinationName: "Centro Empresarial Real",
+        destinationLat: -12.0975,
+        destinationLng: -77.0356,
+        joinCodeHash: "a713b09644f93d06ee6458195592400b1b76babb9beecae5064d9376dfdab704",
+        isDemo: true,
+      })
+      .returning();
+
+    const [sofia] = await testDb
+      .insert(user)
+      .values({
+        id: "u-sofia",
+        name: "Sofía Quispe",
+        email: "sofia@alfa.pe",
+        emailVerified: true,
+      })
+      .returning();
+
+    const [membership] = await testDb
+      .insert(communityMember)
+      .values({
+        communityId: alfa!.id,
+        userId: sofia!.id,
+        verificationMethod: "join_code",
+        isTeam: false,
+      })
+      .returning();
+
+    const fixedServerTime = new Date("2026-10-18T14:30:00.000Z");
+    const app = createApp({
+      db: testDb as never,
+      getSession: async () => ({ user: sofia! }) as never,
+      rateLimit: async () => ({ success: true, reset: 0 }),
+      now: () => fixedServerTime,
+    });
+
+    // 1. GET /me returns incomplete membership (consentAt: null, usualMode: null)
+    const meBeforeRes = await app.request("/me");
+    expect(meBeforeRes.status).toBe(200);
+    expect(await meBeforeRes.json()).toEqual({
+      user: {
+        id: "u-sofia",
+        name: "Sofía Quispe",
+        email: "sofia@alfa.pe",
+      },
+      memberships: [
+        {
+          id: membership!.id,
+          communityId: alfa!.id,
+          communityName: "Comunidad Alfa",
+          destinationName: "Centro Empresarial Real",
+          role: "member",
+          verificationMethod: "join_code",
+          consentVersion: null,
+          consentAt: null,
+          usualMode: null,
+          travelRole: null,
+          alias: null,
+          identifiesAsWoman: false,
+          womenOnly: false,
+          isTeam: false,
+        },
+      ],
+    });
+
+    // 2. PATCH /communities/{id}/membership saves consentVersion='v1', server consentAt, usualMode, travelRole, alias
+    const patchRes = await app.request(`/communities/${alfa!.id}/membership`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        consentAccepted: true,
+        consentAt: "1999-01-01T00:00:00.000Z", // must be ignored in favor of server clock
+        usualMode: "drove_alone",
+        travelRole: "both",
+        alias: "Sofi",
+      }),
+    });
+
+    expect(patchRes.status).toBe(200);
+    expect(await patchRes.json()).toEqual({
+      id: membership!.id,
+      communityId: alfa!.id,
+      communityName: "Comunidad Alfa",
+      destinationName: "Centro Empresarial Real",
+      role: "member",
+      verificationMethod: "join_code",
+      consentVersion: "v1",
+      consentAt: "2026-10-18T14:30:00.000Z",
+      usualMode: "drove_alone",
+      travelRole: "both",
+      alias: "Sofi",
+      identifiesAsWoman: false,
+      womenOnly: false,
+      isTeam: false,
+    });
+
+    // 3. GET /me reflects saved onboarding fields
+    const meAfterRes = await app.request("/me");
+    expect(meAfterRes.status).toBe(200);
+    const meAfterBody = (await meAfterRes.json()) as {
+      memberships: Array<Record<string, unknown>>;
+    };
+    expect(meAfterBody.memberships[0]).toMatchObject({
+      consentVersion: "v1",
+      consentAt: "2026-10-18T14:30:00.000Z",
+      usualMode: "drove_alone",
+      travelRole: "both",
+      alias: "Sofi",
+    });
+  });
+
+  it("blocks protected routes with 403 onboarding_required when consent_at or usual_mode is missing", async () => {
+    const { Hono } = await import("hono");
+    const { requireOnboardedMember, requireSession } = await import("./middleware");
+    const { errorHandler } = await import("./utils/error-handler");
+
+    const testApp = new Hono();
+    testApp.onError(errorHandler);
+    testApp.use(
+      "/trips",
+      requireSession(async () => ({ user: { id: "u-incomplete" } }) as never),
+    );
+    testApp.use(
+      "/trips",
+      requireOnboardedMember("comm-1", async () => ({
+        isMember: true,
+        isOnboarded: false,
+      })),
+    );
+    testApp.get("/trips", (c) => c.json({ ok: true }));
+
+    const blockedRes = await testApp.request("/trips");
+    expect(blockedRes.status).toBe(403);
+    expect(await blockedRes.json()).toEqual({
+      success: false,
+      status: 403,
+      error: "Completa tu registro antes de continuar.",
+      details: { code: "onboarding_required" },
+    });
+  });
+});

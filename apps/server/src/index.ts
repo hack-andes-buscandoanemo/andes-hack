@@ -1,8 +1,10 @@
 import {
+  getMeRoute,
   healthRoute,
   joinCommunityRoute,
   listCommunitiesRoute,
   OPENAPI_DOCUMENT_CONFIG,
+  updateMembershipRoute,
   verifyEmailCommunityRoute,
 } from "@andes-hack/api";
 import { auth as defaultAuth, createAuth, setVerificationOtpSender } from "@andes-hack/auth";
@@ -41,6 +43,7 @@ export type AppDeps = {
   joinRateLimit?: RateLimitCheck;
   otpRateLimit?: RateLimitCheck;
   sendEmail?: (options: SendEmailOptions) => Promise<unknown>;
+  now?: () => Date;
 };
 
 async function sha256Hex(value: string): Promise<string> {
@@ -91,6 +94,7 @@ function matchAllowedDomain(email: string | undefined, allowedDomains: string[])
 export function createApp(deps: AppDeps = {}) {
   const database = deps.db ?? defaultDb;
   const emailSender = deps.sendEmail ?? defaultSendEmail;
+  const getNow = deps.now ?? (() => new Date());
   const authInstance =
     deps.db || deps.sendEmail
       ? createAuth({
@@ -128,10 +132,13 @@ export function createApp(deps: AppDeps = {}) {
   app.post("/api/auth/email-otp/send-verification-otp", async (c, next) => {
     const session = await resolveOptionalSession(c.req.raw.headers);
     const cloned = c.req.raw.clone();
-    const payload = (await cloned.json().catch(() => ({}))) as { email?: string };
+    const payload = (await cloned.json().catch(() => ({}))) as {
+      email?: string;
+      communityId?: string;
+    };
     const candidateEmail = (session?.user?.email ?? payload.email ?? "").trim();
 
-    const communityIdHeader = c.req.header("x-community-id");
+    const communityIdHeader = c.req.header("x-community-id") ?? payload.communityId;
     if (communityIdHeader) {
       const [org] = await database
         .select({
@@ -180,6 +187,8 @@ export function createApp(deps: AppDeps = {}) {
   const openApiApp = new OpenAPIHono({ defaultHook: validationHook });
   openApiApp.use("/communities/:id/join", requireSession(deps.getSession));
   openApiApp.use("/communities/:id/verify-email", requireSession(deps.getSession));
+  openApiApp.use("/communities/:id/membership", requireSession(deps.getSession));
+  openApiApp.use("/me", requireSession(deps.getSession));
 
   openApiApp.openapi(healthRoute, (c) => {
     return c.json({ status: "ok" as const });
@@ -397,6 +406,126 @@ export function createApp(deps: AppDeps = {}) {
         verificationMethod: "email_domain" as const,
         isTeam: teamMember,
         message: "Pertenencia verificada.",
+      },
+      200,
+    );
+  });
+
+  openApiApp.openapi(getMeRoute, async (c) => {
+    const sessionUser = c.get("user");
+    const rows = await database
+      .select({
+        id: communityMember.id,
+        communityId: communityMember.communityId,
+        communityName: community.name,
+        destinationName: community.destinationName,
+        role: communityMember.role,
+        verificationMethod: communityMember.verificationMethod,
+        consentVersion: communityMember.consentVersion,
+        consentAt: communityMember.consentAt,
+        usualMode: communityMember.usualMode,
+        travelRole: communityMember.travelRole,
+        alias: communityMember.alias,
+        identifiesAsWoman: communityMember.identifiesAsWoman,
+        womenOnly: communityMember.womenOnly,
+        isTeam: communityMember.isTeam,
+      })
+      .from(communityMember)
+      .innerJoin(community, eq(communityMember.communityId, community.id))
+      .where(eq(communityMember.userId, sessionUser.id))
+      .orderBy(asc(communityMember.createdAt));
+
+    return c.json(
+      {
+        user: {
+          id: sessionUser.id,
+          name: sessionUser.name,
+          email: sessionUser.email,
+        },
+        memberships: rows.map((row) => ({
+          id: row.id,
+          communityId: row.communityId,
+          communityName: row.communityName,
+          destinationName: row.destinationName,
+          role: row.role,
+          verificationMethod: row.verificationMethod,
+          consentVersion: row.consentVersion,
+          consentAt: row.consentAt ? row.consentAt.toISOString() : null,
+          usualMode: row.usualMode,
+          travelRole: row.travelRole,
+          alias: row.alias,
+          identifiesAsWoman: row.identifiesAsWoman,
+          womenOnly: row.womenOnly,
+          isTeam: row.isTeam,
+        })),
+      },
+      200,
+    );
+  });
+
+  openApiApp.openapi(updateMembershipRoute, async (c) => {
+    const { id: communityId } = c.req.valid("param");
+    const body = c.req.valid("json");
+    const sessionUser = c.get("user");
+
+    const [org] = await database
+      .select({
+        id: community.id,
+        name: community.name,
+        destinationName: community.destinationName,
+      })
+      .from(community)
+      .where(eq(community.id, communityId))
+      .limit(1);
+
+    if (!org) {
+      throw new ApiError(404, "Comunidad no encontrada.", { code: "community_not_found" });
+    }
+
+    const [existing] = await database
+      .select({ id: communityMember.id })
+      .from(communityMember)
+      .where(
+        and(eq(communityMember.communityId, org.id), eq(communityMember.userId, sessionUser.id)),
+      )
+      .limit(1);
+
+    if (!existing) {
+      throw new ApiError(403, "No perteneces a esta comunidad.", {
+        code: "community_membership_required",
+      });
+    }
+
+    const consentTime = getNow();
+    const [updated] = await database
+      .update(communityMember)
+      .set({
+        consentVersion: "v1",
+        consentAt: consentTime,
+        usualMode: body.usualMode,
+        travelRole: body.travelRole,
+        alias: body.alias ?? null,
+        updatedAt: consentTime,
+      })
+      .where(eq(communityMember.id, existing.id))
+      .returning();
+
+    return c.json(
+      {
+        id: updated!.id,
+        communityId: org.id,
+        communityName: org.name,
+        destinationName: org.destinationName,
+        role: updated!.role,
+        verificationMethod: updated!.verificationMethod,
+        consentVersion: updated!.consentVersion,
+        consentAt: updated!.consentAt ? updated!.consentAt.toISOString() : null,
+        usualMode: updated!.usualMode,
+        travelRole: updated!.travelRole,
+        alias: updated!.alias,
+        identifiesAsWoman: updated!.identifiesAsWoman,
+        womenOnly: updated!.womenOnly,
+        isTeam: updated!.isTeam,
       },
       200,
     );
