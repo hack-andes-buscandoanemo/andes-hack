@@ -2,15 +2,15 @@ import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const listCommunities = vi.fn();
-const getPublicStats = vi.fn();
+vi.hoisted(() => {
+  process.env.NEXT_PUBLIC_SERVER_URL = "http://localhost:3000";
+});
 
-vi.mock("@/lib/communities-api", () => ({
-  communitiesApi: {
-    listCommunities: (...args: unknown[]) => listCommunities(...args),
-    getPublicStats: (...args: unknown[]) => getPublicStats(...args),
-  },
-}));
+import { httpClient } from "@/lib/http-client";
+
+const communitiesResponse = vi.fn();
+const statsResponse = vi.fn();
+const originalAdapter = httpClient.defaults.adapter;
 
 import Panel from "./panel";
 
@@ -45,6 +45,7 @@ const STATS = {
     completedTrips: 3,
   },
   waitlist: { institutions: 2, individuals: 6 },
+  comparison: null,
   districts: [
     { district: "La Molina", people: 11 },
     { district: "San Borja", people: null },
@@ -59,22 +60,73 @@ const STATS = {
 };
 
 beforeEach(() => {
-  listCommunities.mockReset().mockResolvedValue([ALFA, BETA]);
-  getPublicStats.mockReset().mockResolvedValue(STATS);
+  communitiesResponse.mockReset().mockResolvedValue([ALFA, BETA]);
+  statsResponse.mockReset().mockResolvedValue(STATS);
+  httpClient.defaults.adapter = async (config) => {
+    const data =
+      config.url === "/communities"
+        ? { communities: await communitiesResponse() }
+        : await statsResponse(config.url);
+    return { data, status: 200, statusText: "OK", headers: {}, config };
+  };
 });
 
 afterEach(() => {
+  httpClient.defaults.adapter = originalAdapter;
   vi.useRealTimers();
 });
 
 describe("Panel", () => {
+  it("separates optimizer recommendations from measured vehicle impact", async () => {
+    statsResponse.mockResolvedValue({
+      ...STATS,
+      comparison: {
+        date: "2026-10-19",
+        direction: "outbound",
+        optimizer: { carTripsAvoided: 8, passengersMatched: 11 },
+        firstComeFirstServed: { carTripsAvoided: 5, passengersMatched: 7 },
+      },
+    });
+    render(<Panel />);
+    const comparison = await screen.findByRole("region", {
+      name: "Optimizador vs. primero en llegar",
+    });
+    expect(
+      within(comparison).getByText("Recomendaciones para el 2026-10-19 · Ida"),
+    ).toBeInTheDocument();
+    const optimizer = within(comparison).getByRole("group", { name: "Optimizador" });
+    expect(within(optimizer).getByText("Viajes en auto evitados").nextSibling).toHaveTextContent(
+      "8",
+    );
+    expect(within(optimizer).getByText("Personas emparejadas").nextSibling).toHaveTextContent("11");
+    const fcfs = within(comparison).getByRole("group", { name: "Primero en llegar" });
+    expect(within(fcfs).getByText("Viajes en auto evitados").nextSibling).toHaveTextContent("5");
+    expect(within(fcfs).getByText("Personas emparejadas").nextSibling).toHaveTextContent("7");
+  });
+  it("finishes loading when there are no communities", async () => {
+    communitiesResponse.mockResolvedValue([]);
+    render(<Panel />);
+    expect(await screen.findByText("Aún no hay comunidades disponibles.")).toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+  it("recovers on a successful poll after the initial request failed", async () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    statsResponse.mockRejectedValueOnce(new Error("network"));
+    render(<Panel />);
+    await screen.findByRole("alert");
+    await act(async () => {
+      vi.advanceTimersByTime(30_000);
+    });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(await screen.findByText("Personas inscritas")).toBeInTheDocument();
+  });
   it("shows the activity cards of Comunidad Alfa without signing in", async () => {
     render(<Panel />);
 
     const card = async (label: string) =>
       (await screen.findByText(label)).closest("[data-card]") as HTMLElement;
     expect(within(await card("Personas inscritas")).getByText("12")).toBeInTheDocument();
-    expect(getPublicStats).toHaveBeenCalledWith("comunidad-alfa");
+    expect(statsResponse).toHaveBeenCalledWith("/public/communities/comunidad-alfa/stats");
     expect(within(await card("Conductores")).getByText("5")).toBeInTheDocument();
     expect(within(await card("Ofertas activas")).getByText("4")).toBeInTheDocument();
     expect(within(await card("Necesidades abiertas")).getByText("7")).toBeInTheDocument();
@@ -102,7 +154,7 @@ describe("Panel", () => {
   });
 
   it("shows skeletons while the figures load", async () => {
-    getPublicStats.mockReturnValue(new Promise(() => {}));
+    statsResponse.mockReturnValue(new Promise(() => {}));
 
     render(<Panel />);
 
@@ -111,7 +163,7 @@ describe("Panel", () => {
   });
 
   it("offers to retry when the panel cannot be loaded", async () => {
-    getPublicStats.mockRejectedValueOnce(new Error("network"));
+    statsResponse.mockRejectedValueOnce(new Error("network"));
     render(<Panel />);
 
     expect(await screen.findByRole("alert")).toHaveTextContent("No pudimos cargar el panel.");
@@ -123,7 +175,7 @@ describe("Panel", () => {
   });
 
   it("says there is no activity yet in an empty community", async () => {
-    getPublicStats.mockResolvedValue({
+    statsResponse.mockResolvedValue({
       ...STATS,
       activity: {
         enrolled: 0,
@@ -161,7 +213,9 @@ describe("Panel", () => {
 
     await userEvent.selectOptions(selector, "Beta");
 
-    await waitFor(() => expect(getPublicStats).toHaveBeenLastCalledWith("beta"));
+    await waitFor(() =>
+      expect(statsResponse).toHaveBeenLastCalledWith("/public/communities/beta/stats"),
+    );
   });
 
   it("labels only demo communities as Datos sintéticos", async () => {
@@ -169,7 +223,7 @@ describe("Panel", () => {
     await screen.findByText("Personas inscritas");
     expect(screen.queryByText("Datos sintéticos")).not.toBeInTheDocument();
 
-    getPublicStats.mockResolvedValue({ ...STATS, community: { name: "Beta", isDemo: true } });
+    statsResponse.mockResolvedValue({ ...STATS, community: { name: "Beta", isDemo: true } });
     await userEvent.selectOptions(screen.getByRole("combobox", { name: "Comunidad" }), "Beta");
 
     expect(await screen.findByText("Datos sintéticos")).toBeInTheDocument();
@@ -199,6 +253,7 @@ describe("Panel", () => {
     render(<Panel />);
 
     const waitlist = await screen.findByRole("region", { name: "Lista de espera" });
+    expect(within(waitlist).getByText("Totales de toda la plataforma.")).toBeInTheDocument();
     expect(within(waitlist).getByText("Instituciones").nextSibling).toHaveTextContent("2");
     expect(within(waitlist).getByText("Personas").nextSibling).toHaveTextContent("6");
   });
@@ -207,15 +262,15 @@ describe("Panel", () => {
     vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
     render(<Panel />);
     await screen.findByText("Personas inscritas");
-    expect(getPublicStats).toHaveBeenCalledTimes(1);
+    expect(statsResponse).toHaveBeenCalledTimes(1);
 
-    getPublicStats.mockResolvedValue({ ...STATS, activity: { ...STATS.activity, enrolled: 13 } });
+    statsResponse.mockResolvedValue({ ...STATS, activity: { ...STATS.activity, enrolled: 13 } });
     await act(async () => {
       vi.advanceTimersByTime(30_000);
     });
 
-    expect(getPublicStats).toHaveBeenCalledTimes(2);
-    expect(getPublicStats).toHaveBeenLastCalledWith("comunidad-alfa");
+    expect(statsResponse).toHaveBeenCalledTimes(2);
+    expect(statsResponse).toHaveBeenLastCalledWith("/public/communities/comunidad-alfa/stats");
     expect(await screen.findByText("13")).toBeInTheDocument();
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });

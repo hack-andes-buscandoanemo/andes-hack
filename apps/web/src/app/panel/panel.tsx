@@ -75,6 +75,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 
 export default function Panel() {
   const [communities, setCommunities] = useState<CommunitySummary[]>([]);
+  const [communitiesLoaded, setCommunitiesLoaded] = useState(false);
   const [slug, setSlug] = useState<string | null>(null);
   const [stats, setStats] = useState<PublicStats | null>(null);
   const [failed, setFailed] = useState(false);
@@ -87,6 +88,7 @@ export default function Panel() {
     communitiesApi.listCommunities().then(
       (list) => {
         setCommunities(list);
+        setCommunitiesLoaded(true);
         setSlug((current) => current ?? list[0]?.slug ?? null);
       },
       () => setFailed(true),
@@ -97,17 +99,16 @@ export default function Panel() {
     if (!slug) return;
     setFailed(false);
     let current = true;
-    communitiesApi.getPublicStats(slug).then(
-      (next) => current && setStats(next),
-      () => current && setFailed(true),
-    );
+    const showStats = (next: PublicStats) => {
+      if (!current) return;
+      setStats(next);
+      setFailed(false);
+    };
+    communitiesApi.getPublicStats(slug).then(showStats, () => current && setFailed(true));
     // The server caches for 30 s, so asking more often would only repeat its answer. A
     // failed refresh keeps the figures on screen instead of replacing them with an error.
     const timer = setInterval(() => {
-      communitiesApi.getPublicStats(slug).then(
-        (next) => current && setStats(next),
-        () => undefined,
-      );
+      communitiesApi.getPublicStats(slug).then(showStats, () => undefined);
     }, REFRESH_MS);
     return () => {
       current = false;
@@ -162,7 +163,11 @@ export default function Panel() {
     return (
       <Shell>
         {selector}
-        <Skeletons />
+        {communitiesLoaded && communities.length === 0 ? (
+          <EmptyState>Aún no hay comunidades disponibles.</EmptyState>
+        ) : (
+          <Skeletons />
+        )}
       </Shell>
     );
   }
@@ -207,6 +212,7 @@ export default function Panel() {
             />
           </Block>
           <Block title="Lista de espera">
+            <p className="text-sm text-muted-foreground">Totales de toda la plataforma.</p>
             <Row label="Instituciones" value={String(stats.waitlist.institutions)} />
             <Row label="Personas" value={String(stats.waitlist.individuals)} />
           </Block>
@@ -223,6 +229,26 @@ export default function Panel() {
           ) : null}
         </>
       )}
+      {stats.comparison ? (
+        <Block title="Optimizador vs. primero en llegar">
+          <p className="text-sm text-muted-foreground">{`Recomendaciones para el ${stats.comparison.date} · ${stats.comparison.direction === "outbound" ? "Ida" : "Regreso"}`}</p>
+          <p className="text-sm text-muted-foreground">
+            Son recomendaciones, no viajes aceptados ni completados.
+          </p>
+          {(
+            [
+              ["Optimizador", stats.comparison.optimizer],
+              ["Primero en llegar", stats.comparison.firstComeFirstServed],
+            ] as const
+          ).map(([name, counts]) => (
+            <div key={name} role="group" aria-label={name} className="space-y-2">
+              <h3 className="font-semibold">{name}</h3>
+              <Row label="Viajes en auto evitados" value={String(counts.carTripsAvoided)} />
+              <Row label="Personas emparejadas" value={String(counts.passengersMatched)} />
+            </div>
+          ))}
+        </Block>
+      ) : null}
       <p className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
         <span>{`Actualizado a las ${limaClock.format(new Date(stats.updatedAt))} (hora del servidor)`}</span>
         <Link href="/datos" className="font-semibold underline">
