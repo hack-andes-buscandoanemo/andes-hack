@@ -228,6 +228,204 @@ export interface paths {
     };
     trace?: never;
   };
+  "/vehicles": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Vehículos registrados por la persona autenticada */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["VehiclesResponse"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: {
+        content: {
+          "application/json": components["schemas"]["CreateVehicleRequest"];
+        };
+      };
+      responses: {
+        /** @description Vehículo registrado */
+        201: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["VehicleSummary"];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/communities/{id}/zones": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Zonas disponibles para la comunidad */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ZonesResponse"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/communities/{id}/offers": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Viajes ofrecidos por la persona autenticada en la comunidad */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["TripOffersResponse"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: {
+        content: {
+          "application/json": components["schemas"]["CreateTripOfferRequest"];
+        };
+      };
+      responses: {
+        /** @description Viaje ofrecido creado */
+        201: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["CreateTripOfferResponse"];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/offers/{id}/status": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: {
+        content: {
+          "application/json": components["schemas"]["UpdateOfferStatusRequest"];
+        };
+      };
+      responses: {
+        /** @description Estado de la oferta actualizado */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["TripOfferSummary"];
+          };
+        };
+      };
+    };
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -315,6 +513,85 @@ export interface components {
       /** @enum {string} */
       travelRole: "driver" | "passenger" | "both";
       alias?: string;
+    };
+    VehiclesResponse: {
+      vehicles: components["schemas"]["VehicleSummary"][];
+    };
+    VehicleSummary: {
+      /** Format: uuid */
+      id: string;
+      plate: string;
+      make: string;
+      model: string;
+      color: string;
+      seats: number;
+    };
+    CreateVehicleRequest: {
+      plate: string;
+      makeModel?: string;
+      make?: string;
+      model?: string;
+      color: string;
+      seats: number;
+    };
+    ZonesResponse: {
+      zones: components["schemas"]["ZoneSummary"][];
+    };
+    ZoneSummary: {
+      id: string;
+      name: string;
+      district: string;
+      lat: number;
+      lng: number;
+    };
+    TripOffersResponse: {
+      offers: components["schemas"]["TripOfferSummary"][];
+    };
+    TripOfferSummary: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      communityId: string;
+      driverId: string | null;
+      /** Format: uuid */
+      vehicleId: string | null;
+      /** @enum {string} */
+      direction: "outbound" | "return";
+      originZoneId: string;
+      originZoneName?: string;
+      departureTime: string;
+      daysOfWeek: number[] | null;
+      date: string | null;
+      seatsTotal: number;
+      seatsTaken: number;
+      maxDetourMinutes: number;
+      womenOnly: boolean;
+      note: string | null;
+      /** @enum {string} */
+      status: "active" | "paused" | "cancelled";
+    };
+    CreateTripOfferResponse: {
+      offer: components["schemas"]["TripOfferSummary"];
+      message: string;
+    };
+    CreateTripOfferRequest: {
+      /** Format: uuid */
+      vehicleId: string;
+      /** @enum {string} */
+      direction: "outbound" | "return";
+      originZoneId: string;
+      departureTime: string;
+      daysOfWeek?: number[] | null;
+      date?: string | null;
+      seatsTotal: number;
+      maxDetourMinutes: 0 | 5 | 10;
+      /** @default false */
+      womenOnly: boolean;
+      note?: string | null;
+    };
+    UpdateOfferStatusRequest: {
+      /** @enum {string} */
+      status: "active" | "paused";
     };
   };
   responses: never;

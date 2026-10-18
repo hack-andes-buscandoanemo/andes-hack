@@ -1,26 +1,36 @@
 import {
+  createCommunityOfferRoute,
+  createVehicleRoute,
   getMeRoute,
   healthRoute,
   joinCommunityRoute,
   listCommunitiesRoute,
+  listCommunityOffersRoute,
+  listCommunityZonesRoute,
+  listVehiclesRoute,
   OPENAPI_DOCUMENT_CONFIG,
   updateMembershipRoute,
+  updateOfferStatusRoute,
   verifyEmailCommunityRoute,
 } from "@andes-hack/api";
 import { auth as defaultAuth, createAuth, setVerificationOtpSender } from "@andes-hack/auth";
 import { db as defaultDb } from "@andes-hack/db";
 import { user as userTable } from "@andes-hack/db/schema/auth";
 import { community, communityMember } from "@andes-hack/db/schema/community";
+import { zone } from "@andes-hack/db/schema/places";
+import { tripOffer } from "@andes-hack/db/schema/trips";
+import { vehicle } from "@andes-hack/db/schema/vehicle";
 import { env } from "@andes-hack/env/server";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { apiReference } from "@scalar/hono-api-reference";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 import { sendEmail as defaultSendEmail, type SendEmailOptions } from "./lib/email";
 import {
   rateLimitMiddleware,
+  requireOnboardedMember,
   requireSession,
   type RateLimitCheck,
   type SessionResolver,
@@ -184,10 +194,38 @@ export function createApp(deps: AppDeps = {}) {
 
   app.on(["POST", "GET"], "/api/auth/*", (c) => authInstance.handler(c.req.raw));
 
+  const checkOnboarded = async (userId: string, communityId: string) => {
+    const [row] = await database
+      .select({
+        consentAt: communityMember.consentAt,
+        usualMode: communityMember.usualMode,
+      })
+      .from(communityMember)
+      .where(and(eq(communityMember.communityId, communityId), eq(communityMember.userId, userId)))
+      .limit(1);
+    if (!row) return { isMember: false, isOnboarded: false };
+    return {
+      isMember: true,
+      isOnboarded: row.consentAt != null && row.usualMode != null,
+    };
+  };
+
   const openApiApp = new OpenAPIHono({ defaultHook: validationHook });
   openApiApp.use("/communities/:id/join", requireSession(deps.getSession));
   openApiApp.use("/communities/:id/verify-email", requireSession(deps.getSession));
   openApiApp.use("/communities/:id/membership", requireSession(deps.getSession));
+  openApiApp.use(
+    "/communities/:id/zones",
+    requireSession(deps.getSession),
+    requireOnboardedMember((c) => c.req.param("id") ?? "", checkOnboarded),
+  );
+  openApiApp.use(
+    "/communities/:id/offers",
+    requireSession(deps.getSession),
+    requireOnboardedMember((c) => c.req.param("id") ?? "", checkOnboarded),
+  );
+  openApiApp.use("/vehicles", requireSession(deps.getSession));
+  openApiApp.use("/offers/:id/status", requireSession(deps.getSession));
   openApiApp.use("/me", requireSession(deps.getSession));
 
   openApiApp.openapi(healthRoute, (c) => {
@@ -526,6 +564,338 @@ export function createApp(deps: AppDeps = {}) {
         identifiesAsWoman: updated!.identifiesAsWoman,
         womenOnly: updated!.womenOnly,
         isTeam: updated!.isTeam,
+      },
+      200,
+    );
+  });
+
+  openApiApp.openapi(listVehiclesRoute, async (c) => {
+    const sessionUser = c.get("user");
+    const rows = await database
+      .select({
+        id: vehicle.id,
+        plate: vehicle.plate,
+        make: vehicle.make,
+        model: vehicle.model,
+        color: vehicle.color,
+        seats: vehicle.seats,
+      })
+      .from(vehicle)
+      .where(eq(vehicle.ownerId, sessionUser.id))
+      .orderBy(asc(vehicle.createdAt));
+
+    return c.json({ vehicles: rows }, 200);
+  });
+
+  openApiApp.openapi(createVehicleRoute, async (c) => {
+    const body = c.req.valid("json");
+    const sessionUser = c.get("user");
+
+    const [existingPlate] = await database
+      .select({ id: vehicle.id })
+      .from(vehicle)
+      .where(eq(vehicle.plate, body.plate))
+      .limit(1);
+
+    if (existingPlate) {
+      throw new ApiError(409, "Esta placa ya está registrada.", {
+        code: "plate_already_registered",
+      });
+    }
+
+    const rawMakeModel = (body.makeModel ?? "").trim();
+    const firstSpace = rawMakeModel.indexOf(" ");
+    const make =
+      body.make?.trim() ||
+      (firstSpace === -1 ? rawMakeModel : rawMakeModel.slice(0, firstSpace).trim());
+    const model =
+      body.model?.trim() ||
+      (firstSpace === -1 ? make : rawMakeModel.slice(firstSpace + 1).trim() || make);
+
+    const [created] = await database
+      .insert(vehicle)
+      .values({
+        ownerId: sessionUser.id,
+        plate: body.plate,
+        make,
+        model,
+        color: body.color.trim(),
+        seats: body.seats,
+      })
+      .returning();
+
+    return c.json(
+      {
+        id: created!.id,
+        plate: created!.plate,
+        make: created!.make,
+        model: created!.model,
+        color: created!.color,
+        seats: created!.seats,
+      },
+      201,
+    );
+  });
+
+  openApiApp.openapi(listCommunityZonesRoute, async (c) => {
+    let rows = await database
+      .select({
+        id: zone.id,
+        name: zone.name,
+        district: zone.district,
+        lat: zone.lat,
+        lng: zone.lng,
+      })
+      .from(zone)
+      .orderBy(asc(zone.name));
+
+    if (rows.length === 0) {
+      await database
+        .insert(zone)
+        .values([
+          {
+            id: "san-isidro",
+            name: "San Isidro (Óvalo Gutiérrez)",
+            district: "San Isidro",
+            lat: -12.1049,
+            lng: -77.0372,
+          },
+          {
+            id: "miraflores",
+            name: "Miraflores (Parque Kennedy)",
+            district: "Miraflores",
+            lat: -12.1211,
+            lng: -77.0294,
+          },
+          {
+            id: "surco",
+            name: "Surco (Óvalo Higuereta)",
+            district: "Santiago de Surco",
+            lat: -12.1277,
+            lng: -77.0014,
+          },
+          {
+            id: "la-molina",
+            name: "La Molina (Óvalo Monitor)",
+            district: "La Molina",
+            lat: -12.0853,
+            lng: -76.9682,
+          },
+          {
+            id: "san-borja",
+            name: "San Borja (La Cultura)",
+            district: "San Borja",
+            lat: -12.0897,
+            lng: -77.0031,
+          },
+        ])
+        .onConflictDoNothing();
+
+      rows = await database
+        .select({
+          id: zone.id,
+          name: zone.name,
+          district: zone.district,
+          lat: zone.lat,
+          lng: zone.lng,
+        })
+        .from(zone)
+        .orderBy(asc(zone.name));
+    }
+
+    return c.json({ zones: rows }, 200);
+  });
+
+  openApiApp.openapi(listCommunityOffersRoute, async (c) => {
+    const { id: communityId } = c.req.valid("param");
+    const sessionUser = c.get("user");
+
+    const rows = await database
+      .select({
+        id: tripOffer.id,
+        communityId: tripOffer.communityId,
+        driverId: tripOffer.driverId,
+        vehicleId: tripOffer.vehicleId,
+        direction: tripOffer.direction,
+        originZoneId: tripOffer.originZoneId,
+        originZoneName: zone.name,
+        departureTime: tripOffer.departureTime,
+        daysOfWeek: tripOffer.daysOfWeek,
+        date: tripOffer.date,
+        seatsTotal: tripOffer.seatsTotal,
+        seatsTaken: tripOffer.seatsTaken,
+        maxDetourMinutes: tripOffer.maxDetourMinutes,
+        womenOnly: tripOffer.womenOnly,
+        note: tripOffer.note,
+        status: tripOffer.status,
+      })
+      .from(tripOffer)
+      .leftJoin(zone, eq(tripOffer.originZoneId, zone.id))
+      .where(and(eq(tripOffer.communityId, communityId), eq(tripOffer.driverId, sessionUser.id)))
+      .orderBy(desc(tripOffer.createdAt));
+
+    return c.json(
+      {
+        offers: rows.map((row) => ({
+          ...row,
+          originZoneName: row.originZoneName ?? row.originZoneId,
+        })),
+      },
+      200,
+    );
+  });
+
+  openApiApp.openapi(createCommunityOfferRoute, async (c) => {
+    const { id: communityId } = c.req.valid("param");
+    const body = c.req.valid("json");
+    const sessionUser = c.get("user");
+
+    const [car] = await database
+      .select({
+        id: vehicle.id,
+        ownerId: vehicle.ownerId,
+        seats: vehicle.seats,
+      })
+      .from(vehicle)
+      .where(and(eq(vehicle.id, body.vehicleId), eq(vehicle.ownerId, sessionUser.id)))
+      .limit(1);
+
+    if (!car) {
+      throw new ApiError(404, "Vehículo no encontrado.", { code: "vehicle_not_found" });
+    }
+
+    if (body.seatsTotal > car.seats) {
+      throw new ApiError(400, "No puedes ofrecer más asientos de los que tiene tu vehículo.", {
+        code: "seats_exceed_vehicle_capacity",
+      });
+    }
+
+    if (body.date) {
+      const todayLima = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Lima",
+      }).format(getNow());
+      if (body.date < todayLima) {
+        throw new ApiError(400, "La fecha del viaje no puede estar en el pasado.", {
+          code: "past_offer_date",
+        });
+      }
+    }
+
+    const [membership] = await database
+      .select({ identifiesAsWoman: communityMember.identifiesAsWoman })
+      .from(communityMember)
+      .where(
+        and(
+          eq(communityMember.communityId, communityId),
+          eq(communityMember.userId, sessionUser.id),
+        ),
+      )
+      .limit(1);
+
+    if (body.womenOnly && !membership?.identifiesAsWoman) {
+      throw new ApiError(
+        403,
+        "Esta preferencia solo está disponible para quienes la activaron en su perfil.",
+        { code: "women_only_not_allowed" },
+      );
+    }
+
+    const [zoneRow] = await database
+      .select({ name: zone.name })
+      .from(zone)
+      .where(eq(zone.id, body.originZoneId))
+      .limit(1);
+
+    const [created] = await database
+      .insert(tripOffer)
+      .values({
+        communityId,
+        driverId: sessionUser.id,
+        vehicleId: car.id,
+        direction: body.direction,
+        originZoneId: body.originZoneId,
+        departureTime: body.departureTime,
+        daysOfWeek: body.daysOfWeek ?? null,
+        date: body.date ?? null,
+        seatsTotal: body.seatsTotal,
+        seatsTaken: 0,
+        maxDetourMinutes: body.maxDetourMinutes,
+        womenOnly: body.womenOnly,
+        note: body.note?.trim() || null,
+        status: "active",
+      })
+      .returning();
+
+    return c.json(
+      {
+        offer: {
+          id: created!.id,
+          communityId: created!.communityId,
+          driverId: created!.driverId,
+          vehicleId: created!.vehicleId,
+          direction: created!.direction,
+          originZoneId: created!.originZoneId,
+          originZoneName: zoneRow?.name ?? created!.originZoneId,
+          departureTime: created!.departureTime,
+          daysOfWeek: created!.daysOfWeek,
+          date: created!.date,
+          seatsTotal: created!.seatsTotal,
+          seatsTaken: created!.seatsTaken,
+          maxDetourMinutes: created!.maxDetourMinutes,
+          womenOnly: created!.womenOnly,
+          note: created!.note,
+          status: created!.status,
+        },
+        message: "Viaje publicado.",
+      },
+      201,
+    );
+  });
+
+  openApiApp.openapi(updateOfferStatusRoute, async (c) => {
+    const { id: offerId } = c.req.valid("param");
+    const { status } = c.req.valid("json");
+    const sessionUser = c.get("user");
+
+    const [existing] = await database
+      .select({ id: tripOffer.id, driverId: tripOffer.driverId })
+      .from(tripOffer)
+      .where(eq(tripOffer.id, offerId))
+      .limit(1);
+
+    if (!existing) {
+      throw new ApiError(404, "Oferta no encontrada.", { code: "offer_not_found" });
+    }
+
+    if (existing.driverId !== sessionUser.id) {
+      throw new ApiError(403, "No tienes permiso para modificar esta oferta.", {
+        code: "forbidden",
+      });
+    }
+
+    const [updated] = await database
+      .update(tripOffer)
+      .set({ status, updatedAt: getNow() })
+      .where(eq(tripOffer.id, offerId))
+      .returning();
+
+    return c.json(
+      {
+        id: updated!.id,
+        communityId: updated!.communityId,
+        driverId: updated!.driverId,
+        vehicleId: updated!.vehicleId,
+        direction: updated!.direction,
+        originZoneId: updated!.originZoneId,
+        departureTime: updated!.departureTime,
+        daysOfWeek: updated!.daysOfWeek,
+        date: updated!.date,
+        seatsTotal: updated!.seatsTotal,
+        seatsTaken: updated!.seatsTaken,
+        maxDetourMinutes: updated!.maxDetourMinutes,
+        womenOnly: updated!.womenOnly,
+        note: updated!.note,
+        status: updated!.status,
       },
       200,
     );

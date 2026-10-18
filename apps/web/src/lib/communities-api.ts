@@ -6,6 +6,12 @@ export type JoinCommunityResponse = components["schemas"]["JoinCommunityResponse
 export type MeResponse = components["schemas"]["MeResponse"];
 export type MembershipSummary = components["schemas"]["MembershipSummary"];
 export type UpdateMembershipRequest = components["schemas"]["UpdateMembershipRequest"];
+export type VehicleSummary = components["schemas"]["VehicleSummary"];
+export type CreateVehicleRequest = components["schemas"]["CreateVehicleRequest"];
+export type ZoneSummary = components["schemas"]["ZoneSummary"];
+export type TripOfferSummary = components["schemas"]["TripOfferSummary"];
+export type CreateTripOfferRequest = components["schemas"]["CreateTripOfferRequest"];
+export type CreateTripOfferResponse = components["schemas"]["CreateTripOfferResponse"];
 
 export const communitiesApi = {
   async listCommunities(): Promise<CommunitySummary[]> {
@@ -51,6 +57,42 @@ export const communitiesApi = {
       `/communities/${communityId}/membership` as "/communities/{id}/membership",
       payload,
     );
+    return response.data;
+  },
+  async listVehicles(): Promise<VehicleSummary[]> {
+    const response = await httpClient.get("/vehicles");
+    return response.data.vehicles;
+  },
+  async createVehicle(payload: CreateVehicleRequest): Promise<VehicleSummary> {
+    const response = await httpClient.post("/vehicles", payload);
+    return response.data;
+  },
+  async listCommunityZones(communityId: string): Promise<ZoneSummary[]> {
+    const response = await httpClient.get(
+      `/communities/${communityId}/zones` as "/communities/{id}/zones",
+    );
+    return response.data.zones;
+  },
+  async listCommunityOffers(communityId: string): Promise<TripOfferSummary[]> {
+    const response = await httpClient.get(
+      `/communities/${communityId}/offers` as "/communities/{id}/offers",
+    );
+    return response.data.offers;
+  },
+  async createCommunityOffer(
+    communityId: string,
+    payload: CreateTripOfferRequest,
+  ): Promise<CreateTripOfferResponse> {
+    const response = await httpClient.post(
+      `/communities/${communityId}/offers` as "/communities/{id}/offers",
+      payload,
+    );
+    return response.data;
+  },
+  async updateOfferStatus(offerId: string, status: "active" | "paused"): Promise<TripOfferSummary> {
+    const response = await httpClient.patch(`/offers/${offerId}/status` as "/offers/{id}/status", {
+      status,
+    });
     return response.data;
   },
 };
