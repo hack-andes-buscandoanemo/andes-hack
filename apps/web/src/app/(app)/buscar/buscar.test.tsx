@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const getMe = vi.fn();
 const listCommunityZones = vi.fn();
@@ -65,6 +65,10 @@ beforeEach(() => {
   getMe.mockReset().mockResolvedValue(ME);
   listCommunityZones.mockReset().mockResolvedValue(ZONES);
   searchTrips.mockReset();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 // Zones arrive after the page shows, so wait for the option before picking it.
@@ -191,7 +195,6 @@ describe("search page /buscar (US-013)", () => {
         windowEnd: "19:00",
       }),
     );
-    vi.useRealTimers();
   });
 
   it("searches a recurring trip on the weekdays picked", async () => {
@@ -461,5 +464,18 @@ describe("search page /buscar (US-013)", () => {
     expect(
       await screen.findByText("No encontramos más viajes disponibles para este recorrido."),
     ).toBeInTheDocument();
+  });
+
+  it("announces the number of matches politely to screen readers", async () => {
+    searchTrips.mockResolvedValue({
+      requestId: "33333333-3333-4333-8333-333333333333",
+      matches: [MATCH],
+      reason: null,
+    });
+
+    await searchFromSanBorja();
+
+    const count = await screen.findByText("1 coincidencia encontrada");
+    expect(count.closest("[aria-live]")).toHaveAttribute("aria-live", "polite");
   });
 });

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import EmptyState from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import {
   communitiesApi,
@@ -141,222 +142,245 @@ export default function SearchPage() {
           {loadError}
         </p>
       ) : null}
-      {memberships.length > 1 ? (
-        <label className="flex items-center justify-between gap-3 text-sm font-bold">
-          Comunidad
-          <select
-            className={selectClass}
-            value={communityId}
-            onChange={(event) => {
-              setCommunityId(event.target.value);
-              setZoneId("");
-              setResult(null);
-            }}
-          >
-            {memberships.map((item) => (
-              <option key={item.communityId} value={item.communityId}>
-                {item.communityName}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : null}
-      <div className="flex flex-col gap-2 rounded-2xl border bg-card p-4 shadow-sm">
-        <div className="flex items-start gap-2">
-          <div className="flex flex-1 flex-col gap-2">
-            {(outbound ? ["Origen", "Destino"] : ["Destino", "Origen"]).map((name) => {
-              const isCommunityEnd = outbound ? name === "Destino" : name === "Origen";
-              return (
-                <div
-                  key={name}
-                  role="group"
-                  aria-label={name}
-                  className="flex items-center justify-between gap-3 text-sm"
-                >
-                  <span className="font-bold">{name}</span>
-                  {isCommunityEnd ? (
-                    <span>{membership?.destinationName}</span>
-                  ) : (
-                    <div className="flex flex-col items-end gap-1">
-                      <select
-                        className={selectClass}
-                        aria-label="Mi zona"
-                        value={zoneId}
-                        onChange={(event) => setZoneId(event.target.value)}
-                      >
-                        <option value="">Elige tu zona</option>
-                        {zones.map((zone) => (
-                          <option key={zone.id} value={zone.id}>
-                            {zone.name}
-                          </option>
-                        ))}
-                      </select>
-                      <span className="text-xs text-muted-foreground">
-                        No pedimos tu dirección exacta
-                      </span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            aria-label="Invertir sentido"
-            onClick={() => setOutbound((value) => !value)}
-          >
-            ⇅
-          </Button>
-        </div>
-      </div>
-      <div className="flex flex-col gap-2 rounded-2xl border bg-card p-4 shadow-sm">
-        <label className="flex items-center justify-between gap-3 text-sm font-bold">
-          Fecha
-          <select
-            className={selectClass}
-            value={dayChoice}
-            onChange={(event) => setDayChoice(event.target.value as DayChoice)}
-          >
-            <option value="today">Hoy</option>
-            <option value="tomorrow">Mañana</option>
-            <option value="other">Otra fecha</option>
-            <option value="days">Días</option>
-          </select>
-        </label>
-        {dayChoice === "other" ? (
-          <input
-            type="date"
-            className={selectClass}
-            aria-label="Día del viaje"
-            min={limaToday()}
-            value={otherDate}
-            onChange={(event) => setOtherDate(event.target.value)}
-          />
-        ) : null}
-        {dateError ? <p className="text-sm font-medium text-destructive">{dateError}</p> : null}
-        {dayChoice === "days" ? (
-          <div role="group" aria-label="Días" className="flex gap-1">
-            {WEEKDAYS.map((day) => (
-              <Button
-                key={day.iso}
-                type="button"
-                size="sm"
-                variant={days.includes(day.iso) ? "default" : "outline"}
-                aria-label={day.name}
-                aria-pressed={days.includes(day.iso)}
-                onClick={() =>
-                  setDays((current) =>
-                    current.includes(day.iso)
-                      ? current.filter((iso) => iso !== day.iso)
-                      : [...current, day.iso].sort(),
-                  )
-                }
-              >
-                {day.name[0]}
-              </Button>
-            ))}
-          </div>
-        ) : null}
-        <div
-          role="group"
-          aria-label="Horario"
-          className="flex items-center justify-between gap-3 text-sm font-bold"
-        >
-          Horario
-          <span className="flex items-center gap-2 font-normal">
-            <select
-              className={selectClass}
-              aria-label="Desde"
-              value={windowStart}
-              onChange={(event) => setWindowStart(event.target.value)}
-            >
-              {TIME_SLOTS.map((slot) => (
-                <option key={slot} value={slot}>
-                  {clockLabel(slot)}
-                </option>
-              ))}
-            </select>
-            –
-            <select
-              className={selectClass}
-              aria-label="Hasta"
-              value={windowEnd}
-              onChange={(event) => setWindowEnd(event.target.value)}
-            >
-              {TIME_SLOTS.map((slot) => (
-                <option key={slot} value={slot}>
-                  {clockLabel(slot)}
-                </option>
-              ))}
-            </select>
-          </span>
-        </div>
-      </div>
-      {membership?.identifiesAsWoman ? (
-        <label className="flex items-center gap-2 text-sm font-bold">
-          <input
-            type="checkbox"
-            checked={womenOnly}
-            onChange={(event) => setWomenOnly(event.target.checked)}
-          />
-          Solo mujeres
-        </label>
-      ) : null}
-      <label className="flex flex-col gap-1 text-sm font-bold">
-        Si no encuentras viaje, ¿cómo irías?
-        <select
-          className={selectClass}
-          value={fallbackMode}
-          onChange={(event) => setFallbackMode(event.target.value as typeof fallbackMode)}
-        >
-          {FALLBACK_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <Button type="button" disabled={searching} onClick={() => handleSearch()}>
-        Buscar coincidencias
-      </Button>
-      {error ? (
-        <p role="alert" className="text-sm font-medium text-destructive">
-          {error}
-        </p>
-      ) : null}
-      {searching ? <p role="status">Buscando viajes compatibles…</p> : null}
-      {result ? (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-extrabold">
-            {result.matches.length === 1
-              ? "1 coincidencia encontrada"
-              : `${result.matches.length} coincidencias encontradas`}
-          </h2>
-          {result.matches.length === 0 ? (
-            <Button type="button" variant="outline" onClick={widenWindow}>
-              Ampliar horario 15 min
-            </Button>
-          ) : null}
-          {result.reason ? (
-            <div className="rounded-2xl border bg-card p-4 text-muted-foreground shadow-sm">
-              <p>{REASON_MESSAGES[result.reason]}</p>
-              <p className="text-xs">Guardamos tu búsqueda para el emparejamiento de la jornada.</p>
+      <div className="flex flex-col gap-3 rounded-2xl border bg-card p-4 shadow-sm">
+        <div className="flex flex-col divide-y">
+          <div className="flex items-start gap-2 pb-3">
+            <div className="flex flex-1 flex-col gap-3">
+              {(outbound ? ["Origen", "Destino"] : ["Destino", "Origen"]).map((name) => {
+                const isCommunityEnd = outbound ? name === "Destino" : name === "Origen";
+                return (
+                  <div
+                    key={name}
+                    role="group"
+                    aria-label={name}
+                    className="flex items-center justify-between gap-3 text-sm"
+                  >
+                    <span className="font-bold">{name}</span>
+                    {isCommunityEnd ? (
+                      <span className="text-right font-medium">{membership?.destinationName}</span>
+                    ) : (
+                      <div className="flex flex-col items-end gap-1">
+                        <select
+                          className={selectClass}
+                          aria-label="Mi zona"
+                          value={zoneId}
+                          onChange={(event) => setZoneId(event.target.value)}
+                        >
+                          <option value="">Elige tu zona</option>
+                          {zones.map((zone) => (
+                            <option key={zone.id} value={zone.id}>
+                              {zone.name}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="text-xs text-muted-foreground">
+                          No pedimos tu dirección exacta
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          ) : null}
-          <ul className="flex flex-col gap-3">
-            {result.matches.map((match, index) => (
-              <TripCard
-                key={match.offerId}
-                match={match}
-                communityName={membership?.communityName ?? ""}
-                best={index === 0}
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="rounded-full"
+              aria-label="Invertir sentido"
+              onClick={() => setOutbound((value) => !value)}
+            >
+              ⇅
+            </Button>
+          </div>
+          <div className="flex flex-col gap-2 py-3">
+            <label className="flex items-center justify-between gap-3 text-sm font-bold">
+              Fecha
+              <select
+                className={selectClass}
+                value={dayChoice}
+                onChange={(event) => setDayChoice(event.target.value as DayChoice)}
+              >
+                <option value="today">Hoy</option>
+                <option value="tomorrow">Mañana</option>
+                <option value="other">Otra fecha</option>
+                <option value="days">Días</option>
+              </select>
+            </label>
+            {dayChoice === "other" ? (
+              <input
+                type="date"
+                className={selectClass}
+                aria-label="Día del viaje"
+                min={limaToday()}
+                value={otherDate}
+                onChange={(event) => setOtherDate(event.target.value)}
               />
-            ))}
-          </ul>
-        </section>
-      ) : null}
+            ) : null}
+            {dayChoice === "days" ? (
+              <div role="group" aria-label="Días" className="flex gap-1">
+                {WEEKDAYS.map((day) => (
+                  <Button
+                    key={day.iso}
+                    type="button"
+                    size="sm"
+                    variant={days.includes(day.iso) ? "default" : "outline"}
+                    className="rounded-full"
+                    aria-label={day.name}
+                    aria-pressed={days.includes(day.iso)}
+                    onClick={() =>
+                      setDays((current) =>
+                        current.includes(day.iso)
+                          ? current.filter((iso) => iso !== day.iso)
+                          : [...current, day.iso].sort(),
+                      )
+                    }
+                  >
+                    {day.name[0]}
+                  </Button>
+                ))}
+              </div>
+            ) : null}
+            {dateError ? <p className="text-sm font-medium text-destructive">{dateError}</p> : null}
+          </div>
+          <fieldset className="py-3">
+            <legend className="sr-only">Horario</legend>
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <span aria-hidden className="font-bold">
+                Horario
+              </span>
+              <span className="flex items-center gap-2">
+                <select
+                  className={selectClass}
+                  aria-label="Desde"
+                  value={windowStart}
+                  onChange={(event) => setWindowStart(event.target.value)}
+                >
+                  {TIME_SLOTS.map((slot) => (
+                    <option key={slot} value={slot}>
+                      {clockLabel(slot)}
+                    </option>
+                  ))}
+                </select>
+                –
+                <select
+                  className={selectClass}
+                  aria-label="Hasta"
+                  value={windowEnd}
+                  onChange={(event) => setWindowEnd(event.target.value)}
+                >
+                  {TIME_SLOTS.map((slot) => (
+                    <option key={slot} value={slot}>
+                      {clockLabel(slot)}
+                    </option>
+                  ))}
+                </select>
+              </span>
+            </div>
+          </fieldset>
+          {memberships.length > 1 ? (
+            <label className="flex items-center justify-between gap-3 py-3 text-sm font-bold">
+              Comunidad
+              <select
+                className={selectClass}
+                value={communityId}
+                onChange={(event) => {
+                  setCommunityId(event.target.value);
+                  setZoneId("");
+                  setResult(null);
+                }}
+              >
+                {memberships.map((item) => (
+                  <option key={item.communityId} value={item.communityId}>
+                    {item.communityName}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          {membership?.identifiesAsWoman ? (
+            <label className="flex items-center gap-2 py-3 text-sm font-bold">
+              <input
+                type="checkbox"
+                checked={womenOnly}
+                onChange={(event) => setWomenOnly(event.target.checked)}
+              />
+              Solo mujeres
+            </label>
+          ) : null}
+          <label className="flex flex-col gap-1 pt-3 text-sm font-bold">
+            Si no encuentras viaje, ¿cómo irías?
+            <select
+              className={`${selectClass} max-w-none`}
+              value={fallbackMode}
+              onChange={(event) => setFallbackMode(event.target.value as typeof fallbackMode)}
+            >
+              {FALLBACK_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <Button
+          type="button"
+          size="lg"
+          className="h-11 w-full rounded-xl text-sm font-bold"
+          disabled={searching}
+          onClick={() => handleSearch()}
+        >
+          Buscar coincidencias
+        </Button>
+        {error ? (
+          <p role="alert" className="text-sm font-medium text-destructive">
+            {error}
+          </p>
+        ) : null}
+      </div>
+      {searching ? <p role="status">Buscando viajes compatibles…</p> : null}
+      <section aria-live="polite" className="flex flex-col gap-3">
+        {result ? (
+          <>
+            <h2 className="text-lg font-extrabold">
+              {result.matches.length === 1
+                ? "1 coincidencia encontrada"
+                : `${result.matches.length} coincidencias encontradas`}
+            </h2>
+            {result.reason ? (
+              <EmptyState>
+                <span className="block font-medium text-foreground">
+                  {REASON_MESSAGES[result.reason]}
+                </span>
+                <span className="block text-xs">
+                  Guardamos tu búsqueda para el emparejamiento de la jornada.
+                </span>
+              </EmptyState>
+            ) : null}
+            {result.matches.length === 0 ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 rounded-xl"
+                disabled={searching}
+                onClick={widenWindow}
+              >
+                Ampliar horario 15 min
+              </Button>
+            ) : null}
+            <ul className="flex flex-col gap-3">
+              {result.matches.map((match, index) => (
+                <TripCard
+                  key={match.offerId}
+                  match={match}
+                  communityName={membership?.communityName ?? ""}
+                  best={index === 0}
+                />
+              ))}
+            </ul>
+          </>
+        ) : null}
+      </section>
     </main>
   );
 }
