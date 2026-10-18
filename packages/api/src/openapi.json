@@ -644,6 +644,38 @@
           "walkMinutes"
         ]
       },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [false]
+          },
+          "status": {
+            "type": "integer"
+          },
+          "error": {
+            "type": "string"
+          },
+          "details": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": ["code"],
+            "additionalProperties": {}
+          }
+        },
+        "required": ["success", "status", "error"]
+      },
       "SearchTripsRequest": {
         "type": "object",
         "properties": {
@@ -657,11 +689,11 @@
           },
           "windowStart": {
             "type": "string",
-            "pattern": "^\\d{2}:\\d{2}$"
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
           },
           "windowEnd": {
             "type": "string",
-            "pattern": "^\\d{2}:\\d{2}$"
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
           },
           "daysOfWeek": {
             "type": ["array", "null"],
@@ -670,7 +702,8 @@
               "minimum": 1,
               "maximum": 7
             },
-            "minItems": 1
+            "minItems": 1,
+            "maxItems": 7
           },
           "date": {
             "type": ["string", "null"],
@@ -1049,6 +1082,56 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SearchTripsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "La zona elegida no existe (`zone_not_found`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No hay sesión iniciada (`unauthorized`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro de la comunidad o no activó Solo mujeres (`women_only_not_allowed`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "La sede de la comunidad no se puede usar para buscar (`unknown_destination`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Los datos enviados no son válidos (`validation_error`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }

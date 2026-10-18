@@ -459,6 +459,51 @@ export interface paths {
             "application/json": components["schemas"]["SearchTripsResponse"];
           };
         };
+        /** @description La zona elegida no existe (`zone_not_found`) */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description No hay sesión iniciada (`unauthorized`) */
+        401: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description No es miembro de la comunidad o no activó Solo mujeres (`women_only_not_allowed`) */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description La sede de la comunidad no se puede usar para buscar (`unknown_destination`) */
+        409: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Los datos enviados no son válidos (`validation_error`) */
+        422: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
       };
     };
     delete?: never;
@@ -665,6 +710,18 @@ export interface components {
       arrivalAt: string;
       detourMinutes: number;
       walkMinutes: number;
+    };
+    ApiError: {
+      /** @enum {boolean} */
+      success: false;
+      status: number;
+      error: string;
+      details?: {
+        code: string;
+        fields?: string[];
+      } & {
+        [key: string]: unknown;
+      };
     };
     SearchTripsRequest: {
       /** @enum {string} */

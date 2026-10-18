@@ -600,6 +600,24 @@ export const SearchTripsResponseSchema = z
   })
   .openapi("SearchTripsResponse");
 
+// Body of every error the server answers: a readable Spanish message plus a stable `details.code`.
+export const ApiErrorSchema = z
+  .object({
+    success: z.literal(false),
+    status: z.number().int(),
+    error: z.string(),
+    details: z
+      .object({ code: z.string(), fields: z.array(z.string()).optional() })
+      .passthrough()
+      .optional(),
+  })
+  .openapi("ApiError");
+
+const apiErrorResponse = (description: string) => ({
+  description,
+  content: { "application/json": { schema: ApiErrorSchema } },
+});
+
 export const searchTripsRoute = createRoute({
   method: "post",
   path: "/communities/{id}/search",
@@ -623,6 +641,15 @@ export const searchTripsRoute = createRoute({
         },
       },
     },
+    400: apiErrorResponse("La zona elegida no existe (`zone_not_found`)"),
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    403: apiErrorResponse(
+      "No es miembro de la comunidad o no activó Solo mujeres (`women_only_not_allowed`)",
+    ),
+    409: apiErrorResponse(
+      "La sede de la comunidad no se puede usar para buscar (`unknown_destination`)",
+    ),
+    422: apiErrorResponse("Los datos enviados no son válidos (`validation_error`)"),
   },
 });
 
