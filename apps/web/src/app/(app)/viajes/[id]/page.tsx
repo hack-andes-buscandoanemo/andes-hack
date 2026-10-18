@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 
 import { CancelTripDialog } from "@/components/cancel-trip-dialog";
 import EmptyState from "@/components/empty-state";
+import IncidentReportForm from "@/components/incident-report-form";
 import { FuelEstimateDetail } from "@/components/fuel-estimate";
 import ShareTrip from "@/components/share-trip";
 import SourceInfo from "@/components/source-info";
@@ -32,6 +33,7 @@ export default function TripDetailPage() {
   const [driverCancelled, setDriverCancelled] = useState(false);
   const [passengerCancelled, setPassengerCancelled] = useState(false);
   const [showAlternatives, setShowAlternatives] = useState(false);
+  const [showIncidentReport, setShowIncidentReport] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -47,6 +49,7 @@ export default function TripDetailPage() {
     setDriverCancelled(false);
     setPassengerCancelled(false);
     setShowAlternatives(false);
+    setShowIncidentReport(false);
     communitiesApi
       .getOfferDetail(id)
       .then((loaded) => {
@@ -92,6 +95,8 @@ export default function TripDetailPage() {
   const pendingId = withdrawn
     ? null
     : (sentId ?? (detail.booking?.status === "pending" ? detail.booking.id : null));
+  const canReport =
+    detail.isOwn || ["accepted", "completed", "no_show"].includes(detail.booking?.status ?? "");
 
   async function withdraw(bookingId: string) {
     setError(null);
@@ -447,6 +452,28 @@ export default function TripDetailPage() {
           <h2 className="font-bold">Nota del conductor</h2>
           <p>{detail.note}</p>
         </section>
+      ) : null}
+      {canReport ? (
+        showIncidentReport ? (
+          <IncidentReportForm
+            offerId={id}
+            reportedUsers={
+              detail.isOwn || !detail.driverId
+                ? undefined
+                : [{ id: detail.driverId, name: detail.driverName }]
+            }
+            onCancel={() => setShowIncidentReport(false)}
+          />
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => setShowIncidentReport(true)}
+          >
+            Reportar
+          </Button>
+        )
       ) : null}
       {action}
       <EmptyState>

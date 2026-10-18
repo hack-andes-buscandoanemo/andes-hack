@@ -11,5 +11,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   if ("unavailable" in access) return <AccountUnavailable />;
 
-  return <AppShell name={access.user.name}>{children}</AppShell>;
+  return (
+    <AppShell name={access.user.name} isAdmin={access.role === "admin"}>
+      {children}
+    </AppShell>
+  );
 }

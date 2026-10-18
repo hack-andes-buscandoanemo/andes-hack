@@ -8,9 +8,9 @@ import AppShell from "./app-shell";
 
 beforeEach(() => usePathname.mockReturnValue("/inicio"));
 
-const shell = () =>
+const shell = (isAdmin = false) =>
   render(
-    <AppShell name="Ana Pérez">
+    <AppShell name="Ana Pérez" isAdmin={isAdmin}>
       <p>contenido</p>
     </AppShell>,
   );
@@ -38,6 +38,18 @@ describe("app shell", () => {
       ["Chat", "/chat"],
       ["Perfil", "/perfil"],
     ]);
+  });
+
+  it("shows incident reports only to community admins", () => {
+    const { unmount } = shell();
+    expect(screen.queryByRole("link", { name: "Reportes" })).not.toBeInTheDocument();
+    unmount();
+
+    shell(true);
+    expect(screen.getByRole("link", { name: "Reportes" })).toHaveAttribute(
+      "href",
+      "/comunidad/reportes",
+    );
   });
 
   it("marks only the current section as active", () => {
