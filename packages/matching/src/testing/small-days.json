@@ -1,1 +1,2205 @@
-{"generatedBy":"scripts/exhaustive-optima.ts","days":[{"seed":10,"size":{"offers":2,"requests":6},"fingerprint":"8aeda703","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":2,"walkMinutes":8}},{"seed":13,"size":{"offers":3,"requests":6},"fingerprint":"8f955358","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":2,"walkMinutes":6}},{"seed":14,"size":{"offers":2,"requests":6},"fingerprint":"0d22938a","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":9,"walkMinutes":12}},{"seed":15,"size":{"offers":3,"requests":6},"fingerprint":"1c3f29ae","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":12,"walkMinutes":7}},{"seed":21,"size":{"offers":3,"requests":6},"fingerprint":"e65fbbad","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":4,"walkMinutes":6}},{"seed":24,"size":{"offers":2,"requests":6},"fingerprint":"c1178683","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":4,"walkMinutes":8}},{"seed":34,"size":{"offers":2,"requests":6},"fingerprint":"dbc90174","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":7,"walkMinutes":10}},{"seed":35,"size":{"offers":3,"requests":6},"fingerprint":"67f8a94e","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":10,"walkMinutes":10}},{"seed":38,"size":{"offers":2,"requests":6},"fingerprint":"3c350923","optimum":{"carTripsAvoided":1,"passengersMatched":3,"detourMinutes":0,"walkMinutes":3}},{"seed":45,"size":{"offers":3,"requests":6},"fingerprint":"32a9fe4c","optimum":{"carTripsAvoided":0,"passengersMatched":4,"detourMinutes":6,"walkMinutes":40}},{"seed":46,"size":{"offers":2,"requests":6},"fingerprint":"b6b6949d","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":0,"walkMinutes":0}},{"seed":52,"size":{"offers":2,"requests":6},"fingerprint":"48c0fe57","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":1,"walkMinutes":3}},{"seed":58,"size":{"offers":2,"requests":6},"fingerprint":"7ff1dad4","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":5,"walkMinutes":0}},{"seed":62,"size":{"offers":2,"requests":6},"fingerprint":"2dfdc29b","optimum":{"carTripsAvoided":1,"passengersMatched":4,"detourMinutes":6,"walkMinutes":0}},{"seed":69,"size":{"offers":3,"requests":6},"fingerprint":"ced39118","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":7,"walkMinutes":8}},{"seed":70,"size":{"offers":2,"requests":6},"fingerprint":"18217d28","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":4,"walkMinutes":8}},{"seed":71,"size":{"offers":3,"requests":6},"fingerprint":"007bffa7","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":3,"walkMinutes":1}},{"seed":73,"size":{"offers":3,"requests":6},"fingerprint":"03f0636c","optimum":{"carTripsAvoided":2,"passengersMatched":2,"detourMinutes":3,"walkMinutes":0}},{"seed":75,"size":{"offers":3,"requests":6},"fingerprint":"b5fb8d89","optimum":{"carTripsAvoided":2,"passengersMatched":4,"detourMinutes":3,"walkMinutes":4}},{"seed":80,"size":{"offers":2,"requests":6},"fingerprint":"a7c71781","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":4,"walkMinutes":0}},{"seed":81,"size":{"offers":3,"requests":6},"fingerprint":"54808d00","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":2,"walkMinutes":4}},{"seed":83,"size":{"offers":3,"requests":6},"fingerprint":"a4d1f6c3","optimum":{"carTripsAvoided":1,"passengersMatched":3,"detourMinutes":2,"walkMinutes":0}},{"seed":89,"size":{"offers":3,"requests":6},"fingerprint":"47bd5519","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":3,"walkMinutes":0}},{"seed":90,"size":{"offers":2,"requests":6},"fingerprint":"fdd6ba14","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":12,"walkMinutes":16}},{"seed":94,"size":{"offers":2,"requests":6},"fingerprint":"cfe9e922","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":1,"walkMinutes":2}},{"seed":95,"size":{"offers":3,"requests":6},"fingerprint":"e59830df","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":8,"walkMinutes":16}},{"seed":96,"size":{"offers":2,"requests":6},"fingerprint":"2c534b93","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":1,"walkMinutes":5}},{"seed":97,"size":{"offers":3,"requests":6},"fingerprint":"3ff82009","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":11,"walkMinutes":7}},{"seed":99,"size":{"offers":3,"requests":6},"fingerprint":"2e7aa4b0","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":11,"walkMinutes":23}},{"seed":102,"size":{"offers":2,"requests":6},"fingerprint":"6779255d","optimum":{"carTripsAvoided":0,"passengersMatched":3,"detourMinutes":4,"walkMinutes":20}},{"seed":103,"size":{"offers":3,"requests":6},"fingerprint":"be1e6fd3","optimum":{"carTripsAvoided":1,"passengersMatched":3,"detourMinutes":4,"walkMinutes":10}},{"seed":105,"size":{"offers":3,"requests":6},"fingerprint":"a3391b76","optimum":{"carTripsAvoided":0,"passengersMatched":3,"detourMinutes":2,"walkMinutes":3}},{"seed":109,"size":{"offers":3,"requests":6},"fingerprint":"b16f9d37","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":3,"walkMinutes":22}},{"seed":116,"size":{"offers":2,"requests":6},"fingerprint":"4d2af78e","optimum":{"carTripsAvoided":3,"passengersMatched":3,"detourMinutes":0,"walkMinutes":6}},{"seed":117,"size":{"offers":3,"requests":6},"fingerprint":"97d13d3b","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":2,"walkMinutes":11}},{"seed":136,"size":{"offers":2,"requests":6},"fingerprint":"f677b2e6","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":8,"walkMinutes":23}},{"seed":137,"size":{"offers":3,"requests":6},"fingerprint":"d8b20e76","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":2,"walkMinutes":9}},{"seed":147,"size":{"offers":3,"requests":6},"fingerprint":"55514e81","optimum":{"carTripsAvoided":2,"passengersMatched":2,"detourMinutes":0,"walkMinutes":6}},{"seed":148,"size":{"offers":2,"requests":6},"fingerprint":"50d140a8","optimum":{"carTripsAvoided":1,"passengersMatched":3,"detourMinutes":5,"walkMinutes":17}},{"seed":156,"size":{"offers":2,"requests":6},"fingerprint":"ad4cef51","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":2,"walkMinutes":1}},{"seed":158,"size":{"offers":2,"requests":6},"fingerprint":"441426ff","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":0,"walkMinutes":1}},{"seed":164,"size":{"offers":2,"requests":6},"fingerprint":"7c9a7a1c","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":3,"walkMinutes":8}},{"seed":168,"size":{"offers":2,"requests":6},"fingerprint":"4158bbb9","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":3,"walkMinutes":1}},{"seed":171,"size":{"offers":3,"requests":6},"fingerprint":"e48bc6e0","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":9,"walkMinutes":0}},{"seed":172,"size":{"offers":2,"requests":6},"fingerprint":"83a9fabe","optimum":{"carTripsAvoided":2,"passengersMatched":3,"detourMinutes":6,"walkMinutes":2}},{"seed":180,"size":{"offers":2,"requests":6},"fingerprint":"7b8877c7","optimum":{"carTripsAvoided":2,"passengersMatched":3,"detourMinutes":3,"walkMinutes":27}},{"seed":181,"size":{"offers":3,"requests":6},"fingerprint":"d0711651","optimum":{"carTripsAvoided":2,"passengersMatched":3,"detourMinutes":1,"walkMinutes":3}},{"seed":184,"size":{"offers":2,"requests":6},"fingerprint":"2ea9b066","optimum":{"carTripsAvoided":2,"passengersMatched":2,"detourMinutes":5,"walkMinutes":5}},{"seed":187,"size":{"offers":3,"requests":6},"fingerprint":"44eb563b","optimum":{"carTripsAvoided":2,"passengersMatched":4,"detourMinutes":8,"walkMinutes":15}},{"seed":193,"size":{"offers":3,"requests":6},"fingerprint":"b521027e","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":1,"walkMinutes":1}},{"seed":195,"size":{"offers":3,"requests":6},"fingerprint":"45a2110e","optimum":{"carTripsAvoided":2,"passengersMatched":3,"detourMinutes":2,"walkMinutes":6}},{"seed":203,"size":{"offers":3,"requests":6},"fingerprint":"0d9087af","optimum":{"carTripsAvoided":0,"passengersMatched":3,"detourMinutes":2,"walkMinutes":15}},{"seed":209,"size":{"offers":3,"requests":6},"fingerprint":"32255f3e","optimum":{"carTripsAvoided":1,"passengersMatched":3,"detourMinutes":1,"walkMinutes":3}},{"seed":223,"size":{"offers":3,"requests":6},"fingerprint":"b32a0211","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":5,"walkMinutes":15}},{"seed":226,"size":{"offers":2,"requests":6},"fingerprint":"d1f8763b","optimum":{"carTripsAvoided":2,"passengersMatched":2,"detourMinutes":3,"walkMinutes":4}},{"seed":228,"size":{"offers":2,"requests":6},"fingerprint":"3cf09e53","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":0,"walkMinutes":2}},{"seed":231,"size":{"offers":3,"requests":6},"fingerprint":"d9453549","optimum":{"carTripsAvoided":1,"passengersMatched":3,"detourMinutes":0,"walkMinutes":0}},{"seed":238,"size":{"offers":2,"requests":6},"fingerprint":"115650bc","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":4,"walkMinutes":28}},{"seed":240,"size":{"offers":2,"requests":6},"fingerprint":"f52ac4fd","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":0,"walkMinutes":8}},{"seed":242,"size":{"offers":2,"requests":6},"fingerprint":"5ff2c2d5","optimum":{"carTripsAvoided":1,"passengersMatched":3,"detourMinutes":4,"walkMinutes":0}},{"seed":243,"size":{"offers":3,"requests":6},"fingerprint":"4f729430","optimum":{"carTripsAvoided":2,"passengersMatched":4,"detourMinutes":8,"walkMinutes":16}},{"seed":251,"size":{"offers":3,"requests":6},"fingerprint":"216b4050","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":4,"walkMinutes":1}},{"seed":252,"size":{"offers":2,"requests":6},"fingerprint":"34563f11","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":-3,"walkMinutes":2}},{"seed":260,"size":{"offers":2,"requests":6},"fingerprint":"70028fcf","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":0,"walkMinutes":0}},{"seed":270,"size":{"offers":2,"requests":6},"fingerprint":"c24fb2c5","optimum":{"carTripsAvoided":0,"passengersMatched":4,"detourMinutes":1,"walkMinutes":16}},{"seed":274,"size":{"offers":2,"requests":6},"fingerprint":"531f73c4","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":10,"walkMinutes":15}},{"seed":276,"size":{"offers":2,"requests":6},"fingerprint":"3bc1b3df","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":0,"walkMinutes":0}},{"seed":284,"size":{"offers":2,"requests":6},"fingerprint":"ba1ddb72","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":2,"walkMinutes":2}},{"seed":286,"size":{"offers":2,"requests":6},"fingerprint":"3be55ffd","optimum":{"carTripsAvoided":3,"passengersMatched":3,"detourMinutes":4,"walkMinutes":3}},{"seed":295,"size":{"offers":3,"requests":6},"fingerprint":"ef037571","optimum":{"carTripsAvoided":1,"passengersMatched":3,"detourMinutes":0,"walkMinutes":2}},{"seed":297,"size":{"offers":3,"requests":6},"fingerprint":"d740f3a6","optimum":{"carTripsAvoided":0,"passengersMatched":3,"detourMinutes":9,"walkMinutes":20}},{"seed":303,"size":{"offers":3,"requests":6},"fingerprint":"49f127d5","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":10,"walkMinutes":2}},{"seed":307,"size":{"offers":3,"requests":6},"fingerprint":"2e379f9a","optimum":{"carTripsAvoided":2,"passengersMatched":3,"detourMinutes":5,"walkMinutes":1}},{"seed":310,"size":{"offers":2,"requests":6},"fingerprint":"bce14883","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":4,"walkMinutes":0}},{"seed":320,"size":{"offers":2,"requests":6},"fingerprint":"03bd5399","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":5,"walkMinutes":7}},{"seed":335,"size":{"offers":3,"requests":6},"fingerprint":"4f65990b","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":5,"walkMinutes":17}},{"seed":336,"size":{"offers":2,"requests":6},"fingerprint":"4e8270a3","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":5,"walkMinutes":1}},{"seed":341,"size":{"offers":3,"requests":6},"fingerprint":"163bbad6","optimum":{"carTripsAvoided":2,"passengersMatched":4,"detourMinutes":3,"walkMinutes":11}},{"seed":342,"size":{"offers":2,"requests":6},"fingerprint":"8b2c2d0d","optimum":{"carTripsAvoided":2,"passengersMatched":3,"detourMinutes":0,"walkMinutes":0}},{"seed":344,"size":{"offers":2,"requests":6},"fingerprint":"dc57b504","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":0,"walkMinutes":2}},{"seed":349,"size":{"offers":3,"requests":6},"fingerprint":"aa9d1bd6","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":13,"walkMinutes":5}},{"seed":353,"size":{"offers":3,"requests":6},"fingerprint":"a0031be8","optimum":{"carTripsAvoided":2,"passengersMatched":3,"detourMinutes":4,"walkMinutes":11}},{"seed":356,"size":{"offers":2,"requests":6},"fingerprint":"fc5242b0","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":1,"walkMinutes":0}},{"seed":359,"size":{"offers":3,"requests":6},"fingerprint":"f7aee4bd","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":0,"walkMinutes":0}},{"seed":363,"size":{"offers":3,"requests":6},"fingerprint":"7c03b18a","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":11,"walkMinutes":15}},{"seed":371,"size":{"offers":3,"requests":6},"fingerprint":"e42c8a12","optimum":{"carTripsAvoided":3,"passengersMatched":3,"detourMinutes":4,"walkMinutes":8}},{"seed":385,"size":{"offers":3,"requests":6},"fingerprint":"4fe68c96","optimum":{"carTripsAvoided":0,"passengersMatched":3,"detourMinutes":9,"walkMinutes":15}},{"seed":386,"size":{"offers":2,"requests":6},"fingerprint":"71af1a97","optimum":{"carTripsAvoided":1,"passengersMatched":3,"detourMinutes":0,"walkMinutes":9}},{"seed":398,"size":{"offers":2,"requests":6},"fingerprint":"158bec78","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":0,"walkMinutes":0}},{"seed":401,"size":{"offers":3,"requests":6},"fingerprint":"ff41f4ef","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":8,"walkMinutes":12}},{"seed":404,"size":{"offers":2,"requests":6},"fingerprint":"42c088a9","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":3,"walkMinutes":11}},{"seed":405,"size":{"offers":3,"requests":6},"fingerprint":"f2f07137","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":5,"walkMinutes":7}},{"seed":407,"size":{"offers":3,"requests":6},"fingerprint":"3beba2a6","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":0,"walkMinutes":2}},{"seed":408,"size":{"offers":2,"requests":6},"fingerprint":"2edcfbe3","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":2,"walkMinutes":6}},{"seed":409,"size":{"offers":3,"requests":6},"fingerprint":"0b2ca1dc","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":9,"walkMinutes":0}},{"seed":413,"size":{"offers":3,"requests":6},"fingerprint":"0d16d070","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":3,"walkMinutes":4}},{"seed":420,"size":{"offers":2,"requests":6},"fingerprint":"0d85e568","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":2,"walkMinutes":0}},{"seed":422,"size":{"offers":2,"requests":6},"fingerprint":"f94ec8e2","optimum":{"carTripsAvoided":3,"passengersMatched":3,"detourMinutes":0,"walkMinutes":9}},{"seed":423,"size":{"offers":3,"requests":6},"fingerprint":"d6b1bada","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":6,"walkMinutes":3}},{"seed":425,"size":{"offers":3,"requests":6},"fingerprint":"8eea06e0","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":4,"walkMinutes":8}},{"seed":434,"size":{"offers":2,"requests":6},"fingerprint":"7852f1c4","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":0,"walkMinutes":8}},{"seed":437,"size":{"offers":3,"requests":6},"fingerprint":"6ea9a67e","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":1,"walkMinutes":6}},{"seed":442,"size":{"offers":2,"requests":6},"fingerprint":"4fb01149","optimum":{"carTripsAvoided":2,"passengersMatched":3,"detourMinutes":12,"walkMinutes":15}},{"seed":443,"size":{"offers":3,"requests":6},"fingerprint":"cccb3a18","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":0,"walkMinutes":0}},{"seed":452,"size":{"offers":2,"requests":6},"fingerprint":"85f93bed","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":4,"walkMinutes":0}},{"seed":453,"size":{"offers":3,"requests":6},"fingerprint":"0657f767","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":5,"walkMinutes":2}},{"seed":455,"size":{"offers":3,"requests":6},"fingerprint":"fa968b84","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":2,"walkMinutes":2}},{"seed":456,"size":{"offers":2,"requests":6},"fingerprint":"b127baf9","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":5,"walkMinutes":8}},{"seed":458,"size":{"offers":2,"requests":6},"fingerprint":"18bd6605","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":2,"walkMinutes":5}},{"seed":460,"size":{"offers":2,"requests":6},"fingerprint":"268dfc1b","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":4,"walkMinutes":6}},{"seed":462,"size":{"offers":2,"requests":6},"fingerprint":"f7733626","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":0,"walkMinutes":18}},{"seed":465,"size":{"offers":3,"requests":6},"fingerprint":"925a40e4","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":4,"walkMinutes":4}},{"seed":471,"size":{"offers":3,"requests":6},"fingerprint":"cb245d66","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":4,"walkMinutes":0}},{"seed":473,"size":{"offers":3,"requests":6},"fingerprint":"69ef53b7","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":7,"walkMinutes":9}},{"seed":479,"size":{"offers":3,"requests":6},"fingerprint":"c57fca77","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":8,"walkMinutes":4}},{"seed":482,"size":{"offers":2,"requests":6},"fingerprint":"6d728100","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":4,"walkMinutes":9}},{"seed":493,"size":{"offers":3,"requests":6},"fingerprint":"af0ea8c4","optimum":{"carTripsAvoided":2,"passengersMatched":3,"detourMinutes":6,"walkMinutes":4}},{"seed":504,"size":{"offers":2,"requests":6},"fingerprint":"8fbeda95","optimum":{"carTripsAvoided":1,"passengersMatched":3,"detourMinutes":0,"walkMinutes":3}},{"seed":505,"size":{"offers":3,"requests":6},"fingerprint":"c2b97d0f","optimum":{"carTripsAvoided":1,"passengersMatched":3,"detourMinutes":15,"walkMinutes":16}},{"seed":507,"size":{"offers":3,"requests":6},"fingerprint":"db335312","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":4,"walkMinutes":4}},{"seed":511,"size":{"offers":3,"requests":6},"fingerprint":"2e32df21","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":1,"walkMinutes":3}},{"seed":514,"size":{"offers":2,"requests":6},"fingerprint":"ccfe12b0","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":4,"walkMinutes":8}},{"seed":516,"size":{"offers":2,"requests":6},"fingerprint":"3c68e76b","optimum":{"carTripsAvoided":2,"passengersMatched":2,"detourMinutes":5,"walkMinutes":12}},{"seed":519,"size":{"offers":3,"requests":6},"fingerprint":"d6749898","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":4,"walkMinutes":12}},{"seed":520,"size":{"offers":2,"requests":6},"fingerprint":"7f32df4a","optimum":{"carTripsAvoided":0,"passengersMatched":3,"detourMinutes":3,"walkMinutes":6}},{"seed":521,"size":{"offers":3,"requests":6},"fingerprint":"6081ce8a","optimum":{"carTripsAvoided":1,"passengersMatched":3,"detourMinutes":5,"walkMinutes":9}},{"seed":524,"size":{"offers":2,"requests":6},"fingerprint":"28d5a3ca","optimum":{"carTripsAvoided":2,"passengersMatched":5,"detourMinutes":0,"walkMinutes":5}},{"seed":525,"size":{"offers":3,"requests":6},"fingerprint":"6655fd44","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":12,"walkMinutes":0}},{"seed":528,"size":{"offers":2,"requests":6},"fingerprint":"c7cdb06c","optimum":{"carTripsAvoided":2,"passengersMatched":3,"detourMinutes":0,"walkMinutes":0}},{"seed":529,"size":{"offers":3,"requests":6},"fingerprint":"0f420e71","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":10,"walkMinutes":13}},{"seed":530,"size":{"offers":2,"requests":6},"fingerprint":"3e677540","optimum":{"carTripsAvoided":2,"passengersMatched":3,"detourMinutes":1,"walkMinutes":3}},{"seed":533,"size":{"offers":3,"requests":6},"fingerprint":"4e79268d","optimum":{"carTripsAvoided":2,"passengersMatched":2,"detourMinutes":9,"walkMinutes":6}},{"seed":536,"size":{"offers":2,"requests":6},"fingerprint":"7f031d37","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":4,"walkMinutes":10}},{"seed":539,"size":{"offers":3,"requests":6},"fingerprint":"ce49405e","optimum":{"carTripsAvoided":2,"passengersMatched":3,"detourMinutes":1,"walkMinutes":1}},{"seed":540,"size":{"offers":2,"requests":6},"fingerprint":"91d07fbb","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":3,"walkMinutes":2}},{"seed":542,"size":{"offers":2,"requests":6},"fingerprint":"ba7f852c","optimum":{"carTripsAvoided":2,"passengersMatched":4,"detourMinutes":8,"walkMinutes":0}},{"seed":545,"size":{"offers":3,"requests":6},"fingerprint":"bc9ee1da","optimum":{"carTripsAvoided":2,"passengersMatched":3,"detourMinutes":3,"walkMinutes":11}},{"seed":546,"size":{"offers":2,"requests":6},"fingerprint":"384f4843","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":1,"walkMinutes":14}},{"seed":555,"size":{"offers":3,"requests":6},"fingerprint":"b0f71a05","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":4,"walkMinutes":0}},{"seed":557,"size":{"offers":3,"requests":6},"fingerprint":"2477e9b8","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":8,"walkMinutes":7}},{"seed":564,"size":{"offers":2,"requests":6},"fingerprint":"0b8e931a","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":0,"walkMinutes":0}},{"seed":566,"size":{"offers":2,"requests":6},"fingerprint":"2f361ff2","optimum":{"carTripsAvoided":1,"passengersMatched":3,"detourMinutes":5,"walkMinutes":9}},{"seed":572,"size":{"offers":2,"requests":6},"fingerprint":"72b3d143","optimum":{"carTripsAvoided":0,"passengersMatched":3,"detourMinutes":3,"walkMinutes":0}},{"seed":574,"size":{"offers":2,"requests":6},"fingerprint":"0ee1eed6","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":0,"walkMinutes":0}},{"seed":577,"size":{"offers":3,"requests":6},"fingerprint":"5b2c3c16","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":3,"walkMinutes":16}},{"seed":586,"size":{"offers":2,"requests":6},"fingerprint":"82e6afa6","optimum":{"carTripsAvoided":1,"passengersMatched":3,"detourMinutes":6,"walkMinutes":15}},{"seed":588,"size":{"offers":2,"requests":6},"fingerprint":"9b486414","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":5,"walkMinutes":5}},{"seed":589,"size":{"offers":3,"requests":6},"fingerprint":"4bf0e5e3","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":13,"walkMinutes":4}},{"seed":590,"size":{"offers":2,"requests":6},"fingerprint":"3cf6be9d","optimum":{"carTripsAvoided":0,"passengersMatched":3,"detourMinutes":0,"walkMinutes":9}},{"seed":600,"size":{"offers":2,"requests":6},"fingerprint":"56a01670","optimum":{"carTripsAvoided":1,"passengersMatched":3,"detourMinutes":0,"walkMinutes":0}},{"seed":605,"size":{"offers":3,"requests":6},"fingerprint":"2326c71a","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":2,"walkMinutes":0}},{"seed":606,"size":{"offers":2,"requests":6},"fingerprint":"d816bdde","optimum":{"carTripsAvoided":1,"passengersMatched":3,"detourMinutes":2,"walkMinutes":16}},{"seed":610,"size":{"offers":2,"requests":6},"fingerprint":"c445104a","optimum":{"carTripsAvoided":2,"passengersMatched":2,"detourMinutes":0,"walkMinutes":6}},{"seed":616,"size":{"offers":2,"requests":6},"fingerprint":"9ffb36c7","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":8,"walkMinutes":6}},{"seed":617,"size":{"offers":3,"requests":6},"fingerprint":"94a70336","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":8,"walkMinutes":5}},{"seed":626,"size":{"offers":2,"requests":6},"fingerprint":"9077d3eb","optimum":{"carTripsAvoided":1,"passengersMatched":3,"detourMinutes":1,"walkMinutes":3}},{"seed":628,"size":{"offers":2,"requests":6},"fingerprint":"9047a25c","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":5,"walkMinutes":12}},{"seed":639,"size":{"offers":3,"requests":6},"fingerprint":"650de15f","optimum":{"carTripsAvoided":3,"passengersMatched":4,"detourMinutes":4,"walkMinutes":3}},{"seed":640,"size":{"offers":2,"requests":6},"fingerprint":"8db6e482","optimum":{"carTripsAvoided":0,"passengersMatched":3,"detourMinutes":0,"walkMinutes":3}},{"seed":642,"size":{"offers":2,"requests":6},"fingerprint":"bd2eabb9","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":0,"walkMinutes":0}},{"seed":644,"size":{"offers":2,"requests":6},"fingerprint":"597f74ee","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":9,"walkMinutes":8}},{"seed":651,"size":{"offers":3,"requests":6},"fingerprint":"8939033c","optimum":{"carTripsAvoided":3,"passengersMatched":3,"detourMinutes":10,"walkMinutes":0}},{"seed":657,"size":{"offers":3,"requests":6},"fingerprint":"c82f196b","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":3,"walkMinutes":18}},{"seed":665,"size":{"offers":3,"requests":6},"fingerprint":"0520dcd8","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":4,"walkMinutes":8}},{"seed":670,"size":{"offers":2,"requests":6},"fingerprint":"481b8d74","optimum":{"carTripsAvoided":2,"passengersMatched":4,"detourMinutes":6,"walkMinutes":19}},{"seed":673,"size":{"offers":3,"requests":6},"fingerprint":"fade0605","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":6,"walkMinutes":14}},{"seed":675,"size":{"offers":3,"requests":6},"fingerprint":"51b70400","optimum":{"carTripsAvoided":1,"passengersMatched":3,"detourMinutes":11,"walkMinutes":14}},{"seed":676,"size":{"offers":2,"requests":6},"fingerprint":"12d41fde","optimum":{"carTripsAvoided":2,"passengersMatched":2,"detourMinutes":0,"walkMinutes":0}},{"seed":680,"size":{"offers":2,"requests":6},"fingerprint":"278acf68","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":1,"walkMinutes":6}},{"seed":685,"size":{"offers":3,"requests":6},"fingerprint":"278edabe","optimum":{"carTripsAvoided":1,"passengersMatched":3,"detourMinutes":2,"walkMinutes":6}},{"seed":691,"size":{"offers":3,"requests":6},"fingerprint":"f69124d9","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":3,"walkMinutes":16}},{"seed":693,"size":{"offers":3,"requests":6},"fingerprint":"f5362011","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":4,"walkMinutes":8}},{"seed":695,"size":{"offers":3,"requests":6},"fingerprint":"821b4267","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":5,"walkMinutes":6}},{"seed":697,"size":{"offers":3,"requests":6},"fingerprint":"75504c83","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":9,"walkMinutes":2}},{"seed":698,"size":{"offers":2,"requests":6},"fingerprint":"08a2ef47","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":0,"walkMinutes":0}},{"seed":699,"size":{"offers":3,"requests":6},"fingerprint":"4cf0ef16","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":4,"walkMinutes":18}},{"seed":701,"size":{"offers":3,"requests":6},"fingerprint":"8b22c86c","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":1,"walkMinutes":2}},{"seed":710,"size":{"offers":2,"requests":6},"fingerprint":"344c0b5c","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":0,"walkMinutes":3}},{"seed":715,"size":{"offers":3,"requests":6},"fingerprint":"543b05aa","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":11,"walkMinutes":16}},{"seed":721,"size":{"offers":3,"requests":6},"fingerprint":"0e6a9924","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":1,"walkMinutes":0}},{"seed":725,"size":{"offers":3,"requests":6},"fingerprint":"78dcca3c","optimum":{"carTripsAvoided":1,"passengersMatched":3,"detourMinutes":5,"walkMinutes":8}},{"seed":727,"size":{"offers":3,"requests":6},"fingerprint":"b1b8a6aa","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":9,"walkMinutes":23}},{"seed":730,"size":{"offers":2,"requests":6},"fingerprint":"e9b30402","optimum":{"carTripsAvoided":2,"passengersMatched":3,"detourMinutes":8,"walkMinutes":0}},{"seed":731,"size":{"offers":3,"requests":6},"fingerprint":"a0fa1bfe","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":4,"walkMinutes":8}},{"seed":739,"size":{"offers":3,"requests":6},"fingerprint":"e215d7f1","optimum":{"carTripsAvoided":1,"passengersMatched":4,"detourMinutes":9,"walkMinutes":18}},{"seed":746,"size":{"offers":2,"requests":6},"fingerprint":"d5a6b419","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":7,"walkMinutes":1}},{"seed":749,"size":{"offers":3,"requests":6},"fingerprint":"d4ede24a","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":0,"walkMinutes":2}},{"seed":751,"size":{"offers":3,"requests":6},"fingerprint":"c45055bb","optimum":{"carTripsAvoided":1,"passengersMatched":3,"detourMinutes":3,"walkMinutes":5}},{"seed":752,"size":{"offers":2,"requests":6},"fingerprint":"abeb1f41","optimum":{"carTripsAvoided":0,"passengersMatched":3,"detourMinutes":4,"walkMinutes":19}},{"seed":753,"size":{"offers":3,"requests":6},"fingerprint":"fdaab768","optimum":{"carTripsAvoided":2,"passengersMatched":3,"detourMinutes":5,"walkMinutes":10}},{"seed":755,"size":{"offers":3,"requests":6},"fingerprint":"a59eca9d","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":1,"walkMinutes":20}},{"seed":756,"size":{"offers":2,"requests":6},"fingerprint":"243a813e","optimum":{"carTripsAvoided":2,"passengersMatched":2,"detourMinutes":0,"walkMinutes":0}},{"seed":757,"size":{"offers":3,"requests":6},"fingerprint":"1af16dd7","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":3,"walkMinutes":6}},{"seed":759,"size":{"offers":3,"requests":6},"fingerprint":"701c29c1","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":2,"walkMinutes":22}},{"seed":762,"size":{"offers":2,"requests":6},"fingerprint":"27a90b60","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":3,"walkMinutes":3}},{"seed":763,"size":{"offers":3,"requests":6},"fingerprint":"611eb84e","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":3,"walkMinutes":16}},{"seed":774,"size":{"offers":2,"requests":6},"fingerprint":"fff7e18f","optimum":{"carTripsAvoided":2,"passengersMatched":4,"detourMinutes":8,"walkMinutes":28}},{"seed":775,"size":{"offers":3,"requests":6},"fingerprint":"61816330","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":3,"walkMinutes":0}},{"seed":777,"size":{"offers":3,"requests":6},"fingerprint":"a0eebd0b","optimum":{"carTripsAvoided":1,"passengersMatched":2,"detourMinutes":1,"walkMinutes":6}},{"seed":778,"size":{"offers":2,"requests":6},"fingerprint":"780b7273","optimum":{"carTripsAvoided":0,"passengersMatched":2,"detourMinutes":3,"walkMinutes":2}}]}
+{
+  "generatedBy": "scripts/exhaustive-optima.ts",
+  "days": [
+    {
+      "seed": 10,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "8aeda703",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 2,
+        "walkMinutes": 8
+      }
+    },
+    {
+      "seed": 13,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "8f955358",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 2,
+        "walkMinutes": 6
+      }
+    },
+    {
+      "seed": 14,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "0d22938a",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 9,
+        "walkMinutes": 12
+      }
+    },
+    {
+      "seed": 15,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "1c3f29ae",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 12,
+        "walkMinutes": 7
+      }
+    },
+    {
+      "seed": 21,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "e65fbbad",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 4,
+        "walkMinutes": 6
+      }
+    },
+    {
+      "seed": 24,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "c1178683",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 4,
+        "walkMinutes": 8
+      }
+    },
+    {
+      "seed": 34,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "dbc90174",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 7,
+        "walkMinutes": 10
+      }
+    },
+    {
+      "seed": 35,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "67f8a94e",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 10,
+        "walkMinutes": 10
+      }
+    },
+    {
+      "seed": 38,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "3c350923",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 3,
+        "detourMinutes": 0,
+        "walkMinutes": 3
+      }
+    },
+    {
+      "seed": 45,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "32a9fe4c",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 4,
+        "detourMinutes": 6,
+        "walkMinutes": 40
+      }
+    },
+    {
+      "seed": 46,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "b6b6949d",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 0,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 52,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "48c0fe57",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 1,
+        "walkMinutes": 3
+      }
+    },
+    {
+      "seed": 58,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "7ff1dad4",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 5,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 62,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "2dfdc29b",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 4,
+        "detourMinutes": 6,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 69,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "ced39118",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 7,
+        "walkMinutes": 8
+      }
+    },
+    {
+      "seed": 70,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "18217d28",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 4,
+        "walkMinutes": 8
+      }
+    },
+    {
+      "seed": 71,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "007bffa7",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 3,
+        "walkMinutes": 1
+      }
+    },
+    {
+      "seed": 73,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "03f0636c",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 2,
+        "detourMinutes": 3,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 75,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "b5fb8d89",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 4,
+        "detourMinutes": 3,
+        "walkMinutes": 4
+      }
+    },
+    {
+      "seed": 80,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "a7c71781",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 4,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 81,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "54808d00",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 2,
+        "walkMinutes": 4
+      }
+    },
+    {
+      "seed": 83,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "a4d1f6c3",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 3,
+        "detourMinutes": 2,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 89,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "47bd5519",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 3,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 90,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "fdd6ba14",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 12,
+        "walkMinutes": 16
+      }
+    },
+    {
+      "seed": 94,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "cfe9e922",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 1,
+        "walkMinutes": 2
+      }
+    },
+    {
+      "seed": 95,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "e59830df",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 8,
+        "walkMinutes": 16
+      }
+    },
+    {
+      "seed": 96,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "2c534b93",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 1,
+        "walkMinutes": 5
+      }
+    },
+    {
+      "seed": 97,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "3ff82009",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 11,
+        "walkMinutes": 7
+      }
+    },
+    {
+      "seed": 99,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "2e7aa4b0",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 11,
+        "walkMinutes": 23
+      }
+    },
+    {
+      "seed": 102,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "6779255d",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 3,
+        "detourMinutes": 4,
+        "walkMinutes": 20
+      }
+    },
+    {
+      "seed": 103,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "be1e6fd3",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 3,
+        "detourMinutes": 4,
+        "walkMinutes": 10
+      }
+    },
+    {
+      "seed": 105,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "a3391b76",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 3,
+        "detourMinutes": 2,
+        "walkMinutes": 3
+      }
+    },
+    {
+      "seed": 109,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "b16f9d37",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 3,
+        "walkMinutes": 22
+      }
+    },
+    {
+      "seed": 116,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "4d2af78e",
+      "optimum": {
+        "carTripsAvoided": 3,
+        "passengersMatched": 3,
+        "detourMinutes": 0,
+        "walkMinutes": 6
+      }
+    },
+    {
+      "seed": 117,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "97d13d3b",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 2,
+        "walkMinutes": 11
+      }
+    },
+    {
+      "seed": 136,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "f677b2e6",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 8,
+        "walkMinutes": 23
+      }
+    },
+    {
+      "seed": 137,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "d8b20e76",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 2,
+        "walkMinutes": 9
+      }
+    },
+    {
+      "seed": 147,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "55514e81",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 2,
+        "detourMinutes": 0,
+        "walkMinutes": 6
+      }
+    },
+    {
+      "seed": 148,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "50d140a8",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 3,
+        "detourMinutes": 5,
+        "walkMinutes": 17
+      }
+    },
+    {
+      "seed": 156,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "ad4cef51",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 2,
+        "walkMinutes": 1
+      }
+    },
+    {
+      "seed": 158,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "441426ff",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 0,
+        "walkMinutes": 1
+      }
+    },
+    {
+      "seed": 164,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "7c9a7a1c",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 3,
+        "walkMinutes": 8
+      }
+    },
+    {
+      "seed": 168,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "4158bbb9",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 3,
+        "walkMinutes": 1
+      }
+    },
+    {
+      "seed": 171,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "e48bc6e0",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 9,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 172,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "83a9fabe",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 3,
+        "detourMinutes": 6,
+        "walkMinutes": 2
+      }
+    },
+    {
+      "seed": 180,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "7b8877c7",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 3,
+        "detourMinutes": 3,
+        "walkMinutes": 27
+      }
+    },
+    {
+      "seed": 181,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "d0711651",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 3,
+        "detourMinutes": 1,
+        "walkMinutes": 3
+      }
+    },
+    {
+      "seed": 184,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "2ea9b066",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 2,
+        "detourMinutes": 5,
+        "walkMinutes": 5
+      }
+    },
+    {
+      "seed": 187,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "44eb563b",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 4,
+        "detourMinutes": 8,
+        "walkMinutes": 15
+      }
+    },
+    {
+      "seed": 193,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "b521027e",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 1,
+        "walkMinutes": 1
+      }
+    },
+    {
+      "seed": 195,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "45a2110e",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 3,
+        "detourMinutes": 2,
+        "walkMinutes": 6
+      }
+    },
+    {
+      "seed": 203,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "0d9087af",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 3,
+        "detourMinutes": 2,
+        "walkMinutes": 15
+      }
+    },
+    {
+      "seed": 209,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "32255f3e",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 3,
+        "detourMinutes": 1,
+        "walkMinutes": 3
+      }
+    },
+    {
+      "seed": 223,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "b32a0211",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 5,
+        "walkMinutes": 15
+      }
+    },
+    {
+      "seed": 226,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "d1f8763b",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 2,
+        "detourMinutes": 3,
+        "walkMinutes": 4
+      }
+    },
+    {
+      "seed": 228,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "3cf09e53",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 0,
+        "walkMinutes": 2
+      }
+    },
+    {
+      "seed": 231,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "d9453549",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 3,
+        "detourMinutes": 0,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 238,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "115650bc",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 4,
+        "walkMinutes": 28
+      }
+    },
+    {
+      "seed": 240,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "f52ac4fd",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 0,
+        "walkMinutes": 8
+      }
+    },
+    {
+      "seed": 242,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "5ff2c2d5",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 3,
+        "detourMinutes": 4,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 243,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "4f729430",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 4,
+        "detourMinutes": 8,
+        "walkMinutes": 16
+      }
+    },
+    {
+      "seed": 251,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "216b4050",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 4,
+        "walkMinutes": 1
+      }
+    },
+    {
+      "seed": 252,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "34563f11",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": -3,
+        "walkMinutes": 2
+      }
+    },
+    {
+      "seed": 260,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "70028fcf",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 0,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 270,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "c24fb2c5",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 4,
+        "detourMinutes": 1,
+        "walkMinutes": 16
+      }
+    },
+    {
+      "seed": 274,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "531f73c4",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 10,
+        "walkMinutes": 15
+      }
+    },
+    {
+      "seed": 276,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "3bc1b3df",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 0,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 284,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "ba1ddb72",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 2,
+        "walkMinutes": 2
+      }
+    },
+    {
+      "seed": 286,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "3be55ffd",
+      "optimum": {
+        "carTripsAvoided": 3,
+        "passengersMatched": 3,
+        "detourMinutes": 4,
+        "walkMinutes": 3
+      }
+    },
+    {
+      "seed": 295,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "ef037571",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 3,
+        "detourMinutes": 0,
+        "walkMinutes": 2
+      }
+    },
+    {
+      "seed": 297,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "d740f3a6",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 3,
+        "detourMinutes": 9,
+        "walkMinutes": 20
+      }
+    },
+    {
+      "seed": 303,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "49f127d5",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 10,
+        "walkMinutes": 2
+      }
+    },
+    {
+      "seed": 307,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "2e379f9a",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 3,
+        "detourMinutes": 5,
+        "walkMinutes": 1
+      }
+    },
+    {
+      "seed": 310,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "bce14883",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 4,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 320,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "03bd5399",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 5,
+        "walkMinutes": 7
+      }
+    },
+    {
+      "seed": 335,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "4f65990b",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 5,
+        "walkMinutes": 17
+      }
+    },
+    {
+      "seed": 336,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "4e8270a3",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 5,
+        "walkMinutes": 1
+      }
+    },
+    {
+      "seed": 341,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "163bbad6",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 4,
+        "detourMinutes": 3,
+        "walkMinutes": 11
+      }
+    },
+    {
+      "seed": 342,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "8b2c2d0d",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 3,
+        "detourMinutes": 0,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 344,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "dc57b504",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 0,
+        "walkMinutes": 2
+      }
+    },
+    {
+      "seed": 349,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "aa9d1bd6",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 13,
+        "walkMinutes": 5
+      }
+    },
+    {
+      "seed": 353,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "a0031be8",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 3,
+        "detourMinutes": 4,
+        "walkMinutes": 11
+      }
+    },
+    {
+      "seed": 356,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "fc5242b0",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 1,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 359,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "f7aee4bd",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 0,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 363,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "7c03b18a",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 11,
+        "walkMinutes": 15
+      }
+    },
+    {
+      "seed": 371,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "e42c8a12",
+      "optimum": {
+        "carTripsAvoided": 3,
+        "passengersMatched": 3,
+        "detourMinutes": 4,
+        "walkMinutes": 8
+      }
+    },
+    {
+      "seed": 385,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "4fe68c96",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 3,
+        "detourMinutes": 9,
+        "walkMinutes": 15
+      }
+    },
+    {
+      "seed": 386,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "71af1a97",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 3,
+        "detourMinutes": 0,
+        "walkMinutes": 9
+      }
+    },
+    {
+      "seed": 398,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "158bec78",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 0,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 401,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "ff41f4ef",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 8,
+        "walkMinutes": 12
+      }
+    },
+    {
+      "seed": 404,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "42c088a9",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 3,
+        "walkMinutes": 11
+      }
+    },
+    {
+      "seed": 405,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "f2f07137",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 5,
+        "walkMinutes": 7
+      }
+    },
+    {
+      "seed": 407,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "3beba2a6",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 0,
+        "walkMinutes": 2
+      }
+    },
+    {
+      "seed": 408,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "2edcfbe3",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 2,
+        "walkMinutes": 6
+      }
+    },
+    {
+      "seed": 409,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "0b2ca1dc",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 9,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 413,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "0d16d070",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 3,
+        "walkMinutes": 4
+      }
+    },
+    {
+      "seed": 420,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "0d85e568",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 2,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 422,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "f94ec8e2",
+      "optimum": {
+        "carTripsAvoided": 3,
+        "passengersMatched": 3,
+        "detourMinutes": 0,
+        "walkMinutes": 9
+      }
+    },
+    {
+      "seed": 423,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "d6b1bada",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 6,
+        "walkMinutes": 3
+      }
+    },
+    {
+      "seed": 425,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "8eea06e0",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 4,
+        "walkMinutes": 8
+      }
+    },
+    {
+      "seed": 434,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "7852f1c4",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 0,
+        "walkMinutes": 8
+      }
+    },
+    {
+      "seed": 437,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "6ea9a67e",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 1,
+        "walkMinutes": 6
+      }
+    },
+    {
+      "seed": 442,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "4fb01149",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 3,
+        "detourMinutes": 12,
+        "walkMinutes": 15
+      }
+    },
+    {
+      "seed": 443,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "cccb3a18",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 0,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 452,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "85f93bed",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 4,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 453,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "0657f767",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 5,
+        "walkMinutes": 2
+      }
+    },
+    {
+      "seed": 455,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "fa968b84",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 2,
+        "walkMinutes": 2
+      }
+    },
+    {
+      "seed": 456,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "b127baf9",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 5,
+        "walkMinutes": 8
+      }
+    },
+    {
+      "seed": 458,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "18bd6605",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 2,
+        "walkMinutes": 5
+      }
+    },
+    {
+      "seed": 460,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "268dfc1b",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 4,
+        "walkMinutes": 6
+      }
+    },
+    {
+      "seed": 462,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "f7733626",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 0,
+        "walkMinutes": 18
+      }
+    },
+    {
+      "seed": 465,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "925a40e4",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 4,
+        "walkMinutes": 4
+      }
+    },
+    {
+      "seed": 471,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "cb245d66",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 4,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 473,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "69ef53b7",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 7,
+        "walkMinutes": 9
+      }
+    },
+    {
+      "seed": 479,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "c57fca77",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 8,
+        "walkMinutes": 4
+      }
+    },
+    {
+      "seed": 482,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "6d728100",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 4,
+        "walkMinutes": 9
+      }
+    },
+    {
+      "seed": 493,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "af0ea8c4",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 3,
+        "detourMinutes": 6,
+        "walkMinutes": 4
+      }
+    },
+    {
+      "seed": 504,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "8fbeda95",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 3,
+        "detourMinutes": 0,
+        "walkMinutes": 3
+      }
+    },
+    {
+      "seed": 505,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "c2b97d0f",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 3,
+        "detourMinutes": 15,
+        "walkMinutes": 16
+      }
+    },
+    {
+      "seed": 507,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "db335312",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 4,
+        "walkMinutes": 4
+      }
+    },
+    {
+      "seed": 511,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "2e32df21",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 1,
+        "walkMinutes": 3
+      }
+    },
+    {
+      "seed": 514,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "ccfe12b0",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 4,
+        "walkMinutes": 8
+      }
+    },
+    {
+      "seed": 516,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "3c68e76b",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 2,
+        "detourMinutes": 5,
+        "walkMinutes": 12
+      }
+    },
+    {
+      "seed": 519,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "d6749898",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 4,
+        "walkMinutes": 12
+      }
+    },
+    {
+      "seed": 520,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "7f32df4a",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 3,
+        "detourMinutes": 3,
+        "walkMinutes": 6
+      }
+    },
+    {
+      "seed": 521,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "6081ce8a",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 3,
+        "detourMinutes": 5,
+        "walkMinutes": 9
+      }
+    },
+    {
+      "seed": 524,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "28d5a3ca",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 5,
+        "detourMinutes": 0,
+        "walkMinutes": 5
+      }
+    },
+    {
+      "seed": 525,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "6655fd44",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 12,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 528,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "c7cdb06c",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 3,
+        "detourMinutes": 0,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 529,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "0f420e71",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 10,
+        "walkMinutes": 13
+      }
+    },
+    {
+      "seed": 530,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "3e677540",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 3,
+        "detourMinutes": 1,
+        "walkMinutes": 3
+      }
+    },
+    {
+      "seed": 533,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "4e79268d",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 2,
+        "detourMinutes": 9,
+        "walkMinutes": 6
+      }
+    },
+    {
+      "seed": 536,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "7f031d37",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 4,
+        "walkMinutes": 10
+      }
+    },
+    {
+      "seed": 539,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "ce49405e",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 3,
+        "detourMinutes": 1,
+        "walkMinutes": 1
+      }
+    },
+    {
+      "seed": 540,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "91d07fbb",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 3,
+        "walkMinutes": 2
+      }
+    },
+    {
+      "seed": 542,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "ba7f852c",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 4,
+        "detourMinutes": 8,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 545,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "bc9ee1da",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 3,
+        "detourMinutes": 3,
+        "walkMinutes": 11
+      }
+    },
+    {
+      "seed": 546,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "384f4843",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 1,
+        "walkMinutes": 14
+      }
+    },
+    {
+      "seed": 555,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "b0f71a05",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 4,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 557,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "2477e9b8",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 8,
+        "walkMinutes": 7
+      }
+    },
+    {
+      "seed": 564,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "0b8e931a",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 0,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 566,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "2f361ff2",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 3,
+        "detourMinutes": 5,
+        "walkMinutes": 9
+      }
+    },
+    {
+      "seed": 572,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "72b3d143",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 3,
+        "detourMinutes": 3,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 574,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "0ee1eed6",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 0,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 577,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "5b2c3c16",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 3,
+        "walkMinutes": 16
+      }
+    },
+    {
+      "seed": 586,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "82e6afa6",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 3,
+        "detourMinutes": 6,
+        "walkMinutes": 15
+      }
+    },
+    {
+      "seed": 588,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "9b486414",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 5,
+        "walkMinutes": 5
+      }
+    },
+    {
+      "seed": 589,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "4bf0e5e3",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 13,
+        "walkMinutes": 4
+      }
+    },
+    {
+      "seed": 590,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "3cf6be9d",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 3,
+        "detourMinutes": 0,
+        "walkMinutes": 9
+      }
+    },
+    {
+      "seed": 600,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "56a01670",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 3,
+        "detourMinutes": 0,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 605,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "2326c71a",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 2,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 606,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "d816bdde",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 3,
+        "detourMinutes": 2,
+        "walkMinutes": 16
+      }
+    },
+    {
+      "seed": 610,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "c445104a",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 2,
+        "detourMinutes": 0,
+        "walkMinutes": 6
+      }
+    },
+    {
+      "seed": 616,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "9ffb36c7",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 8,
+        "walkMinutes": 6
+      }
+    },
+    {
+      "seed": 617,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "94a70336",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 8,
+        "walkMinutes": 5
+      }
+    },
+    {
+      "seed": 626,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "9077d3eb",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 3,
+        "detourMinutes": 1,
+        "walkMinutes": 3
+      }
+    },
+    {
+      "seed": 628,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "9047a25c",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 5,
+        "walkMinutes": 12
+      }
+    },
+    {
+      "seed": 639,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "650de15f",
+      "optimum": {
+        "carTripsAvoided": 3,
+        "passengersMatched": 4,
+        "detourMinutes": 4,
+        "walkMinutes": 3
+      }
+    },
+    {
+      "seed": 640,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "8db6e482",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 3,
+        "detourMinutes": 0,
+        "walkMinutes": 3
+      }
+    },
+    {
+      "seed": 642,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "bd2eabb9",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 0,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 644,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "597f74ee",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 9,
+        "walkMinutes": 8
+      }
+    },
+    {
+      "seed": 651,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "8939033c",
+      "optimum": {
+        "carTripsAvoided": 3,
+        "passengersMatched": 3,
+        "detourMinutes": 10,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 657,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "c82f196b",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 3,
+        "walkMinutes": 18
+      }
+    },
+    {
+      "seed": 665,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "0520dcd8",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 4,
+        "walkMinutes": 8
+      }
+    },
+    {
+      "seed": 670,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "481b8d74",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 4,
+        "detourMinutes": 6,
+        "walkMinutes": 19
+      }
+    },
+    {
+      "seed": 673,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "fade0605",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 6,
+        "walkMinutes": 14
+      }
+    },
+    {
+      "seed": 675,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "51b70400",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 3,
+        "detourMinutes": 11,
+        "walkMinutes": 14
+      }
+    },
+    {
+      "seed": 676,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "12d41fde",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 2,
+        "detourMinutes": 0,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 680,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "278acf68",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 1,
+        "walkMinutes": 6
+      }
+    },
+    {
+      "seed": 685,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "278edabe",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 3,
+        "detourMinutes": 2,
+        "walkMinutes": 6
+      }
+    },
+    {
+      "seed": 691,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "f69124d9",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 3,
+        "walkMinutes": 16
+      }
+    },
+    {
+      "seed": 693,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "f5362011",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 4,
+        "walkMinutes": 8
+      }
+    },
+    {
+      "seed": 695,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "821b4267",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 5,
+        "walkMinutes": 6
+      }
+    },
+    {
+      "seed": 697,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "75504c83",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 9,
+        "walkMinutes": 2
+      }
+    },
+    {
+      "seed": 698,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "08a2ef47",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 0,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 699,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "4cf0ef16",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 4,
+        "walkMinutes": 18
+      }
+    },
+    {
+      "seed": 701,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "8b22c86c",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 1,
+        "walkMinutes": 2
+      }
+    },
+    {
+      "seed": 710,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "344c0b5c",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 0,
+        "walkMinutes": 3
+      }
+    },
+    {
+      "seed": 715,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "543b05aa",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 11,
+        "walkMinutes": 16
+      }
+    },
+    {
+      "seed": 721,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "0e6a9924",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 1,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 725,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "78dcca3c",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 3,
+        "detourMinutes": 5,
+        "walkMinutes": 8
+      }
+    },
+    {
+      "seed": 727,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "b1b8a6aa",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 9,
+        "walkMinutes": 23
+      }
+    },
+    {
+      "seed": 730,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "e9b30402",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 3,
+        "detourMinutes": 8,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 731,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "a0fa1bfe",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 4,
+        "walkMinutes": 8
+      }
+    },
+    {
+      "seed": 739,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "e215d7f1",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 4,
+        "detourMinutes": 9,
+        "walkMinutes": 18
+      }
+    },
+    {
+      "seed": 746,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "d5a6b419",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 7,
+        "walkMinutes": 1
+      }
+    },
+    {
+      "seed": 749,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "d4ede24a",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 0,
+        "walkMinutes": 2
+      }
+    },
+    {
+      "seed": 751,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "c45055bb",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 3,
+        "detourMinutes": 3,
+        "walkMinutes": 5
+      }
+    },
+    {
+      "seed": 752,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "abeb1f41",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 3,
+        "detourMinutes": 4,
+        "walkMinutes": 19
+      }
+    },
+    {
+      "seed": 753,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "fdaab768",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 3,
+        "detourMinutes": 5,
+        "walkMinutes": 10
+      }
+    },
+    {
+      "seed": 755,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "a59eca9d",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 1,
+        "walkMinutes": 20
+      }
+    },
+    {
+      "seed": 756,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "243a813e",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 2,
+        "detourMinutes": 0,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 757,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "1af16dd7",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 3,
+        "walkMinutes": 6
+      }
+    },
+    {
+      "seed": 759,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "701c29c1",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 2,
+        "walkMinutes": 22
+      }
+    },
+    {
+      "seed": 762,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "27a90b60",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 3,
+        "walkMinutes": 3
+      }
+    },
+    {
+      "seed": 763,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "611eb84e",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 3,
+        "walkMinutes": 16
+      }
+    },
+    {
+      "seed": 774,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "fff7e18f",
+      "optimum": {
+        "carTripsAvoided": 2,
+        "passengersMatched": 4,
+        "detourMinutes": 8,
+        "walkMinutes": 28
+      }
+    },
+    {
+      "seed": 775,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "61816330",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 3,
+        "walkMinutes": 0
+      }
+    },
+    {
+      "seed": 777,
+      "size": { "offers": 3, "requests": 6 },
+      "fingerprint": "a0eebd0b",
+      "optimum": {
+        "carTripsAvoided": 1,
+        "passengersMatched": 2,
+        "detourMinutes": 1,
+        "walkMinutes": 6
+      }
+    },
+    {
+      "seed": 778,
+      "size": { "offers": 2, "requests": 6 },
+      "fingerprint": "780b7273",
+      "optimum": {
+        "carTripsAvoided": 0,
+        "passengersMatched": 2,
+        "detourMinutes": 3,
+        "walkMinutes": 2
+      }
+    }
+  ]
+}
