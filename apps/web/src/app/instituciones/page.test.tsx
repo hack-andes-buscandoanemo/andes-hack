@@ -120,6 +120,21 @@ describe("institutions page (US-033)", () => {
     expect(sent).toEqual([]);
   });
 
+  it("catches a head count above what the server accepts before sending", async () => {
+    const user = userEvent.setup();
+    render(<InstitutionsPage />);
+    const form = screen.getByRole("form", { name: "Pide un piloto de 4 semanas" });
+    const headCount = within(form).getByLabelText("Personas que van presencialmente a la sede");
+
+    await user.type(headCount, "100001");
+    await user.click(within(form).getByRole("button", { name: "Enviar" }));
+
+    expect(
+      await within(form).findByText("Escribe un número de hasta 100 000 personas."),
+    ).toBeInTheDocument();
+    expect(sent).toEqual([]);
+  });
+
   it("sends nothing until the person accepts how their data is used", async () => {
     const user = userEvent.setup();
     render(<InstitutionsPage />);

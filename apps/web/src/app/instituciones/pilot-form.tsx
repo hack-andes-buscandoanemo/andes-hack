@@ -10,11 +10,16 @@ import { httpClient } from "@/lib/http-client";
 
 import ConsentField from "./consent-field";
 import { failureMessage } from "./failure-message";
+import TrapField from "./trap-field";
 
 const schema = z.object({
   institution: z.string().trim().min(1, "Escribe el nombre de tu institución."),
   role: z.string().trim().min(1, "Escribe tu rol."),
-  onSiteCount: z.string().regex(/^[1-9]\d*$/, "Escribe cuántas personas van a la sede."),
+  onSiteCount: z
+    .string()
+    .regex(/^[1-9]\d*$/, "Escribe cuántas personas van a la sede.")
+    // The same ceiling as POST /public/waitlist, so the server never has to refuse it.
+    .refine((count) => Number(count) <= 100_000, "Escribe un número de hasta 100 000 personas."),
   wantsPilot: z.enum(["yes", "no"], "Elige Sí o No."),
   email: z.email("Escribe un correo válido."),
   consent: z.literal(true, "Acepta el uso de tus datos para continuar."),
@@ -165,20 +170,9 @@ export default function PilotForm() {
           />
         )}
       </form.Field>
-      {/* A trap for bots: hidden from people and from screen readers. */}
       <form.Field name="website">
         {(field) => (
-          <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
-            <label htmlFor="pilot-website">Sitio web</label>
-            <input
-              id="pilot-website"
-              name="website"
-              tabIndex={-1}
-              autoComplete="off"
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-            />
-          </div>
+          <TrapField id="pilot-website" value={field.state.value} onChange={field.handleChange} />
         )}
       </form.Field>
       {notice && (

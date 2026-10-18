@@ -10,6 +10,7 @@ import { httpClient } from "@/lib/http-client";
 
 import ConsentField from "./consent-field";
 import { failureMessage } from "./failure-message";
+import TrapField from "./trap-field";
 
 const schema = z.object({
   email: z.email("Escribe un correo válido."),
@@ -92,20 +93,9 @@ export default function NotifyForm() {
           />
         )}
       </form.Field>
-      {/* A trap for bots: hidden from people and from screen readers. */}
       <form.Field name="website">
         {(field) => (
-          <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
-            <label htmlFor="notify-website">Sitio web</label>
-            <input
-              id="notify-website"
-              name="website"
-              tabIndex={-1}
-              autoComplete="off"
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-            />
-          </div>
+          <TrapField id="notify-website" value={field.state.value} onChange={field.handleChange} />
         )}
       </form.Field>
       {notice && (
