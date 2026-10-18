@@ -405,6 +405,8 @@ export default function TripDetailPage() {
       </section>
       <LiveTrip
         offerId={detail.offerId}
+        priceCents={detail.priceCents}
+        paymentMethods={detail.paymentMethods}
         role={
           detail.isOwn
             ? "driver"

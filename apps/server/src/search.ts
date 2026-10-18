@@ -6,8 +6,10 @@ import { zone } from "@andes-hack/db/schema/places";
 import { seatBooking, tripOffer, tripRequest } from "@andes-hack/db/schema/trips";
 import {
   createTravelTimeModel,
+  haversineKm,
   places,
   rankOffersForRequest,
+  routeMapFor,
   type OfferRoute,
   type RideRequest,
 } from "@andes-hack/matching";
@@ -35,6 +37,28 @@ export function destinationOf(row: { destinationName: string }) {
     });
   }
   return place;
+}
+
+// The route to draw for a result, with the person's meeting point on it, and how close to
+// `target` (the person's destination point) it passes, in metres.
+export function routeOfMatch(
+  offer: { direction: "outbound" | "return"; originZoneId: string },
+  destinationId: string,
+  meetingPointId: string,
+  target?: { lat: number; lng: number },
+) {
+  const routeMap = routeMapFor({
+    direction: offer.direction,
+    originZoneId: offer.originZoneId,
+    destinationId,
+    stops: [{ meetingPointId, mine: true }],
+  });
+  const dropOffMeters = target
+    ? Math.round(
+        Math.min(...routeMap.path.map(([lat, lng]) => haversineKm({ lat, lng }, target) * 1000)),
+      )
+    : null;
+  return { routeMap, dropOffMeters };
 }
 
 // Every active-offer input the engine needs, with accepted passengers and the rejections of
@@ -311,43 +335,57 @@ export async function searchTrips(
   // For the coverage panel (US-030, US-031): only the outcome, never who searched or from where.
   logEvent("search.completed", { communityId, hadResults });
 
+  const results = ranking.matches.map((match) => {
+    const offer = byId.get(match.offerId)!;
+    return routeOfMatch(offer, destination.id, match.meetingPointId, body.destination);
+  });
+
+  const matches = ranking.matches.map((match, index) => {
+    const offer = byId.get(match.offerId)!;
+    const accepted = acceptedByOffer.get(offer.id) ?? [];
+    return {
+      offerId: match.offerId,
+      driverName: displayName(offer.driverName, offer.accountName),
+      driverPhotoUrl: offer.driverId ? (photoUrls.get(offer.driverId) ?? null) : null,
+      originZoneName: offer.originZoneName,
+      destinationName: destination.name,
+      direction: offer.direction,
+      departureTime: offer.departureTime,
+      // Same count the engine uses for its seat check: accepted passengers.
+      seatsFree: seatsFree(offer.seatsTotal, accepted.length),
+      meetingPointName: meetingPointNames.get(match.meetingPointId) ?? match.meetingPointId,
+      pickupAt: match.pickupAt,
+      arrivalAt: match.arrivalAt,
+      detourMinutes: match.detourMinutes,
+      walkMinutes: match.walkMinutes,
+      priceCents: offer.priceCents,
+      paymentMethods: offer.paymentMethods,
+      live: live.has(offer.id),
+      routeMap: results[index]!.routeMap,
+      dropOffMeters: results[index]!.dropOffMeters,
+      // Someone already accepted on this trip who searches again is not counted twice.
+      fuelEstimate: fuelEstimateFor({
+        direction: offer.direction,
+        originZoneId: offer.originZoneId,
+        destinationId: destination.id,
+        occupants: occupantsSharingFuel(
+          accepted.length,
+          accepted.some((booking) => booking.passengerId === userId),
+        ),
+      }),
+    };
+  });
+  // With a destination point, the car that leaves the person closest to it goes first; the
+  // sort is stable, so ties keep the engine's order.
+  if (body.destination) {
+    matches.sort((a, b) => (a.dropOffMeters ?? 0) - (b.dropOffMeters ?? 0));
+  }
+
   return {
     requestId: saved!.id,
     originZoneId,
     originZoneName: places.zones.find((place) => place.id === originZoneId)?.name ?? originZoneId,
     reason: ranking.reason,
-    matches: ranking.matches.map((match) => {
-      const offer = byId.get(match.offerId)!;
-      const accepted = acceptedByOffer.get(offer.id) ?? [];
-      return {
-        offerId: match.offerId,
-        driverName: displayName(offer.driverName, offer.accountName),
-        driverPhotoUrl: offer.driverId ? (photoUrls.get(offer.driverId) ?? null) : null,
-        originZoneName: offer.originZoneName,
-        destinationName: destination.name,
-        direction: offer.direction,
-        departureTime: offer.departureTime,
-        // Same count the engine uses for its seat check: accepted passengers.
-        seatsFree: seatsFree(offer.seatsTotal, accepted.length),
-        meetingPointName: meetingPointNames.get(match.meetingPointId) ?? match.meetingPointId,
-        pickupAt: match.pickupAt,
-        arrivalAt: match.arrivalAt,
-        detourMinutes: match.detourMinutes,
-        walkMinutes: match.walkMinutes,
-        priceCents: offer.priceCents,
-        paymentMethods: offer.paymentMethods,
-        live: live.has(offer.id),
-        // Someone already accepted on this trip who searches again is not counted twice.
-        fuelEstimate: fuelEstimateFor({
-          direction: offer.direction,
-          originZoneId: offer.originZoneId,
-          destinationId: destination.id,
-          occupants: occupantsSharingFuel(
-            accepted.length,
-            accepted.some((booking) => booking.passengerId === userId),
-          ),
-        }),
-      };
-    }),
+    matches,
   };
 }

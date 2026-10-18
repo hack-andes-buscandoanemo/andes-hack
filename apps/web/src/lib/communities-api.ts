@@ -21,6 +21,7 @@ export type TripMatch = components["schemas"]["TripMatch"];
 export type OfferDetail = components["schemas"]["OfferDetail"];
 export type RouteMap = components["schemas"]["RouteMap"];
 export type LiveLocation = components["schemas"]["LiveLocation"];
+export type LiveAlert = components["schemas"]["LiveAlert"];
 export type PaymentMethod = TripOfferSummary["paymentMethods"][number];
 export type MyTrip = components["schemas"]["MyTrip"];
 export type MyTripsResponse = components["schemas"]["MyTripsResponse"];
@@ -207,6 +208,16 @@ export const communitiesApi = {
       `/offers/${offerId}/live-location` as "/offers/{id}/live-location",
     );
     return response.data;
+  },
+  async listLiveAlerts(
+    communityId: string,
+    location?: { lat: number; lng: number },
+  ): Promise<LiveAlert[]> {
+    const response = await httpClient.get(
+      `/communities/${communityId}/live-alerts` as "/communities/{id}/live-alerts",
+      { params: location },
+    );
+    return response.data.alerts;
   },
   async listMyTrips(
     role: "passenger" | "driver",

@@ -1,9 +1,13 @@
 import type { db as defaultDb } from "@andes-hack/db";
-import { communityMember } from "@andes-hack/db/schema/community";
+import { user as userTable } from "@andes-hack/db/schema/auth";
+import { community, communityMember } from "@andes-hack/db/schema/community";
+import { zone } from "@andes-hack/db/schema/places";
 import { seatBooking, tripLiveLocation, tripOffer } from "@andes-hack/db/schema/trips";
 import { haversineKm, places } from "@andes-hack/matching";
-import { and, eq, gte, inArray } from "drizzle-orm";
+import { and, eq, gte, inArray, ne, sql } from "drizzle-orm";
 
+import { getCommunityProfilePhotos, type ProfilePhotoStorageResolver } from "./profile-photos";
+import { displayName, seatsFree } from "./trip-rules";
 import { ApiError } from "./utils/api-response";
 
 type Database = typeof defaultDb;
@@ -13,6 +17,8 @@ type Position = { lat: number; lng: number };
 export const LIVE_FRESH_MS = 2 * 60 * 1000;
 // Farther than this from every zone, the person is outside the area Te Jalo covers.
 const COVERAGE_KM = 25;
+// A passenger who shared their location only gets the alerts of cars this close.
+const ALERT_RADIUS_KM = 15;
 
 const freshSince = (now: Date) => new Date(now.getTime() - LIVE_FRESH_MS);
 
@@ -49,7 +55,15 @@ async function ownOffer(database: Database, offerId: string, userId: string) {
 // Te Jalo on: keeps the last position of the car, overwriting the previous one.
 export async function shareLiveLocation(
   database: Database,
-  input: { offerId: string; userId: string; position: Position; now: Date },
+  input: {
+    offerId: string;
+    userId: string;
+    position: Position;
+    now: Date;
+    // Sent when the driver turns Te Jalo on: the price and how it is paid. Left out, they stay.
+    priceCents?: number | null;
+    paymentMethods?: ("yape" | "cash")[];
+  },
 ) {
   const { offerId, userId, position, now } = input;
   const offer = await ownOffer(database, offerId, userId);
@@ -67,7 +81,15 @@ export async function shareLiveLocation(
     });
   await database
     .update(tripOffer)
-    .set({ liveStartedAt: now })
+    .set({
+      liveStartedAt: now,
+      ...(input.priceCents === undefined
+        ? {}
+        : {
+            priceCents: input.priceCents,
+            paymentMethods: input.priceCents ? (input.paymentMethods ?? []) : [],
+          }),
+    })
     .where(and(eq(tripOffer.id, offerId), eq(tripOffer.driverId, userId)));
   return { active: true, position: { ...position, recordedAt: now.toISOString() } };
 }
@@ -166,4 +188,116 @@ export async function liveOfferIds(database: Database, offerIds: string[], now: 
       ),
     );
   return new Set(rows.map((row) => row.offerId));
+}
+
+// The alerts a passenger sees without searching: every trip of their community whose driver
+// has Te Jalo on right now and still has a seat. With their location, only the cars within
+// ALERT_RADIUS_KM, the closest first.
+export async function listLiveAlerts(
+  database: Database,
+  input: {
+    communityId: string;
+    userId: string;
+    location?: Position;
+    now: Date;
+  },
+  storageForPhotos?: ProfilePhotoStorageResolver,
+) {
+  const { communityId, userId, location, now } = input;
+  const [member] = await database
+    .select({
+      identifiesAsWoman: communityMember.identifiesAsWoman,
+      travelRole: communityMember.travelRole,
+    })
+    .from(communityMember)
+    .where(and(eq(communityMember.communityId, communityId), eq(communityMember.userId, userId)))
+    .limit(1);
+  // Someone who registered only as a driver is not waiting for a ride.
+  if (!member || member.travelRole === "driver") return { alerts: [] };
+
+  const rows = await database
+    .select({
+      offerId: tripOffer.id,
+      driverId: tripOffer.driverId,
+      direction: tripOffer.direction,
+      originZoneName: zone.name,
+      destinationName: community.destinationName,
+      departureTime: tripOffer.departureTime,
+      seatsTotal: tripOffer.seatsTotal,
+      womenOnly: tripOffer.womenOnly,
+      priceCents: tripOffer.priceCents,
+      paymentMethods: tripOffer.paymentMethods,
+      lat: tripLiveLocation.lat,
+      lng: tripLiveLocation.lng,
+      driverAlias: communityMember.alias,
+      accountName: userTable.name,
+    })
+    .from(tripLiveLocation)
+    .innerJoin(tripOffer, eq(tripOffer.id, tripLiveLocation.offerId))
+    .innerJoin(community, eq(community.id, tripOffer.communityId))
+    .innerJoin(zone, eq(zone.id, tripOffer.originZoneId))
+    .innerJoin(userTable, eq(userTable.id, tripOffer.driverId))
+    .leftJoin(
+      communityMember,
+      and(
+        eq(communityMember.userId, tripOffer.driverId),
+        eq(communityMember.communityId, tripOffer.communityId),
+      ),
+    )
+    .where(
+      and(
+        eq(tripOffer.communityId, communityId),
+        eq(tripOffer.status, "active"),
+        ne(tripOffer.driverId, userId),
+        gte(tripLiveLocation.recordedAt, freshSince(now)),
+      ),
+    );
+  if (rows.length === 0) return { alerts: [] };
+
+  const accepted = await database
+    .select({ offerId: seatBooking.offerId, taken: sql<number>`count(*)::int` })
+    .from(seatBooking)
+    .where(
+      and(
+        inArray(
+          seatBooking.offerId,
+          rows.map((row) => row.offerId),
+        ),
+        eq(seatBooking.status, "accepted"),
+      ),
+    )
+    .groupBy(seatBooking.offerId);
+  const takenBy = new Map(accepted.map((row) => [row.offerId, row.taken]));
+  const photoUrls = await getCommunityProfilePhotos(
+    database,
+    storageForPhotos,
+    communityId,
+    rows.flatMap((row) => (row.driverId ? [row.driverId] : [])),
+  );
+
+  const alerts = rows
+    .filter((row) => !row.womenOnly || member.identifiesAsWoman)
+    .map((row) => ({
+      row,
+      free: seatsFree(row.seatsTotal, takenBy.get(row.offerId) ?? 0),
+      distanceKm: location ? haversineKm(location, row) : null,
+    }))
+    .filter(
+      ({ free, distanceKm }) => free > 0 && (distanceKm === null || distanceKm <= ALERT_RADIUS_KM),
+    )
+    .sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0))
+    .map(({ row, free, distanceKm }) => ({
+      offerId: row.offerId,
+      driverName: displayName(row.driverAlias, row.accountName),
+      driverPhotoUrl: row.driverId ? (photoUrls.get(row.driverId) ?? null) : null,
+      originZoneName: row.originZoneName,
+      destinationName: row.destinationName,
+      direction: row.direction,
+      departureTime: row.departureTime,
+      seatsFree: free,
+      priceCents: row.priceCents,
+      paymentMethods: row.paymentMethods,
+      distanceKm: distanceKm === null ? null : Math.round(distanceKm * 10) / 10,
+    }));
+  return { alerts };
 }

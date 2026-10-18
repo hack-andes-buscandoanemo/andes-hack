@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import EmptyState from "@/components/empty-state";
+import SearchRouteMap from "@/components/search-route-map";
 import { Button } from "@/components/ui/button";
 import {
   communitiesApi,
@@ -10,6 +11,7 @@ import {
   type SearchTripsResponse,
   type ZoneSummary,
 } from "@/lib/communities-api";
+import { findPlace } from "@/lib/geo";
 
 import { addDays, clockLabel, limaToday, shiftClock, TIME_SLOTS, WEEKDAYS } from "./schedule";
 import { FALLBACK_FOR_USUAL_MODE, FALLBACK_OPTIONS, REASON_MESSAGES } from "./reasons";
@@ -33,6 +35,16 @@ export default function SearchPage() {
   // the nearest zone and the coordinates are not kept.
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
+  // Where the person is going, when it is not the community's headquarters; kept only on screen.
+  const [destination, setDestination] = useState<{
+    lat: number;
+    lng: number;
+    name: string;
+  } | null>(null);
+  const [destinationQuery, setDestinationQuery] = useState("");
+  const [findingDestination, setFindingDestination] = useState(false);
+  const [destinationError, setDestinationError] = useState<string | null>(null);
+  const [mapOfferId, setMapOfferId] = useState<string | null>(null);
   const [outbound, setOutbound] = useState(true);
   const [dayChoice, setDayChoice] = useState<DayChoice>("today");
   const [days, setDays] = useState<number[]>([]);
@@ -119,6 +131,40 @@ export default function SearchPage() {
     };
   }, [communityId]);
 
+  // The location is asked for as soon as the screen opens; a refusal leaves the zone list.
+  useEffect(() => {
+    if (!("geolocation" in navigator)) return;
+    let active = true;
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        if (active) setLocation({ lat: coords.latitude, lng: coords.longitude });
+      },
+      () => {
+        // Denied or unavailable: the person picks their zone.
+      },
+      { enableHighAccuracy: true, timeout: 10_000 },
+    );
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function fixDestination() {
+    const text = destinationQuery.trim();
+    if (!text || findingDestination) return;
+    setFindingDestination(true);
+    setDestinationError(null);
+    try {
+      const place = await findPlace(text);
+      if (place) setDestination(place);
+      else setDestinationError("No encontramos ese lugar en Lima. Prueba con otra dirección.");
+    } catch {
+      setDestinationError("No pudimos buscar ese lugar ahora. Inténtalo de nuevo.");
+    } finally {
+      setFindingDestination(false);
+    }
+  }
+
   function useMyLocation() {
     if (locating) return;
     if (!("geolocation" in navigator)) {
@@ -172,7 +218,8 @@ export default function SearchPage() {
     try {
       const response = await communitiesApi.searchTrips(membership.communityId, {
         direction: outbound ? "outbound" : "return",
-        ...(location ? { location } : { originZoneId: zoneId }),
+        ...(zoneId ? { originZoneId: zoneId } : location ? { location } : {}),
+        ...(destination ? { destination: { lat: destination.lat, lng: destination.lng } } : {}),
         windowStart: range.start,
         windowEnd: range.end,
         date: tripDate(),
@@ -182,11 +229,9 @@ export default function SearchPage() {
         womenOnly,
       });
       setResult(response);
-      // The nearest zone the server found takes the place of the coordinates, which are dropped.
-      if (location) {
-        setZoneId(response.originZoneId);
-        setLocation(null);
-      }
+      setMapOfferId(response.matches[0]?.offerId ?? null);
+      // The zone the server found from the coordinates is shown in the selector.
+      if (!zoneId) setZoneId(response.originZoneId);
       setCompletedSearch(submittedSearch);
     } catch (err: unknown) {
       const apiError = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
@@ -242,10 +287,7 @@ export default function SearchPage() {
                           className={selectClass}
                           aria-label="Mi zona"
                           value={zoneId}
-                          onChange={(event) => {
-                            setZoneId(event.target.value);
-                            setLocation(null);
-                          }}
+                          onChange={(event) => setZoneId(event.target.value)}
                         >
                           <option value="">
                             {location ? "Tu ubicación actual" : "Elige tu zona"}
@@ -418,6 +460,60 @@ export default function SearchPage() {
             </select>
           </label>
         </div>
+        <div className="flex flex-col gap-1.5 border-t pt-3">
+          <label htmlFor="destination-point" className="text-sm font-bold">
+            ¿A dónde vas? (opcional)
+          </label>
+          {destination ? (
+            <div className="flex items-center justify-between gap-2 rounded-xl bg-brand-yellow/30 p-2 text-sm">
+              <span className="font-medium">{`Destino: ${destination.name}`}</span>
+              <button
+                type="button"
+                className="px-2 text-xs font-bold underline"
+                onClick={() => {
+                  setDestination(null);
+                  setDestinationQuery("");
+                }}
+              >
+                Quitar
+              </button>
+            </div>
+          ) : (
+            <form
+              className="flex gap-2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void fixDestination();
+              }}
+            >
+              <input
+                id="destination-point"
+                value={destinationQuery}
+                maxLength={120}
+                placeholder="Ej. Av. Javier Prado, San Isidro"
+                onChange={(event) => setDestinationQuery(event.target.value)}
+                className="h-10 min-w-0 flex-1 rounded-md border bg-background px-3 text-sm"
+              />
+              <Button
+                type="submit"
+                variant="outline"
+                disabled={findingDestination || !destinationQuery.trim()}
+                className="h-10 rounded-xl font-bold"
+              >
+                {findingDestination ? "Buscando…" : "Fijar"}
+              </Button>
+            </form>
+          )}
+          {destinationError ? (
+            <p role="alert" className="text-xs font-medium text-destructive">
+              {destinationError}
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Ordenamos los viajes por cuál te deja más cerca de tu destino.
+            </p>
+          )}
+        </div>
         <Button
           type="button"
           size="lg"
@@ -470,6 +566,15 @@ export default function SearchPage() {
                 Ampliar horario 15 min
               </Button>
             ) : null}
+            {(() => {
+              const onMap =
+                result.matches.find((match) => match.offerId === mapOfferId) ?? result.matches[0];
+              return onMap ? (
+                <div className="space-y-1 rounded-2xl border bg-card p-3 shadow-sm">
+                  <SearchRouteMap match={onMap} me={location} destination={destination} />
+                </div>
+              ) : null;
+            })()}
             <ul className="flex flex-col gap-3">
               {result.matches.map((match, index) => (
                 <TripCard
@@ -477,6 +582,8 @@ export default function SearchPage() {
                   match={match}
                   communityName={membership?.communityName ?? ""}
                   best={index === 0}
+                  onMap={(mapOfferId ?? result.matches[0]?.offerId) === match.offerId}
+                  onShowMap={() => setMapOfferId(match.offerId)}
                 />
               ))}
             </ul>

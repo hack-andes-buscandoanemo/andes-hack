@@ -525,7 +525,7 @@ export default function OfferPage() {
           <offerForm.Field name="price">
             {(field) => (
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="offer-price">Precio base por asiento (S/, opcional)</Label>
+                <Label htmlFor="offer-price">Precio por asiento (S/, opcional)</Label>
                 <Input
                   id="offer-price"
                   inputMode="decimal"

@@ -13,6 +13,8 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import LiveAlerts from "@/components/live-alerts";
+
 const SECTIONS = [
   { href: "/inicio", label: "Inicio", icon: Home01Icon },
   { href: "/buscar", label: "Buscar", icon: Search01Icon },
@@ -73,6 +75,8 @@ export default function AppShell({
           </span>
         </div>
       </header>
+
+      <LiveAlerts />
 
       <div className="flex-1 pb-20">{children}</div>
 

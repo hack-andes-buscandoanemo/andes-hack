@@ -10,7 +10,7 @@ export const solesLabel = (amount: number) => `S/ ${soles.format(amount)}`;
 
 export const FUEL_UNKNOWN = "No pudimos estimar el combustible de este tramo.";
 export const FUEL_NOTE =
-  "Referencial. Te Jalo no cobra ni procesa pagos: el precio base lo fija quien maneja y se paga directamente con Yape o efectivo.";
+  "Referencial. Te Jalo no cobra ni procesa pagos: el precio lo fija quien maneja y se paga directamente con Yape o efectivo.";
 
 // The fuel of the leg on the trip detail and in "Viajes" (US-034): a figure to talk about
 // a voluntary contribution. There is no fare, balance or payment anywhere in the app.
