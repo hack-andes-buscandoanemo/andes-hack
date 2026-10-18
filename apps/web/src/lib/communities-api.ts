@@ -12,6 +12,9 @@ export type ZoneSummary = components["schemas"]["ZoneSummary"];
 export type TripOfferSummary = components["schemas"]["TripOfferSummary"];
 export type CreateTripOfferRequest = components["schemas"]["CreateTripOfferRequest"];
 export type CreateTripOfferResponse = components["schemas"]["CreateTripOfferResponse"];
+export type SearchTripsRequest = components["schemas"]["SearchTripsRequest"];
+export type SearchTripsResponse = components["schemas"]["SearchTripsResponse"];
+export type TripMatch = components["schemas"]["TripMatch"];
 
 export const communitiesApi = {
   async listCommunities(): Promise<CommunitySummary[]> {
@@ -93,6 +96,16 @@ export const communitiesApi = {
     const response = await httpClient.patch(`/offers/${offerId}/status` as "/offers/{id}/status", {
       status,
     });
+    return response.data;
+  },
+  async searchTrips(
+    communityId: string,
+    payload: SearchTripsRequest,
+  ): Promise<SearchTripsResponse> {
+    const response = await httpClient.post(
+      `/communities/${communityId}/search` as "/communities/{id}/search",
+      payload,
+    );
     return response.data;
   },
 };
