@@ -5,6 +5,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { count, eq } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 
+import { ApiError } from "./utils/api-response";
 import { errorHandler, validationHook } from "./utils/error-handler";
 
 export interface WaitlistDeps {
@@ -22,11 +23,33 @@ export function createWaitlistRoutes(deps: WaitlistDeps = {}) {
   app.onError(errorHandler);
 
   const database = async () => deps.db ?? (await import("@andes-hack/db")).db;
+  const limit =
+    deps.limit ??
+    (async (identifier: string) => {
+      const { checkWaitlistRateLimit } = await import("./lib/waitlist-rate-limit");
+      return checkWaitlistRateLimit(identifier);
+    });
 
   app.openapi(joinWaitlistRoute, async (c) => {
-    const { website: _website, ...entry } = c.req.valid("json");
+    const allowed = await limit(`waitlist:${c.req.header("cf-connecting-ip") ?? "unknown"}`);
+    if (!allowed.success) {
+      c.header("Retry-After", String(Math.max(1, Math.ceil((allowed.reset - Date.now()) / 1000))));
+      throw new ApiError(429, "Inténtalo en unos minutos.", { code: "too_many_waitlist_entries" });
+    }
+
+    const { website, ...entry } = c.req.valid("json");
+    // A filled trap field means a bot: it gets the same answer, so it learns nothing.
+    if (website) return c.json({ message: thanks }, 201);
+
     const db = await database();
-    await db.insert(waitlistEntry).values({ ...entry, email: entry.email.toLowerCase() });
+    const stored = await db
+      .insert(waitlistEntry)
+      .values({ ...entry, email: entry.email.toLowerCase() })
+      .onConflictDoNothing()
+      .returning({ id: waitlistEntry.id });
+    if (stored.length === 0) {
+      throw new ApiError(409, "Ya estás en la lista.", { code: "already_on_waitlist" });
+    }
     return c.json({ message: thanks }, 201);
   });
 
