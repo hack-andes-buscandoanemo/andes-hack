@@ -1,6 +1,7 @@
 "use client";
 
 import { Search01Icon } from "@hugeicons/core-free-icons";
+import type { VoiceSearchResponse } from "@andes-hack/api";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useState } from "react";
 
@@ -10,12 +11,13 @@ import PageHeader from "@/components/page-header";
 import PlacePicker from "@/components/place-picker";
 import SearchRouteMap from "@/components/search-route-map";
 import { Button } from "@/components/ui/button";
+import VoiceFab from "@/components/voice-fab";
 import {
   communitiesApi,
   type MembershipSummary,
   type SearchTripsResponse,
 } from "@/lib/communities-api";
-import { streetAt, type Place } from "@/lib/geo";
+import { currentPlace, findPlaces, streetAt, type Place } from "@/lib/geo";
 
 import { addDays, clockLabel, limaToday, shiftClock, TIME_SLOTS, WEEKDAYS } from "./schedule";
 import { FALLBACK_FOR_USUAL_MODE, FALLBACK_OPTIONS, REASON_MESSAGES } from "./reasons";
@@ -101,6 +103,83 @@ export default function SearchPage() {
     };
   }, []);
 
+  // Fills the form with what the person dictated and says what it did, one line each. Places
+  // are looked up on the map; what the person did not say is left as it was.
+  async function applyVoice({ fields }: VoiceSearchResponse): Promise<string[]> {
+    const notes: string[] = [];
+    const today = limaToday();
+
+    if (fields.when === "today" || fields.when === "tomorrow") {
+      setDayChoice(fields.when);
+      notes.push(`Fecha: ${fields.when === "today" ? "hoy" : "mañana"}`);
+    } else if (fields.when === "date" && fields.date && fields.date >= today) {
+      setDayChoice("other");
+      setOtherDate(fields.date);
+      notes.push(`Fecha: ${fields.date}`);
+    } else if (fields.when === "weekdays" || fields.days.length > 0) {
+      const chosen =
+        fields.days.length > 0 ? [...new Set(fields.days)].toSorted() : [1, 2, 3, 4, 5];
+      setDayChoice("days");
+      setDays(chosen);
+      notes.push(
+        `Días: ${chosen.map((iso) => WEEKDAYS.find((day) => day.iso === iso)?.name ?? iso).join(", ")}`,
+      );
+    }
+
+    if (fields.windowStart) {
+      const end =
+        fields.windowEnd && fields.windowEnd > fields.windowStart
+          ? fields.windowEnd
+          : shiftClock(fields.windowStart, 60);
+      setWindowStart(fields.windowStart);
+      setWindowEnd(end);
+      notes.push(`Horario: ${clockLabel(fields.windowStart)} a ${clockLabel(end)}`);
+    }
+
+    if (fields.womenOnly !== null && membership?.identifiesAsWoman) {
+      setWomenOnly(fields.womenOnly);
+      notes.push(`Solo mujeres: ${fields.womenOnly ? "sí" : "no"}`);
+    }
+    if (fields.fallbackMode) {
+      setFallbackMode(fields.fallbackMode);
+      notes.push(
+        `Si no hay viaje: ${FALLBACK_OPTIONS.find((option) => option.value === fields.fallbackMode)?.label}`,
+      );
+    }
+
+    // The two places, looked up at once: neither waits for the other.
+    const [from, to] = await Promise.all([
+      fields.originIsCurrentLocation
+        ? currentPlace().then((place) => ({ place, said: "tu ubicación" }))
+        : fields.origin
+          ? findPlaces(fields.origin, 1)
+              .then(([place]) => ({ place: place ?? null, said: fields.origin! }))
+              .catch(() => ({ place: null, said: fields.origin! }))
+          : null,
+      fields.destination
+        ? findPlaces(fields.destination, 1)
+            .then(([place]) => ({ place: place ?? null, said: fields.destination! }))
+            .catch(() => ({ place: null, said: fields.destination! }))
+        : null,
+    ]);
+    if (from) {
+      if (from.place) {
+        setOrigin(from.place);
+        notes.push(`Origen: ${from.place.label}`);
+      } else notes.push(`No encontré el origen “${from.said}”: escríbelo`);
+    }
+    if (to) {
+      if (to.place) {
+        setDestination(to.place);
+        notes.push(`Destino: ${to.place.label}`);
+      } else notes.push(`No encontré el destino “${to.said}”: escríbelo`);
+    }
+    if (notes.length === 0) notes.push("No detecté campos del formulario en lo que dijiste.");
+    setError(null);
+    setDateError(null);
+    return notes;
+  }
+
   function tripDate() {
     if (dayChoice === "days") return null;
     if (dayChoice === "other") return otherDate;
@@ -161,6 +240,7 @@ export default function SearchPage() {
   return (
     <main className="flex flex-col gap-6 px-4 pt-2 pb-6">
       <PageHeader title="Buscar viaje" description="Encuentra personas que van en tu dirección" />
+      <VoiceFab headquarters={membership?.destinationName} onResult={applyVoice} />
       {membership ? (
         <CommunityContext
           communityName={membership.communityName}

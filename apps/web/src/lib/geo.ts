@@ -53,6 +53,21 @@ export async function findPlace(query: string): Promise<(Coordinates & { name: s
   return hit ? { lat: hit.lat, lng: hit.lng, name: hit.label.split(",")[0]! } : null;
 }
 
+// Where the device is now, named by its street; null when the person does not allow it.
+export async function currentPlace(): Promise<Place | null> {
+  if (!("geolocation" in navigator)) return null;
+  const position = await new Promise<GeolocationPosition | null>((resolve) => {
+    navigator.geolocation.getCurrentPosition(resolve, () => resolve(null), {
+      enableHighAccuracy: true,
+      timeout: 10_000,
+    });
+  });
+  if (!position) return null;
+  const point = { lat: position.coords.latitude, lng: position.coords.longitude };
+  const street = await streetAt(point);
+  return { ...point, label: street ? `Mi ubicación, ${street}` : "Mi ubicación" };
+}
+
 // The street a point is on, or null when OpenStreetMap does not know one.
 export async function streetAt(point: Coordinates): Promise<string | null> {
   const url = `${nominatim}/reverse?format=jsonv2&zoom=17&lat=${point.lat}&lon=${point.lng}`;

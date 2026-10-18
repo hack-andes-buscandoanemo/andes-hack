@@ -846,6 +846,32 @@ export const TripMatchSchema = z
 
 export type TripMatch = z.infer<typeof TripMatchSchema>;
 
+// What the person said when they dictated a search, as the fields of the form: null in
+// whatever they did not say. The places are still text; the web turns them into points.
+export const VoiceSearchFieldsSchema = z.object({
+  origin: z.string().nullable(),
+  // "Aquí", "donde estoy": the origin is the device's location.
+  originIsCurrentLocation: z.boolean(),
+  destination: z.string().nullable(),
+  when: z.enum(["today", "tomorrow", "date", "weekdays"]).nullable(),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable(),
+  // ISO weekdays, 1 = Monday … 7 = Sunday.
+  days: z.array(z.number().int().min(1).max(7)),
+  windowStart: clockTime.nullable(),
+  windowEnd: clockTime.nullable(),
+  womenOnly: z.boolean().nullable(),
+  fallbackMode: FallbackModeSchema.nullable(),
+});
+export const VoiceSearchResponseSchema = z.object({
+  text: z.string(),
+  fields: VoiceSearchFieldsSchema,
+});
+export type VoiceSearchFields = z.infer<typeof VoiceSearchFieldsSchema>;
+export type VoiceSearchResponse = z.infer<typeof VoiceSearchResponseSchema>;
+
 export const SearchTripsResponseSchema = z
   .object({
     // The passenger's saved need, one per direction; kept even when nothing matched.
