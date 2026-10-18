@@ -1,3 +1,7 @@
 {
-  "ignorePatterns": []
+  "ignorePatterns": [
+    "apps/web/src/lib/api-schema.d.ts",
+    "packages/api/src/openapi.json",
+    "packages/db/src/migrations/**"
+  ]
 }
