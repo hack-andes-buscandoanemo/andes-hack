@@ -292,6 +292,9 @@ Aplica las migraciones versionadas de la base de datos e inicia los servidores d
 bun db:generate
 bun db:migrate
 
+# Cargar los lugares reales de Lima y la comunidad demo (DEMO_JOIN_CODE y DEMO_ADMIN_EMAIL en .env)
+bun db:seed
+
 # Iniciar frontend y backend en paralelo con Turborepo
 bun dev
 ```
@@ -332,6 +335,7 @@ bun --cwd packages/infra deploy
 | `bun db:studio`   | Abre Drizzle Studio para explorar la base de datos visualmente |
 | `bun db:generate` | Genera archivos de migración SQL                               |
 | `bun db:migrate`  | Ejecuta las migraciones pendientes                             |
+| `bun db:seed`     | Carga los lugares reales de Lima y la comunidad demo           |
 
 </details>
 
