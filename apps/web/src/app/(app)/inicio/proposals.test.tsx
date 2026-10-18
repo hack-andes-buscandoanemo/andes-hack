@@ -1,7 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { AxiosError, type AxiosResponse } from "axios";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { serverError } from "@/test/server-error";
 
 const listProposals = vi.fn();
 const requestSeat = vi.fn();
@@ -28,11 +29,6 @@ const PROPOSAL = {
   arrivalAt: "07:44",
   walkMinutes: 14,
 };
-
-function serverError(status: number, error: string) {
-  const response = { status, data: { success: false, status, error } } as AxiosResponse;
-  return new AxiosError("Request failed", "ERR_BAD_REQUEST", undefined, null, response);
-}
 
 beforeEach(() => {
   listProposals.mockReset().mockResolvedValue([PROPOSAL]);

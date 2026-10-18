@@ -1,7 +1,8 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { AxiosError, type AxiosResponse } from "axios";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { serverError } from "@/test/server-error";
 
 const runMatching = vi.fn();
 const latestMatchRuns = vi.fn();
@@ -52,11 +53,6 @@ const RESULT = {
     },
   ],
 };
-
-function serverError(status: number, error: string) {
-  const response = { status, data: { success: false, status, error } } as AxiosResponse;
-  return new AxiosError("Request failed", "ERR_BAD_REQUEST", undefined, null, response);
-}
 
 beforeEach(() => {
   runMatching.mockReset();

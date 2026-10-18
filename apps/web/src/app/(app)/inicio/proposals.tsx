@@ -1,19 +1,13 @@
 "use client";
 
-import { isAxiosError } from "axios";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { reasonOf } from "@/lib/api-error";
 import { communitiesApi, type MatchProposal } from "@/lib/communities-api";
 
 import { clockLabel, dateLabel } from "../buscar/schedule";
-
-// The server answers in Spanish ("Este viaje ya no tiene asientos libres."); fall back when it does not.
-function reasonOf(failure: unknown, fallback: string) {
-  const reason = isAxiosError(failure) ? failure.response?.data?.error : undefined;
-  return typeof reason === "string" ? reason : fallback;
-}
 
 // The seats the matching recommended to this person (US-019). Nothing is booked until
 // they ask for the seat, and the driver still decides.

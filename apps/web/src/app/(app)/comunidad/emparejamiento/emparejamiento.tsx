@@ -1,21 +1,15 @@
 "use client";
 
-import { isAxiosError } from "axios";
 import { useEffect, useState } from "react";
 
 import EmptyState from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
+import { reasonOf } from "@/lib/api-error";
 import { communitiesApi, type MatchRunsResponse } from "@/lib/communities-api";
 
 import { clockLabel, dateLabel, limaToday } from "../../buscar/schedule";
 
 const selectClass = "h-9 rounded-lg border border-input bg-background px-2 text-sm font-normal";
-
-// The server answers in Spanish ("Ya hay un emparejamiento en curso…"); fall back when it does not.
-function reasonOf(failure: unknown, fallback: string) {
-  const reason = isAxiosError(failure) ? failure.response?.data?.error : undefined;
-  return typeof reason === "string" ? reason : fallback;
-}
 
 function strategyLine(name: string, run: MatchRunsResponse["optimizer"]) {
   return `${name}: ${run.carTripsAvoided} viajes en auto evitados · ${run.passengersMatched} pasajeros · ${run.detourMinutes} min de desvío total`;
