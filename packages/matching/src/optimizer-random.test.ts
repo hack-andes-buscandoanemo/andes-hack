@@ -67,8 +67,12 @@ describe("plans for random days of Lima", () => {
     const instance = randomDay(2, { offers: 60, requests: 200 }, model);
 
     const start = performance.now();
-    optimizeDay(instance, model);
+    const plan = optimizeDay(instance, model);
+    const elapsed = performance.now() - start;
 
-    expect(performance.now() - start).toBeLessThan(2000);
+    expect(elapsed).toBeLessThan(2000);
+    // What the plan reports is what it took.
+    expect(plan.durationMs).toBeGreaterThan(0);
+    expect(plan.durationMs).toBeLessThanOrEqual(Math.ceil(elapsed));
   });
 });

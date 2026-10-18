@@ -88,6 +88,8 @@ export interface DayPlan {
   objective: Objective;
   // Who is seated and who is left out, group by group: the priority favours one of them.
   metrics: { matched: ByFallback; unassigned: ByFallback };
+  // How long the plan took to compute.
+  durationMs: number;
 }
 
 function byFallback(requests: readonly DayRequest[]): ByFallback {
@@ -172,7 +174,8 @@ export function optimizeDay(
 ): DayPlan {
   const { date } = instance;
   const { priority = "car_trips_avoided", timeBudgetMs = 1000 } = options;
-  const deadline = performance.now() + timeBudgetMs;
+  const start = performance.now();
+  const deadline = start + timeBudgetMs;
   const accepted = new Map(
     instance.offers.map((offer) => [offer.id, timeRoute(offer, date, model).minutes]),
   );
@@ -401,5 +404,6 @@ export function optimizeDay(
     })),
     objective: total,
     metrics: { matched: byFallback([...seated.keys()]), unassigned: byFallback(waiting()) },
+    durationMs: Math.round(performance.now() - start),
   };
 }
