@@ -108,6 +108,23 @@ describe("perfil: seguridad (US-035)", () => {
   });
 });
 
+describe("perfil: contactos de emergencia (US-028)", () => {
+  it("sends the passenger to their trips, where an accepted trip can be shared", () => {
+    render(<Perfil name="Ana Torres" email="ana@alfa.pe" membership={MEMBERSHIP} />);
+
+    const security = screen.getByRole("region", { name: "Seguridad" });
+    expect(within(security).getByRole("link", { name: "Contactos de emergencia" })).toHaveAttribute(
+      "href",
+      "/viajes?role=pasajero",
+    );
+    expect(
+      within(security).getByText(
+        "Comparte el enlace de un viaje aceptado con alguien de confianza.",
+      ),
+    ).toBeInTheDocument();
+  });
+});
+
 describe("perfil: editar perfil (US-035)", () => {
   it("saves the alias and the usual mode without asking for consent again", async () => {
     updateMembership.mockResolvedValue({});
@@ -383,6 +400,15 @@ describe("perfil", () => {
 
     await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/"));
     expect(signOut).toHaveBeenCalled();
+  });
+
+  it("links to the privacy settings (US-029)", () => {
+    render(<Perfil name="Ana" email="ana@uni.pe" />);
+
+    expect(screen.getByRole("link", { name: "Privacidad" })).toHaveAttribute(
+      "href",
+      "/perfil/privacidad",
+    );
   });
 
   it("links to the trip history", () => {

@@ -198,6 +198,17 @@ export default function Perfil({
         <p>Pertenencia validada</p>
         {/* Declared, not verified: neither the SOAT nor the property card is checked yet. */}
         {hasVehicle ? <p>Vehículo registrado: Declarado</p> : null}
+        {/* US-028 stores no contacts: the passenger shares an accepted trip from Viajes. */}
+        <Link
+          href={{ pathname: "/viajes", query: { role: "pasajero" } }}
+          className="flex min-h-11 items-center justify-between rounded-lg bg-muted px-3 font-medium"
+        >
+          Contactos de emergencia
+          <span aria-hidden>›</span>
+        </Link>
+        <p className="text-sm text-muted-foreground">
+          Comparte el enlace de un viaje aceptado con alguien de confianza.
+        </p>
         <Link
           href={{ pathname: "/viajes", query: { tab: "historial" } }}
           className="flex min-h-11 items-center justify-between rounded-lg bg-muted px-3 font-medium"
