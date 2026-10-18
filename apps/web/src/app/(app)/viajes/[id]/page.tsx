@@ -162,6 +162,12 @@ export default function TripDetailPage() {
     } else {
       action = (
         <div className="space-y-3">
+          <Link
+            href={`/viajes/${id}/solicitudes`}
+            className="flex h-11 w-full items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground hover:bg-primary/90"
+          >
+            Solicitudes
+          </Link>
           {error ? (
             <p role="alert" className="text-sm font-medium text-destructive">
               {error}

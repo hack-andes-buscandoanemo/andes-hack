@@ -412,6 +412,14 @@ describe("trip detail /viajes/{id} (US-014)", () => {
   });
 
   describe("trip cancellation (US-022)", () => {
+    it("shows a link to requests for the driver of the trip", async () => {
+      getOfferDetail.mockResolvedValue({ ...DETAIL, isOwn: true, status: "active" });
+      render(<TripDetailPage />);
+
+      const link = await screen.findByRole("link", { name: "Solicitudes" });
+      expect(link).toHaveAttribute("href", `/viajes/${OFFER_ID}/solicitudes`);
+    });
+
     it("lets the driver cancel their own trip with reasons dialog and confirms cancellation", async () => {
       getOfferDetail.mockResolvedValue({ ...DETAIL, isOwn: true, status: "active" });
       cancelOffer.mockResolvedValue({
