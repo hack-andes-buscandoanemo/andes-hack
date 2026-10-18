@@ -63,6 +63,7 @@ describe("plans for random days of Lima", () => {
     expect(seated).toBeGreaterThan(500);
   });
 
+  // The bound is US-017's; this day takes about 0.2 to 0.4 s, so a slower machine has room.
   it("plans a day of 200 needs and 60 offers in under 2 seconds", () => {
     const instance = randomDay(2, { offers: 60, requests: 200 }, model);
 

@@ -20,6 +20,7 @@ import {
   type OfferRoute,
   optimizeDay,
 } from "../src/index";
+import { compareObjectives, emptyPlan } from "../src/testing/objective";
 import { type DaySize, fingerprint, randomDay } from "../src/testing/random-day";
 import { pairBreak, routeBreak, tripMinutes } from "../src/testing/route-oracle";
 
@@ -59,6 +60,8 @@ function* meetingPoints(riders: readonly DayRequest[]): Generator<Map<string, nu
       yield [new Map([[point.meetingPointId, Math.round(point.walkMinutes)]]), ...others];
 }
 
+const windowOf = ({ windowStart, windowEnd }: DayRequest) => ({ windowStart, windowEnd });
+
 // The cheapest way to add these riders to the offer: fewest detour minutes, then fewest
 // minutes on foot; null if no order and no meeting points fit.
 function cheapestRoute(offer: OfferRoute, riders: readonly DayRequest[], date: string) {
@@ -87,18 +90,6 @@ function cheapestRoute(offer: OfferRoute, riders: readonly DayRequest[], date: s
   return best;
 }
 
-const windowOf = ({ windowStart, windowEnd }: DayRequest) => ({ windowStart, windowEnd });
-
-// Positive when `a` is the better plan.
-function compare(a: Objective, b: Objective) {
-  return (
-    a.carTripsAvoided - b.carTripsAvoided ||
-    a.passengersMatched - b.passengersMatched ||
-    b.detourMinutes - a.detourMinutes ||
-    b.walkMinutes - a.walkMinutes
-  );
-}
-
 function optimum(instance: DayInstance): Objective {
   const { offers, requests, date } = instance;
   // The offers each passenger could ever ride with.
@@ -117,21 +108,11 @@ function optimum(instance: DayInstance): Objective {
     return costs.get(key)!;
   };
 
-  let best: Objective = {
-    carTripsAvoided: 0,
-    passengersMatched: 0,
-    detourMinutes: 0,
-    walkMinutes: 0,
-  };
+  let best = emptyPlan();
   const chosen = new Map<string, DayRequest[]>(offers.map((offer) => [offer.id, []]));
   const visit = (index: number) => {
     if (index === requests.length) {
-      const plan: Objective = {
-        carTripsAvoided: 0,
-        passengersMatched: 0,
-        detourMinutes: 0,
-        walkMinutes: 0,
-      };
+      const plan = emptyPlan();
       for (const offer of offers) {
         const riders = chosen.get(offer.id)!;
         if (riders.length === 0) continue;
@@ -142,7 +123,7 @@ function optimum(instance: DayInstance): Objective {
         plan.detourMinutes += cost.detourMinutes;
         plan.walkMinutes += cost.walkMinutes;
       }
-      if (compare(plan, best) > 0) best = plan;
+      if (compareObjectives(plan, best) > 0) best = plan;
       return;
     }
     visit(index + 1);
@@ -178,7 +159,7 @@ writeFileSync(
 let reached = 0;
 for (const { seed, optimum: best } of days) {
   const found = optimizeDay(instances.get(seed)!, model).objective;
-  if (compare(found, best) === 0) reached++;
+  if (compareObjectives(found, best) === 0) reached++;
   else
     console.log(
       `seed ${seed}: optimum ${JSON.stringify(best)}, optimizer ${JSON.stringify(found)}`,

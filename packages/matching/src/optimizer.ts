@@ -53,7 +53,8 @@ export interface Assignment {
   position: number;
   pickupAt: string;
   arrivalAt: string;
-  // How much shorter the driver's final route would be without this passenger.
+  // How much shorter the driver's final route would be without this passenger. A stop on
+  // another passenger's way adds 0, so these need not add up to the objective's detour.
   detourMinutes: number;
   walkMinutes: number;
   avoidsCarTrip: boolean;
@@ -261,6 +262,8 @@ export function optimizeDay(
       }),
     ]),
   );
+  const canJoin = (request: DayRequest, offerId: string) =>
+    reachable.get(request)!.some((offer) => offer.id === offerId);
   const rank = (request: DayRequest) => {
     const routes = reachable.get(request)!.map((offer) => cars.get(offer.id)!.route);
     return rankOffersForRequest(request, routes, model, date).matches;
@@ -280,8 +283,7 @@ export function optimizeDay(
     seatedOn.set(next.request, best.offerId);
     // Only that car changed, so only those who could join it are ranked again.
     for (const request of waiting())
-      if (reachable.get(request)!.some((offer) => offer.id === best.offerId))
-        matches.set(request, rank(request));
+      if (canJoin(request, best.offerId)) matches.set(request, rank(request));
   }
 
   // Every plan one move away, as the cars it changes.
@@ -312,7 +314,7 @@ export function optimizeDay(
         // Alone they would have been seated by now.
         if (withRider(cars.get(offer.id)!, first)) continue;
         for (const second of left.slice(index + 1)) {
-          if (!reachable.get(second)!.includes(offer)) continue;
+          if (!canJoin(second, offer.id)) continue;
           for (const both of withPair(cars.get(offer.id)!, first, second)) yield [both];
         }
       }
@@ -331,7 +333,7 @@ export function optimizeDay(
         if (moved) yield [source, moved];
         // Swap with someone who can take this seat.
         for (const rider of target.riders) {
-          if (!rider || !reachable.get(rider.request)!.some(({ id }) => id === from)) continue;
+          if (!rider || !canJoin(rider.request, from)) continue;
           const freed = withoutRider(target, rider.request);
           const swappedIn = freed && withRider(freed, request);
           const swappedBack = swappedIn && withRider(source, rider.request);
