@@ -1,6 +1,7 @@
 import {
   acceptBookingRoute,
   cancelBookingRoute,
+  createShareLinkRoute,
   createCommunityOfferRoute,
   confirmProfilePhotoRoute,
   createVehicleRoute,
@@ -25,6 +26,8 @@ import {
   runMatchingRoute,
   profilePhotoUploadRoute,
   rejectBookingRoute,
+  revokeShareLinkRoute,
+  sharedTripRoute,
   searchTripsRoute,
   updateMembershipRoute,
   updateOfferStatusRoute,
@@ -70,6 +73,7 @@ import {
 import { createPublicStatsRoutes, type StatsCache } from "./public-stats";
 import { searchTrips } from "./search";
 import { getTripMessages, listMyChats, sendTripMessage } from "./chat";
+import { createShareLink, getSharedTrip, revokeShareLink } from "./trip-share";
 import { ApiError } from "./utils/api-response";
 import { deletePersonalData } from "./privacy";
 import {
@@ -102,6 +106,8 @@ export type AppDeps = {
   now?: () => Date;
   statsRateLimit?: RateLimitCheck;
   statsCache?: StatsCache;
+  // Limits who can try tokens on the public shared-trip view.
+  shareRateLimit?: RateLimitCheck;
   // Keeps two admins from matching the same journey at once; Redis unless injected.
   journeyLock?: JourneyLock;
   profilePhotoStorage?: ProfilePhotoStorage;
@@ -312,6 +318,8 @@ export function createApp(deps: AppDeps = {}) {
   openApiApp.use("/bookings/:id/cancel", requireSession(deps.getSession));
   openApiApp.use("/bookings/:id/accept", requireSession(deps.getSession));
   openApiApp.use("/bookings/:id/reject", requireSession(deps.getSession));
+  openApiApp.use("/bookings/:id/share-links", requireSession(deps.getSession));
+  openApiApp.use("/share-links/:id", requireSession(deps.getSession));
   openApiApp.use("/me", requireSession(deps.getSession));
   const requirePhotoMember = requireOnboardedMember(
     (c) => c.req.header("x-community-id") ?? "",
@@ -1200,6 +1208,49 @@ export function createApp(deps: AppDeps = {}) {
   openApiApp.openapi(cancelBookingRoute, async (c) => {
     const { id: bookingId } = c.req.valid("param");
     return c.json(await withdrawRequest(database, { bookingId, userId: c.get("user").id }), 200);
+  });
+
+  openApiApp.openapi(createShareLinkRoute, async (c) => {
+    const { id: bookingId } = c.req.valid("param");
+    return c.json(
+      await createShareLink(database, { bookingId, userId: c.get("user").id, now: getNow() }),
+      201,
+    );
+  });
+
+  openApiApp.openapi(revokeShareLinkRoute, async (c) => {
+    const { id: linkId } = c.req.valid("param");
+    return c.json(
+      await revokeShareLink(database, { linkId, userId: c.get("user").id, now: getNow() }),
+      200,
+    );
+  });
+
+  // What a shared link shows is for the person holding it: never kept by browsers or proxies.
+  openApiApp.use("/public/share/*", async (c, next) => {
+    await next();
+    c.header("Cache-Control", "no-store");
+  });
+
+  openApiApp.openapi(sharedTripRoute, async (c) => {
+    const limit =
+      deps.shareRateLimit ??
+      (async (identifier: string) => {
+        const { checkShareRateLimit } = await import("./lib/share-rate-limit");
+        return checkShareRateLimit(identifier);
+      });
+    const allowed = await limit(`share:${c.req.header("cf-connecting-ip") ?? "unknown"}`);
+    if (!allowed.success) {
+      c.header(
+        "Retry-After",
+        String(Math.max(1, Math.ceil((allowed.reset - getNow().getTime()) / 1000))),
+      );
+      throw new ApiError(429, "Demasiadas consultas. Inténtalo en un momento.", {
+        code: "too_many_share_requests",
+      });
+    }
+    const { token } = c.req.valid("param");
+    return c.json(await getSharedTrip(database, { token, now: getNow() }), 200);
   });
 
   const journeyLock = async (): Promise<JourneyLock> => {
