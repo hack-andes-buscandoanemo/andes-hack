@@ -60,8 +60,8 @@ export default function Home() {
   if (isPending || session) return null;
 
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-md flex-col gap-10 px-4 pt-5 pb-8 md:max-w-xl">
-      <header className="flex flex-col gap-8">
+    <main className="mx-auto flex min-h-svh w-full max-w-md flex-col gap-10 px-4 pt-5 pb-8 md:max-w-3xl md:px-6 lg:grid lg:max-w-7xl lg:grid-cols-2 lg:items-center lg:gap-x-14 lg:gap-y-12 lg:px-10 lg:pt-8">
+      <header className="flex flex-col gap-8 lg:col-start-1 lg:row-start-1">
         <div className="flex items-center gap-2.5">
           <BrandMark />
           <h1 className="text-lg font-bold tracking-tight">Te Jalo</h1>
@@ -76,7 +76,7 @@ export default function Home() {
         </div>
       </header>
 
-      <nav aria-label="Acceso" className="flex flex-col gap-3">
+      <nav aria-label="Acceso" className="flex flex-col gap-3 lg:col-start-1 lg:row-start-2">
         <Link href="/ingresar" className={buttonVariants({ size: "lg" })}>
           <HugeiconsIcon icon={BankIcon} className="size-5" aria-hidden />
           Ingresar con mi entidad
@@ -101,10 +101,10 @@ export default function Home() {
         width={758}
         height={342}
         priority
-        className="aspect-[758/342] w-full rounded-3xl object-cover shadow-md"
+        className="aspect-[758/342] w-full rounded-3xl object-cover shadow-md lg:col-start-2 lg:row-span-2 lg:row-start-1"
       />
 
-      <ul className="grid gap-x-8 gap-y-6 sm:grid-cols-2">
+      <ul className="grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:col-span-2 lg:grid-cols-4">
         {BENEFITS.map(({ icon, title, body }) => (
           <li key={title} className="flex gap-4">
             <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-highlight text-highlight-foreground">
@@ -118,7 +118,7 @@ export default function Home() {
         ))}
       </ul>
 
-      <footer className="mt-auto flex flex-col items-center gap-3 border-t pt-6 text-center text-sm">
+      <footer className="mt-auto flex flex-col items-center gap-3 border-t pt-6 text-center text-sm lg:col-span-2">
         <p className="text-muted-foreground">Conectamos personas que ya recorren rutas similares</p>
         <ul className="flex flex-wrap justify-center gap-x-5 gap-y-1">
           {FOOTER_LINKS.map(({ href, label }) => (
