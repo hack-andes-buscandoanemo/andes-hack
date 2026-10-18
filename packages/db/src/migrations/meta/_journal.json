@@ -26,8 +26,15 @@
     {
       "idx": 3,
       "version": "7",
-      "when": 1792291581088,
-      "tag": "0003_steep_tinkerer",
+      "when": 1792290819356,
+      "tag": "0003_waitlist",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792292760357,
+      "tag": "0004_giant_triathlon",
       "breakpoints": true
     }
   ]

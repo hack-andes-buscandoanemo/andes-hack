@@ -39,6 +39,7 @@ import {
 import { searchTrips } from "./search";
 import { ApiError } from "./utils/api-response";
 import { errorHandler, validationHook } from "./utils/error-handler";
+import { createWaitlistRoutes } from "./waitlist";
 
 setVerificationOtpSender(async ({ email, otp }) => {
   await defaultSendEmail({
@@ -916,6 +917,8 @@ export function createApp(deps: AppDeps = {}) {
       200,
     );
   });
+
+  openApiApp.route("/", createWaitlistRoutes({ db: deps.db }));
 
   openApiApp.doc31("/openapi.json", OPENAPI_DOCUMENT_CONFIG);
   openApiApp.get("/docs", apiReference({ spec: { url: "/openapi.json" } }));

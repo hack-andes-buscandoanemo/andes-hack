@@ -725,6 +725,106 @@
           }
         },
         "required": ["direction", "originZoneId", "windowStart", "windowEnd", "fallbackMode"]
+      },
+      "WaitlistEntryResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": ["message"]
+      },
+      "WaitlistEntryRequest": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["institution"]
+              },
+              "institution": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "email": {
+                "type": "string",
+                "maxLength": 254,
+                "format": "email"
+              },
+              "consent": {
+                "type": "boolean",
+                "enum": [true]
+              },
+              "website": {
+                "type": "string"
+              },
+              "role": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "onSiteCount": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100000
+              },
+              "wantsPilot": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "kind",
+              "institution",
+              "email",
+              "consent",
+              "role",
+              "onSiteCount",
+              "wantsPilot"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["individual"]
+              },
+              "institution": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "email": {
+                "type": "string",
+                "maxLength": 254,
+                "format": "email"
+              },
+              "consent": {
+                "type": "boolean",
+                "enum": [true]
+              },
+              "website": {
+                "type": "string"
+              }
+            },
+            "required": ["kind", "institution", "email", "consent"]
+          }
+        ]
+      },
+      "WaitlistSummary": {
+        "type": "object",
+        "properties": {
+          "institutions": {
+            "type": "integer"
+          },
+          "individuals": {
+            "type": "integer"
+          }
+        },
+        "required": ["institutions", "individuals"]
       }
     },
     "parameters": {}
@@ -1132,6 +1232,79 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/waitlist": {
+      "post": {
+        "tags": ["Público"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WaitlistEntryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Inscripción recibida en la lista de espera",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaitlistEntryResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ya está en la lista: «Ya estás en la lista.»",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos incompletos o sin consentimiento",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Demasiados envíos desde la misma IP: «Inténtalo en unos minutos.»",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/waitlist/summary": {
+      "get": {
+        "tags": ["Público"],
+        "responses": {
+          "200": {
+            "description": "Totales de la lista de espera, sin datos de contacto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaitlistSummary"
                 }
               }
             }

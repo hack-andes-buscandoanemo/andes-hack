@@ -512,6 +512,107 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/public/waitlist": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: {
+        content: {
+          "application/json": components["schemas"]["WaitlistEntryRequest"];
+        };
+      };
+      responses: {
+        /** @description Inscripción recibida en la lista de espera */
+        201: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["WaitlistEntryResponse"];
+          };
+        };
+        /** @description Ya está en la lista: «Ya estás en la lista.» */
+        409: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Datos incompletos o sin consentimiento */
+        422: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Demasiados envíos desde la misma IP: «Inténtalo en unos minutos.» */
+        429: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/waitlist/summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Totales de la lista de espera, sin datos de contacto */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["WaitlistSummary"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -737,6 +838,37 @@ export interface components {
       fallbackMode: "drive_alone" | "taxi_app" | "public_transport" | "picked_up" | "other";
       /** @default false */
       womenOnly: boolean;
+    };
+    WaitlistEntryResponse: {
+      message: string;
+    };
+    WaitlistEntryRequest:
+      | {
+          /** @enum {string} */
+          kind: "institution";
+          institution: string;
+          /** Format: email */
+          email: string;
+          /** @enum {boolean} */
+          consent: true;
+          website?: string;
+          role: string;
+          onSiteCount: number;
+          wantsPilot: boolean;
+        }
+      | {
+          /** @enum {string} */
+          kind: "individual";
+          institution: string;
+          /** Format: email */
+          email: string;
+          /** @enum {boolean} */
+          consent: true;
+          website?: string;
+        };
+    WaitlistSummary: {
+      institutions: number;
+      individuals: number;
     };
   };
   responses: never;
