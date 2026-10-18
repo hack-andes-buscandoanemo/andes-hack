@@ -1,3 +1,4 @@
+import { PublicStatsSchema } from "@andes-hack/api";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.hoisted(() => {
@@ -14,6 +15,7 @@ vi.hoisted(() => {
 
 import { user } from "@andes-hack/db/schema/auth";
 import { community, communityMember } from "@andes-hack/db/schema/community";
+import { matchRun, matchSuggestion } from "@andes-hack/db/schema/matching";
 import { meetingPoint, zone } from "@andes-hack/db/schema/places";
 import { seatBooking, tripOffer, tripRequest } from "@andes-hack/db/schema/trips";
 import { waitlistEntry } from "@andes-hack/db/schema/waitlist";
@@ -36,6 +38,8 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+  await testDb.delete(matchSuggestion);
+  await testDb.delete(matchRun);
   await testDb.delete(waitlistEntry);
   await testDb.delete(seatBooking);
   await testDb.delete(tripRequest);
@@ -130,6 +134,7 @@ async function addBooking(
   passengerId: string,
   options: {
     status?: "pending" | "accepted" | "rejected" | "completed" | "no_show";
+    originZoneId?: string;
     fallbackMode?: "drive_alone" | "taxi_app" | "public_transport" | "picked_up" | "other";
   } = {},
 ) {
@@ -139,7 +144,7 @@ async function addBooking(
       communityId: offer.communityId,
       passengerId,
       direction: "outbound",
-      originZoneId: "la-molina",
+      originZoneId: options.originZoneId ?? "la-molina",
       windowStart: "06:30",
       windowEnd: "07:30",
       date: "2099-03-02",
@@ -157,6 +162,57 @@ async function addBooking(
     detourMinutes: 6,
     walkMinutes: 4,
     status: options.status ?? "accepted",
+  });
+  return need!;
+}
+
+async function addRun(
+  communityId: string,
+  algorithm: "fcfs" | "optimizer",
+  createdAt: string,
+  date = "2099-03-02",
+) {
+  const [run] = await testDb
+    .insert(matchRun)
+    .values({
+      communityId,
+      algorithm,
+      direction: "outbound",
+      date,
+      inputSummary: { offers: 99, requests: 99 },
+      metrics: {
+        carTripsAvoided: 99,
+        passengersMatched: 99,
+        detourMinutes: 99,
+        walkMinutes: 99,
+        unassigned: 99,
+      },
+      durationMs: 1,
+      createdAt: new Date(createdAt),
+    })
+    .returning();
+  return run!;
+}
+
+async function addSuggestion(
+  runId: string,
+  offerId: string,
+  requestId: string,
+  passengerId: string,
+  avoidsCarTrip = true,
+) {
+  await testDb.insert(matchSuggestion).values({
+    runId,
+    offerId,
+    requestId,
+    passengerId,
+    avoidsCarTrip,
+    meetingPointId: "la-molina-parque",
+    position: 0,
+    pickupAt: "07:00",
+    arrivalAt: "07:30",
+    detourMinutes: 2,
+    walkMinutes: 1,
   });
 }
 
@@ -211,6 +267,170 @@ function statsApp(deps: PublicStatsDeps = {}) {
 }
 
 describe("GET /public/communities/{slug}/stats", () => {
+  it("uses the latest complete pair if a later optimizer has no baseline on that journey", async () => {
+    const org = await seedCommunity();
+    await addRun(org.id, "fcfs", "2026-10-19T14:00:00Z");
+    await addRun(org.id, "optimizer", "2026-10-19T14:00:01Z");
+    await addRun(org.id, "optimizer", "2026-10-19T15:00:00Z", "2099-03-03");
+    const body = PublicStatsSchema.parse(
+      await (await statsApp().request("/public/communities/alfa/stats")).json(),
+    );
+    expect(body.comparison).toMatchObject({ date: "2099-03-02", direction: "outbound" });
+  });
+  it("pairs repeated journeys before the optimizer, ignoring newer orphan baselines and other communities", async () => {
+    const org = await seedCommunity();
+    const other = await seedCommunity("beta");
+    await addMember(org.id, "driver", { travelRole: "driver" });
+    await addMember(org.id, "ana");
+    const offer = await addOffer(org.id, "driver");
+    const need = await addBooking(offer, "ana");
+    await addRun(org.id, "fcfs", "2026-10-19T14:00:00Z");
+    const baseline = await addRun(org.id, "fcfs", "2026-10-19T15:00:00Z");
+    await addSuggestion(baseline.id, offer.id, need.id, "ana");
+    await addRun(org.id, "optimizer", "2026-10-19T15:00:01Z");
+    await addRun(org.id, "fcfs", "2026-10-19T15:00:02Z");
+    await addRun(other.id, "fcfs", "2026-10-19T16:00:00Z");
+    await addRun(other.id, "optimizer", "2026-10-19T16:00:01Z");
+    const body = PublicStatsSchema.parse(
+      await (await statsApp().request("/public/communities/alfa/stats")).json(),
+    );
+    expect(body.comparison?.firstComeFirstServed).toEqual({
+      carTripsAvoided: 1,
+      passengersMatched: 1,
+    });
+  });
+  it("excludes team drivers and passengers using membership in the selected community", async () => {
+    const org = await seedCommunity();
+    const other = await seedCommunity("beta");
+    await addMember(org.id, "driver", { travelRole: "driver" });
+    await addMember(org.id, "team-driver", { travelRole: "driver", isTeam: true });
+    await addMember(org.id, "ana");
+    await addMember(org.id, "team-passenger", { isTeam: true });
+    await testDb.insert(communityMember).values({
+      communityId: other.id,
+      userId: "ana",
+      verificationMethod: "join_code",
+      isTeam: true,
+    });
+    const offer = await addOffer(org.id, "driver");
+    const teamOffer = await addOffer(org.id, "team-driver");
+    const realNeed = await addBooking(offer, "ana");
+    const teamNeed = await addBooking(offer, "team-passenger");
+    const teamRide = await addBooking(teamOffer, "ana");
+    for (const algorithm of ["fcfs", "optimizer"] as const) {
+      const run = await addRun(
+        org.id,
+        algorithm,
+        algorithm === "fcfs" ? "2026-10-19T15:00:00Z" : "2026-10-19T15:00:01Z",
+      );
+      await addSuggestion(run.id, offer.id, realNeed.id, "ana");
+      await addSuggestion(run.id, offer.id, teamNeed.id, "team-passenger");
+      await addSuggestion(run.id, teamOffer.id, teamRide.id, "ana");
+    }
+    const body = PublicStatsSchema.parse(
+      await (await statsApp().request("/public/communities/alfa/stats")).json(),
+    );
+    expect(body.comparison?.optimizer).toEqual({ carTripsAvoided: 1, passengersMatched: 1 });
+    expect(body.comparison?.firstComeFirstServed).toEqual({
+      carTripsAvoided: 1,
+      passengersMatched: 1,
+    });
+  });
+  it("compares persisted recommendations rather than unfiltered run totals", async () => {
+    const org = await seedCommunity();
+    await addMember(org.id, "driver", { travelRole: "driver" });
+    await addMember(org.id, "ana");
+    const offer = await addOffer(org.id, "driver");
+    const need = await addBooking(offer, "ana");
+    const fcfs = await addRun(org.id, "fcfs", "2026-10-19T15:00:00Z");
+    const optimizer = await addRun(org.id, "optimizer", "2026-10-19T15:00:01Z");
+    await addSuggestion(fcfs.id, offer.id, need.id, "ana", false);
+    await addSuggestion(optimizer.id, offer.id, need.id, "ana");
+    const body = PublicStatsSchema.parse(
+      await (await statsApp().request("/public/communities/alfa/stats")).json(),
+    );
+    expect(body.comparison).toEqual({
+      date: "2099-03-02",
+      direction: "outbound",
+      optimizer: { carTripsAvoided: 1, passengersMatched: 1 },
+      firstComeFirstServed: { carTripsAvoided: 0, passengersMatched: 1 },
+    });
+  });
+  it("has no comparison before a matching pair has been persisted", async () => {
+    await seedCommunity();
+    const body = PublicStatsSchema.parse(
+      await (await statsApp().request("/public/communities/alfa/stats")).json(),
+    );
+    expect(body.comparison).toBeNull();
+  });
+  it("returns computed stats when Redis writes fail and caches again after recovery", async () => {
+    const org = await seedCommunity();
+    await addMember(org.id, "ana");
+    const recovered = fakeCache({ now: NOW });
+    let unavailable = true;
+    const app = statsApp({
+      cache: {
+        get: recovered.get,
+        set: async (key, value, ttl) => {
+          if (unavailable) throw new Error("Redis unavailable");
+          await recovered.set(key, value, ttl);
+        },
+      },
+    });
+    const first = await app.request("/public/communities/alfa/stats");
+    expect(first.status).toBe(200);
+    expect(await first.json()).toMatchObject({ activity: { enrolled: 1 } });
+    unavailable = false;
+    await addMember(org.id, "beto");
+    expect(await (await app.request("/public/communities/alfa/stats")).json()).toMatchObject({
+      activity: { enrolled: 2 },
+    });
+    await addMember(org.id, "carlos");
+    expect(await (await app.request("/public/communities/alfa/stats")).json()).toMatchObject({
+      activity: { enrolled: 2 },
+    });
+  });
+  it("serves fresh stats when Redis reads fail and uses the cache after recovery", async () => {
+    const org = await seedCommunity();
+    await addMember(org.id, "ana");
+    const recovered = fakeCache({ now: NOW });
+    let unavailable = true;
+    const app = statsApp({
+      cache: {
+        get: async (key) => {
+          if (unavailable) throw new Error("Redis unavailable");
+          return recovered.get(key);
+        },
+        set: recovered.set,
+      },
+    });
+    const first = await app.request("/public/communities/alfa/stats");
+    expect(first.status).toBe(200);
+    expect(await first.json()).toMatchObject({ activity: { enrolled: 1 } });
+    unavailable = false;
+    await addMember(org.id, "beto");
+    expect(await (await app.request("/public/communities/alfa/stats")).json()).toMatchObject({
+      activity: { enrolled: 1 },
+    });
+  });
+  it("uses the passenger's origin for avoided distance, even when nearer than the driver", async () => {
+    const org = await seedCommunity();
+    await testDb.insert(zone).values({
+      id: "destination",
+      name: "Destination",
+      district: "San Isidro",
+      lat: org.destinationLat,
+      lng: org.destinationLng,
+    });
+    await addMember(org.id, "driver", { travelRole: "driver" });
+    await addMember(org.id, "passenger");
+    const offer = await addOffer(org.id, "driver");
+    await addBooking(offer, "passenger", { originZoneId: "destination" });
+    const body = PublicStatsSchema.parse(
+      await (await statsApp().request("/public/communities/alfa/stats")).json(),
+    );
+    expect(body.vehicleImpact.potential.km).toBe(-4.25);
+  });
   it("counts enrolled people without the team's accounts", async () => {
     const org = await seedCommunity();
     await addMember(org.id, "ana");

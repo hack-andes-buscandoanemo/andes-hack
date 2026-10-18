@@ -1749,6 +1749,60 @@
               "individuals"
             ]
           },
+          "comparison": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "date": {
+                "type": "string"
+              },
+              "direction": {
+                "type": "string",
+                "enum": [
+                  "outbound",
+                  "return"
+                ]
+              },
+              "optimizer": {
+                "type": "object",
+                "properties": {
+                  "carTripsAvoided": {
+                    "type": "integer"
+                  },
+                  "passengersMatched": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "carTripsAvoided",
+                  "passengersMatched"
+                ]
+              },
+              "firstComeFirstServed": {
+                "type": "object",
+                "properties": {
+                  "carTripsAvoided": {
+                    "type": "integer"
+                  },
+                  "passengersMatched": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "carTripsAvoided",
+                  "passengersMatched"
+                ]
+              }
+            },
+            "required": [
+              "date",
+              "direction",
+              "optimizer",
+              "firstComeFirstServed"
+            ]
+          },
           "districts": {
             "type": "array",
             "items": {
@@ -1846,6 +1900,7 @@
           "updatedAt",
           "activity",
           "waitlist",
+          "comparison",
           "districts",
           "people",
           "vehicleImpact"

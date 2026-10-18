@@ -1091,6 +1091,11 @@ const CarTripsAvoidedSchema = z.object({
   co2Kg: z.number(),
 });
 
+const PublicStrategyCountsSchema = z.object({
+  carTripsAvoided: z.number().int(),
+  passengersMatched: z.number().int(),
+});
+
 export const PublicStatsSchema = z
   .object({
     community: z.object({ name: z.string(), isDemo: z.boolean() }),
@@ -1106,6 +1111,14 @@ export const PublicStatsSchema = z
       completedTrips: z.number().int(),
     }),
     waitlist: z.object({ institutions: z.number().int(), individuals: z.number().int() }),
+    comparison: z
+      .object({
+        date: z.string(),
+        direction: z.enum(["outbound", "return"]),
+        optimizer: PublicStrategyCountsSchema,
+        firstComeFirstServed: PublicStrategyCountsSchema,
+      })
+      .nullable(),
     // People who travel from each district; null stands for "menos de 10" (k ≥ 10, US-029).
     districts: z.array(z.object({ district: z.string(), people: z.number().int().nullable() })),
     people: z.object({ transported: z.number().int(), fromPublicTransport: z.number().int() }),

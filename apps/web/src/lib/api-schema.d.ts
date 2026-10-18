@@ -1663,6 +1663,19 @@ export interface components {
         institutions: number;
         individuals: number;
       };
+      comparison: {
+        date: string;
+        /** @enum {string} */
+        direction: "outbound" | "return";
+        optimizer: {
+          carTripsAvoided: number;
+          passengersMatched: number;
+        };
+        firstComeFirstServed: {
+          carTripsAvoided: number;
+          passengersMatched: number;
+        };
+      } | null;
       districts: {
         district: string;
         people: number | null;
