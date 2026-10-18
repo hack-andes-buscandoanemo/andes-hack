@@ -127,11 +127,17 @@ export const tripRequest = pgTable(
     maxWalkMinutes: smallint("max_walk_minutes").notNull(),
     fallbackMode: fallbackModeEnum("fallback_mode").notNull(),
     status: requestStatusEnum("status").default("open").notNull(),
+    // Whether the last search for this need found at least one trip; feeds the coverage panel (US-030, US-031).
+    hadResults: boolean("had_results"),
     ...timestamps,
   },
   (table) => [
     index("trip_request_community_id_idx").on(table.communityId),
     index("trip_request_passenger_id_idx").on(table.passengerId),
+    // One open need per person and direction; searching again updates it.
+    uniqueIndex("trip_request_open_need_idx")
+      .on(table.communityId, table.passengerId, table.direction)
+      .where(sql`${table.status} = 'open'`),
     ...scheduleChecks("trip_request", table),
   ],
 );

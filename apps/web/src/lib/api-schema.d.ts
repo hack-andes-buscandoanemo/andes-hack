@@ -426,6 +426,92 @@ export interface paths {
     };
     trace?: never;
   };
+  "/communities/{id}/search": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: {
+        content: {
+          "application/json": components["schemas"]["SearchTripsRequest"];
+        };
+      };
+      responses: {
+        /** @description Viajes compatibles con la necesidad guardada de la persona */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["SearchTripsResponse"];
+          };
+        };
+        /** @description La zona elegida no existe (`zone_not_found`) */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description No hay sesión iniciada (`unauthorized`) */
+        401: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description No es miembro de la comunidad o no activó Solo mujeres (`women_only_not_allowed`) */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description La sede de la comunidad no se puede usar para buscar (`unknown_destination`) */
+        409: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Los datos enviados no son válidos (`validation_error`) */
+        422: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/public/waitlist": {
     parameters: {
       query?: never;
@@ -463,7 +549,7 @@ export interface paths {
             [name: string]: unknown;
           };
           content: {
-            "application/json": components["schemas"]["ApiFailure"];
+            "application/json": components["schemas"]["ApiError"];
           };
         };
         /** @description Datos incompletos o sin consentimiento */
@@ -472,7 +558,7 @@ export interface paths {
             [name: string]: unknown;
           };
           content: {
-            "application/json": components["schemas"]["ApiFailure"];
+            "application/json": components["schemas"]["ApiError"];
           };
         };
         /** @description Demasiados envíos desde la misma IP: «Inténtalo en unos minutos.» */
@@ -481,7 +567,7 @@ export interface paths {
             [name: string]: unknown;
           };
           content: {
-            "application/json": components["schemas"]["ApiFailure"];
+            "application/json": components["schemas"]["ApiError"];
           };
         };
       };
@@ -694,15 +780,67 @@ export interface components {
       /** @enum {string} */
       status: "active" | "paused";
     };
-    WaitlistEntryResponse: {
-      message: string;
+    SearchTripsResponse: {
+      /** Format: uuid */
+      requestId: string;
+      matches: components["schemas"]["TripMatch"][];
+      /** @enum {string|null} */
+      reason:
+        | "different_community"
+        | "days_mismatch"
+        | "women_only"
+        | "previously_rejected"
+        | "no_seats"
+        | "no_walkable_meeting_point"
+        | "outside_time_window"
+        | "detour_exceeded"
+        | null;
     };
-    ApiFailure: {
+    TripMatch: {
+      /** Format: uuid */
+      offerId: string;
+      driverName: string;
+      originZoneName: string;
+      destinationName: string;
+      /** @enum {string} */
+      direction: "outbound" | "return";
+      departureTime: string;
+      seatsFree: number;
+      meetingPointName: string;
+      pickupAt: string;
+      arrivalAt: string;
+      detourMinutes: number;
+      walkMinutes: number;
+    };
+    ApiError: {
       /** @enum {boolean} */
       success: false;
       status: number;
       error: string;
-      details?: unknown;
+      details?: {
+        code: string;
+        fields?: string[];
+      } & {
+        [key: string]: unknown;
+      };
+    };
+    SearchTripsRequest: {
+      /** @enum {string} */
+      direction: "outbound" | "return";
+      originZoneId: string;
+      windowStart: string;
+      windowEnd: string;
+      daysOfWeek?: number[] | null;
+      date?: string | null;
+      /** @default 15 */
+      maxWalkMinutes: number;
+      /** @enum {string} */
+      fallbackMode: "drive_alone" | "taxi_app" | "public_transport" | "picked_up" | "other";
+      /** @default false */
+      womenOnly: boolean;
+    };
+    WaitlistEntryResponse: {
+      message: string;
     };
     WaitlistEntryRequest:
       | {

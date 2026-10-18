@@ -513,6 +513,146 @@ export const updateOfferStatusRoute = createRoute({
   },
 });
 
+export const FallbackModeSchema = z.enum([
+  "drive_alone",
+  "taxi_app",
+  "public_transport",
+  "picked_up",
+  "other",
+]);
+
+export const InfeasibleReasonSchema = z.enum([
+  "different_community",
+  "days_mismatch",
+  "women_only",
+  "previously_rejected",
+  "no_seats",
+  "no_walkable_meeting_point",
+  "outside_time_window",
+  "detour_exceeded",
+]);
+
+const clockTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Ingresa una hora válida.");
+
+// Calendar date in Lima (UTC−5, no daylight saving time); en-CA formats as YYYY-MM-DD.
+const todayInLima = () =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "America/Lima" }).format(new Date());
+
+export const SearchTripsBodySchema = z
+  .object({
+    direction: TripDirectionSchema,
+    originZoneId: z.string().min(1, "Selecciona tu zona."),
+    windowStart: clockTime,
+    windowEnd: clockTime,
+    daysOfWeek: z
+      .array(z.number().int().min(1).max(7))
+      .min(1)
+      .max(7)
+      .refine((days) => new Set(days).size === days.length, "No repitas los días.")
+      .nullable()
+      .optional(),
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Ingresa una fecha válida.")
+      .refine((date) => date >= todayInLima(), "La fecha no puede ser anterior a hoy.")
+      .nullable()
+      .optional(),
+    maxWalkMinutes: z.number().int().min(1).max(30).default(15),
+    fallbackMode: FallbackModeSchema,
+    womenOnly: z.boolean().default(false),
+  })
+  .refine((data) => Boolean(data.date) !== Boolean(data.daysOfWeek && data.daysOfWeek.length > 0), {
+    message: "Elige una fecha puntual o días habituales, pero no ambos.",
+    path: ["date"],
+  })
+  .refine((data) => data.windowStart < data.windowEnd, {
+    message: "La hora de inicio debe ser anterior a la hora de fin.",
+    path: ["windowEnd"],
+  })
+  .openapi("SearchTripsRequest");
+
+// Never carries plates, emails or exact locations: only what the result card shows.
+export const TripMatchSchema = z
+  .object({
+    offerId: z.string().uuid(),
+    driverName: z.string(),
+    originZoneName: z.string(),
+    destinationName: z.string(),
+    direction: TripDirectionSchema,
+    departureTime: z.string(),
+    seatsFree: z.number().int(),
+    meetingPointName: z.string(),
+    pickupAt: z.string(),
+    arrivalAt: z.string(),
+    detourMinutes: z.number().int(),
+    walkMinutes: z.number().int(),
+  })
+  .openapi("TripMatch");
+
+export const SearchTripsResponseSchema = z
+  .object({
+    // The passenger's saved need, one per direction; kept even when nothing matched.
+    requestId: z.string().uuid(),
+    // Best match first, in the engine's order.
+    matches: z.array(TripMatchSchema),
+    // Why nothing matched, from the engine; null when something did.
+    reason: InfeasibleReasonSchema.nullable(),
+  })
+  .openapi("SearchTripsResponse");
+
+// Body of every error the server answers: a readable Spanish message plus a stable `details.code`.
+export const ApiErrorSchema = z
+  .object({
+    success: z.literal(false),
+    status: z.number().int(),
+    error: z.string(),
+    details: z
+      .object({ code: z.string(), fields: z.array(z.string()).optional() })
+      .passthrough()
+      .optional(),
+  })
+  .openapi("ApiError");
+
+const apiErrorResponse = (description: string) => ({
+  description,
+  content: { "application/json": { schema: ApiErrorSchema } },
+});
+
+export const searchTripsRoute = createRoute({
+  method: "post",
+  path: "/communities/{id}/search",
+  tags: ["Búsqueda"],
+  request: {
+    params: JoinCommunityParamsSchema,
+    body: {
+      content: {
+        "application/json": {
+          schema: SearchTripsBodySchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Viajes compatibles con la necesidad guardada de la persona",
+      content: {
+        "application/json": {
+          schema: SearchTripsResponseSchema,
+        },
+      },
+    },
+    400: apiErrorResponse("La zona elegida no existe (`zone_not_found`)"),
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    403: apiErrorResponse(
+      "No es miembro de la comunidad o no activó Solo mujeres (`women_only_not_allowed`)",
+    ),
+    409: apiErrorResponse(
+      "La sede de la comunidad no se puede usar para buscar (`unknown_destination`)",
+    ),
+    422: apiErrorResponse("Los datos enviados no son válidos (`validation_error`)"),
+  },
+});
+
 const waitlistContact = {
   institution: z.string().trim().min(1).max(120),
   email: z.email().max(254),
@@ -544,21 +684,6 @@ export const WaitlistEntryResponseSchema = z
   })
   .openapi("WaitlistEntryResponse");
 
-// The body of every error, as apps/server's error handler writes it.
-export const ApiFailureSchema = z
-  .object({
-    success: z.literal(false),
-    status: z.number().int(),
-    error: z.string(),
-    details: z.unknown().optional(),
-  })
-  .openapi("ApiFailure");
-
-const failure = (description: string) => ({
-  description,
-  content: { "application/json": { schema: ApiFailureSchema } },
-});
-
 export const joinWaitlistRoute = createRoute({
   method: "post",
   path: "/public/waitlist",
@@ -581,9 +706,9 @@ export const joinWaitlistRoute = createRoute({
         },
       },
     },
-    409: failure("Ya está en la lista: «Ya estás en la lista.»"),
-    422: failure("Datos incompletos o sin consentimiento"),
-    429: failure("Demasiados envíos desde la misma IP: «Inténtalo en unos minutos.»"),
+    409: apiErrorResponse("Ya está en la lista: «Ya estás en la lista.»"),
+    422: apiErrorResponse("Datos incompletos o sin consentimiento"),
+    429: apiErrorResponse("Demasiados envíos desde la misma IP: «Inténtalo en unos minutos.»"),
   },
 });
 
@@ -623,6 +748,7 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   listCommunityOffersRoute,
   createCommunityOfferRoute,
   updateOfferStatusRoute,
+  searchTripsRoute,
   joinWaitlistRoute,
   waitlistSummaryRoute,
 ];

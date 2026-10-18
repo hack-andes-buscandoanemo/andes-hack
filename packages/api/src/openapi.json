@@ -47,14 +47,10 @@
         "properties": {
           "status": {
             "type": "string",
-            "enum": [
-              "ok"
-            ]
+            "enum": ["ok"]
           }
         },
-        "required": [
-          "status"
-        ]
+        "required": ["status"]
       },
       "CommunitiesResponse": {
         "type": "object",
@@ -66,9 +62,7 @@
             }
           }
         },
-        "required": [
-          "communities"
-        ]
+        "required": ["communities"]
       },
       "CommunitySummary": {
         "type": "object",
@@ -82,12 +76,7 @@
           },
           "kind": {
             "type": "string",
-            "enum": [
-              "company",
-              "university",
-              "public_entity",
-              "event"
-            ]
+            "enum": ["company", "university", "public_entity", "event"]
           },
           "isDemo": {
             "type": "boolean"
@@ -96,29 +85,17 @@
             "type": "boolean"
           },
           "matchedEmailDomain": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           }
         },
-        "required": [
-          "id",
-          "name",
-          "kind",
-          "isDemo",
-          "hasEmailVerification",
-          "matchedEmailDomain"
-        ]
+        "required": ["id", "name", "kind", "isDemo", "hasEmailVerification", "matchedEmailDomain"]
       },
       "JoinCommunityResponse": {
         "type": "object",
         "properties": {
           "joined": {
             "type": "boolean",
-            "enum": [
-              true
-            ]
+            "enum": [true]
           },
           "alreadyMember": {
             "type": "boolean"
@@ -132,10 +109,7 @@
           },
           "verificationMethod": {
             "type": "string",
-            "enum": [
-              "join_code",
-              "email_domain"
-            ]
+            "enum": ["join_code", "email_domain"]
           },
           "isTeam": {
             "type": "boolean"
@@ -162,9 +136,7 @@
             "minLength": 1
           }
         },
-        "required": [
-          "code"
-        ]
+        "required": ["code"]
       },
       "MeResponse": {
         "type": "object",
@@ -183,11 +155,7 @@
                 "format": "email"
               }
             },
-            "required": [
-              "id",
-              "name",
-              "email"
-            ]
+            "required": ["id", "name", "email"]
           },
           "memberships": {
             "type": "array",
@@ -196,10 +164,7 @@
             }
           }
         },
-        "required": [
-          "user",
-          "memberships"
-        ]
+        "required": ["user", "memberships"]
       },
       "MembershipSummary": {
         "type": "object",
@@ -220,35 +185,20 @@
           },
           "role": {
             "type": "string",
-            "enum": [
-              "member",
-              "admin"
-            ]
+            "enum": ["member", "admin"]
           },
           "verificationMethod": {
             "type": "string",
-            "enum": [
-              "join_code",
-              "email_domain"
-            ]
+            "enum": ["join_code", "email_domain"]
           },
           "consentVersion": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "consentAt": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "usualMode": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "enum": [
               "drove_alone",
               "drove_with_others",
@@ -260,22 +210,11 @@
             ]
           },
           "travelRole": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "enum": [
-              "driver",
-              "passenger",
-              "both",
-              null
-            ]
+            "type": ["string", "null"],
+            "enum": ["driver", "passenger", "both", null]
           },
           "alias": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "identifiesAsWoman": {
             "type": "boolean"
@@ -323,11 +262,7 @@
           },
           "travelRole": {
             "type": "string",
-            "enum": [
-              "driver",
-              "passenger",
-              "both"
-            ]
+            "enum": ["driver", "passenger", "both"]
           },
           "alias": {
             "type": "string",
@@ -335,11 +270,7 @@
             "maxLength": 30
           }
         },
-        "required": [
-          "consentAccepted",
-          "usualMode",
-          "travelRole"
-        ]
+        "required": ["consentAccepted", "usualMode", "travelRole"]
       },
       "VehiclesResponse": {
         "type": "object",
@@ -351,9 +282,7 @@
             }
           }
         },
-        "required": [
-          "vehicles"
-        ]
+        "required": ["vehicles"]
       },
       "VehicleSummary": {
         "type": "object",
@@ -380,14 +309,7 @@
             "maximum": 6
           }
         },
-        "required": [
-          "id",
-          "plate",
-          "make",
-          "model",
-          "color",
-          "seats"
-        ]
+        "required": ["id", "plate", "make", "model", "color", "seats"]
       },
       "CreateVehicleRequest": {
         "type": "object",
@@ -417,11 +339,7 @@
             "maximum": 6
           }
         },
-        "required": [
-          "plate",
-          "color",
-          "seats"
-        ]
+        "required": ["plate", "color", "seats"]
       },
       "ZonesResponse": {
         "type": "object",
@@ -433,9 +351,7 @@
             }
           }
         },
-        "required": [
-          "zones"
-        ]
+        "required": ["zones"]
       },
       "ZoneSummary": {
         "type": "object",
@@ -456,13 +372,7 @@
             "type": "number"
           }
         },
-        "required": [
-          "id",
-          "name",
-          "district",
-          "lat",
-          "lng"
-        ]
+        "required": ["id", "name", "district", "lat", "lng"]
       },
       "TripOffersResponse": {
         "type": "object",
@@ -474,9 +384,7 @@
             }
           }
         },
-        "required": [
-          "offers"
-        ]
+        "required": ["offers"]
       },
       "TripOfferSummary": {
         "type": "object",
@@ -490,24 +398,15 @@
             "format": "uuid"
           },
           "driverId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "vehicleId": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "format": "uuid"
           },
           "direction": {
             "type": "string",
-            "enum": [
-              "outbound",
-              "return"
-            ]
+            "enum": ["outbound", "return"]
           },
           "originZoneId": {
             "type": "string"
@@ -519,19 +418,13 @@
             "type": "string"
           },
           "daysOfWeek": {
-            "type": [
-              "array",
-              "null"
-            ],
+            "type": ["array", "null"],
             "items": {
               "type": "integer"
             }
           },
           "date": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "seatsTotal": {
             "type": "integer"
@@ -546,18 +439,11 @@
             "type": "boolean"
           },
           "note": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "status": {
             "type": "string",
-            "enum": [
-              "active",
-              "paused",
-              "cancelled"
-            ]
+            "enum": ["active", "paused", "cancelled"]
           }
         },
         "required": [
@@ -588,10 +474,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "offer",
-          "message"
-        ]
+        "required": ["offer", "message"]
       },
       "CreateTripOfferRequest": {
         "type": "object",
@@ -602,10 +485,7 @@
           },
           "direction": {
             "type": "string",
-            "enum": [
-              "outbound",
-              "return"
-            ]
+            "enum": ["outbound", "return"]
           },
           "originZoneId": {
             "type": "string",
@@ -616,10 +496,7 @@
             "pattern": "^\\d{2}:\\d{2}(:\\d{2})?$"
           },
           "daysOfWeek": {
-            "type": [
-              "array",
-              "null"
-            ],
+            "type": ["array", "null"],
             "items": {
               "type": "integer",
               "minimum": 1,
@@ -628,10 +505,7 @@
             "minItems": 1
           },
           "date": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
           },
           "seatsTotal": {
@@ -643,21 +517,15 @@
             "anyOf": [
               {
                 "type": "number",
-                "enum": [
-                  0
-                ]
+                "enum": [0]
               },
               {
                 "type": "number",
-                "enum": [
-                  5
-                ]
+                "enum": [5]
               },
               {
                 "type": "number",
-                "enum": [
-                  10
-                ]
+                "enum": [10]
               }
             ]
           },
@@ -666,10 +534,7 @@
             "default": false
           },
           "note": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "maxLength": 280
           }
         },
@@ -687,15 +552,179 @@
         "properties": {
           "status": {
             "type": "string",
+            "enum": ["active", "paused"]
+          }
+        },
+        "required": ["status"]
+      },
+      "SearchTripsResponse": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "matches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TripMatch"
+            }
+          },
+          "reason": {
+            "type": ["string", "null"],
             "enum": [
-              "active",
-              "paused"
+              "different_community",
+              "days_mismatch",
+              "women_only",
+              "previously_rejected",
+              "no_seats",
+              "no_walkable_meeting_point",
+              "outside_time_window",
+              "detour_exceeded",
+              null
             ]
           }
         },
+        "required": ["requestId", "matches", "reason"]
+      },
+      "TripMatch": {
+        "type": "object",
+        "properties": {
+          "offerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "driverName": {
+            "type": "string"
+          },
+          "originZoneName": {
+            "type": "string"
+          },
+          "destinationName": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string",
+            "enum": ["outbound", "return"]
+          },
+          "departureTime": {
+            "type": "string"
+          },
+          "seatsFree": {
+            "type": "integer"
+          },
+          "meetingPointName": {
+            "type": "string"
+          },
+          "pickupAt": {
+            "type": "string"
+          },
+          "arrivalAt": {
+            "type": "string"
+          },
+          "detourMinutes": {
+            "type": "integer"
+          },
+          "walkMinutes": {
+            "type": "integer"
+          }
+        },
         "required": [
-          "status"
+          "offerId",
+          "driverName",
+          "originZoneName",
+          "destinationName",
+          "direction",
+          "departureTime",
+          "seatsFree",
+          "meetingPointName",
+          "pickupAt",
+          "arrivalAt",
+          "detourMinutes",
+          "walkMinutes"
         ]
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [false]
+          },
+          "status": {
+            "type": "integer"
+          },
+          "error": {
+            "type": "string"
+          },
+          "details": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": ["code"],
+            "additionalProperties": {}
+          }
+        },
+        "required": ["success", "status", "error"]
+      },
+      "SearchTripsRequest": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": ["outbound", "return"]
+          },
+          "originZoneId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "windowStart": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "windowEnd": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "daysOfWeek": {
+            "type": ["array", "null"],
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 7
+            },
+            "minItems": 1,
+            "maxItems": 7
+          },
+          "date": {
+            "type": ["string", "null"],
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "maxWalkMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 30,
+            "default": 15
+          },
+          "fallbackMode": {
+            "type": "string",
+            "enum": ["drive_alone", "taxi_app", "public_transport", "picked_up", "other"]
+          },
+          "womenOnly": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": ["direction", "originZoneId", "windowStart", "windowEnd", "fallbackMode"]
       },
       "WaitlistEntryResponse": {
         "type": "object",
@@ -704,32 +733,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "message"
-        ]
-      },
-      "ApiFailure": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "enum": [
-              false
-            ]
-          },
-          "status": {
-            "type": "integer"
-          },
-          "error": {
-            "type": "string"
-          },
-          "details": {}
-        },
-        "required": [
-          "success",
-          "status",
-          "error"
-        ]
+        "required": ["message"]
       },
       "WaitlistEntryRequest": {
         "oneOf": [
@@ -738,9 +742,7 @@
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": [
-                  "institution"
-                ]
+                "enum": ["institution"]
               },
               "institution": {
                 "type": "string",
@@ -754,9 +756,7 @@
               },
               "consent": {
                 "type": "boolean",
-                "enum": [
-                  true
-                ]
+                "enum": [true]
               },
               "website": {
                 "type": "string"
@@ -790,9 +790,7 @@
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": [
-                  "individual"
-                ]
+                "enum": ["individual"]
               },
               "institution": {
                 "type": "string",
@@ -806,20 +804,13 @@
               },
               "consent": {
                 "type": "boolean",
-                "enum": [
-                  true
-                ]
+                "enum": [true]
               },
               "website": {
                 "type": "string"
               }
             },
-            "required": [
-              "kind",
-              "institution",
-              "email",
-              "consent"
-            ]
+            "required": ["kind", "institution", "email", "consent"]
           }
         ]
       },
@@ -833,10 +824,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "institutions",
-          "individuals"
-        ]
+        "required": ["institutions", "individuals"]
       }
     },
     "parameters": {}
@@ -844,9 +832,7 @@
   "paths": {
     "/health": {
       "get": {
-        "tags": [
-          "Público"
-        ],
+        "tags": ["Público"],
         "responses": {
           "200": {
             "description": "Service health",
@@ -863,9 +849,7 @@
     },
     "/communities": {
       "get": {
-        "tags": [
-          "Comunidades"
-        ],
+        "tags": ["Comunidades"],
         "responses": {
           "200": {
             "description": "Lista pública de comunidades",
@@ -882,9 +866,7 @@
     },
     "/communities/{id}/join": {
       "post": {
-        "tags": [
-          "Comunidades"
-        ],
+        "tags": ["Comunidades"],
         "parameters": [
           {
             "schema": {
@@ -921,9 +903,7 @@
     },
     "/communities/{id}/verify-email": {
       "post": {
-        "tags": [
-          "Comunidades"
-        ],
+        "tags": ["Comunidades"],
         "parameters": [
           {
             "schema": {
@@ -951,9 +931,7 @@
     },
     "/me": {
       "get": {
-        "tags": [
-          "Comunidades"
-        ],
+        "tags": ["Comunidades"],
         "responses": {
           "200": {
             "description": "Perfil y membresías de la persona autenticada",
@@ -970,9 +948,7 @@
     },
     "/communities/{id}/membership": {
       "patch": {
-        "tags": [
-          "Comunidades"
-        ],
+        "tags": ["Comunidades"],
         "parameters": [
           {
             "schema": {
@@ -1009,9 +985,7 @@
     },
     "/vehicles": {
       "get": {
-        "tags": [
-          "Ofertas"
-        ],
+        "tags": ["Ofertas"],
         "responses": {
           "200": {
             "description": "Vehículos registrados por la persona autenticada",
@@ -1026,9 +1000,7 @@
         }
       },
       "post": {
-        "tags": [
-          "Ofertas"
-        ],
+        "tags": ["Ofertas"],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1054,9 +1026,7 @@
     },
     "/communities/{id}/zones": {
       "get": {
-        "tags": [
-          "Ofertas"
-        ],
+        "tags": ["Ofertas"],
         "parameters": [
           {
             "schema": {
@@ -1084,9 +1054,7 @@
     },
     "/communities/{id}/offers": {
       "get": {
-        "tags": [
-          "Ofertas"
-        ],
+        "tags": ["Ofertas"],
         "parameters": [
           {
             "schema": {
@@ -1112,9 +1080,7 @@
         }
       },
       "post": {
-        "tags": [
-          "Ofertas"
-        ],
+        "tags": ["Ofertas"],
         "parameters": [
           {
             "schema": {
@@ -1151,9 +1117,7 @@
     },
     "/offers/{id}/status": {
       "patch": {
-        "tags": [
-          "Ofertas"
-        ],
+        "tags": ["Ofertas"],
         "parameters": [
           {
             "schema": {
@@ -1188,11 +1152,96 @@
         }
       }
     },
+    "/communities/{id}/search": {
+      "post": {
+        "tags": ["Búsqueda"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchTripsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Viajes compatibles con la necesidad guardada de la persona",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchTripsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "La zona elegida no existe (`zone_not_found`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No hay sesión iniciada (`unauthorized`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro de la comunidad o no activó Solo mujeres (`women_only_not_allowed`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "La sede de la comunidad no se puede usar para buscar (`unknown_destination`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Los datos enviados no son válidos (`validation_error`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/public/waitlist": {
       "post": {
-        "tags": [
-          "Público"
-        ],
+        "tags": ["Público"],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1218,7 +1267,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiFailure"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -1228,7 +1277,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiFailure"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -1238,7 +1287,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiFailure"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -1248,9 +1297,7 @@
     },
     "/public/waitlist/summary": {
       "get": {
-        "tags": [
-          "Público"
-        ],
+        "tags": ["Público"],
         "responses": {
           "200": {
             "description": "Totales de la lista de espera, sin datos de contacto",
