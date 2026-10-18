@@ -833,10 +833,10 @@ export const RouteMapSchema = z
 export const OfferDetailSchema = z
   .object({
     offerId: z.string().uuid(),
-    driverId: z.string().nullable(),
     // Only an active trip can be requested; paused and cancelled trips are unavailable.
     status: z.enum(["active", "paused", "cancelled"]),
     driverName: z.string(),
+    reportTargets: z.array(z.object({ id: z.string(), name: z.string() })),
     driverPhotoUrl: z.string().url().nullable(),
     communityName: z.string(),
     originZoneName: z.string(),
@@ -1197,6 +1197,7 @@ export const TripMessageBodySchema = z.union([
 
 export const TripMessageSchema = z.object({
   id: z.string().uuid(),
+  isOwn: z.boolean(),
   senderName: z.string(),
   senderPhotoUrl: z.string().url().nullable(),
   senderRole: z.enum(["driver", "passenger"]),

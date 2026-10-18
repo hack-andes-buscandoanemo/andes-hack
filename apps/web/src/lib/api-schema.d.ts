@@ -2785,10 +2785,13 @@ export interface components {
         OfferDetail: {
             /** Format: uuid */
             offerId: string;
-            driverId: string | null;
             /** @enum {string} */
             status: "active" | "paused" | "cancelled";
             driverName: string;
+            reportTargets: {
+                id: string;
+                name: string;
+            }[];
             /** Format: uri */
             driverPhotoUrl: string | null;
             communityName: string;
@@ -3102,6 +3105,7 @@ export interface components {
             messages: {
                 /** Format: uuid */
                 id: string;
+                isOwn: boolean;
                 senderName: string;
                 /** Format: uri */
                 senderPhotoUrl: string | null;
@@ -3118,6 +3122,7 @@ export interface components {
             message: {
                 /** Format: uuid */
                 id: string;
+                isOwn: boolean;
                 senderName: string;
                 /** Format: uri */
                 senderPhotoUrl: string | null;

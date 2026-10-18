@@ -1058,12 +1058,6 @@
             "type": "string",
             "format": "uuid"
           },
-          "driverId": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "status": {
             "type": "string",
             "enum": [
@@ -1074,6 +1068,24 @@
           },
           "driverName": {
             "type": "string"
+          },
+          "reportTargets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ]
+            }
           },
           "driverPhotoUrl": {
             "type": [
@@ -1229,9 +1241,9 @@
         },
         "required": [
           "offerId",
-          "driverId",
           "status",
           "driverName",
+          "reportTargets",
           "driverPhotoUrl",
           "communityName",
           "originZoneName",
@@ -2421,6 +2433,9 @@
                   "type": "string",
                   "format": "uuid"
                 },
+                "isOwn": {
+                  "type": "boolean"
+                },
                 "senderName": {
                   "type": "string"
                 },
@@ -2455,6 +2470,7 @@
               },
               "required": [
                 "id",
+                "isOwn",
                 "senderName",
                 "senderPhotoUrl",
                 "senderRole",
@@ -2479,6 +2495,9 @@
               "id": {
                 "type": "string",
                 "format": "uuid"
+              },
+              "isOwn": {
+                "type": "boolean"
               },
               "senderName": {
                 "type": "string"
@@ -2514,6 +2533,7 @@
             },
             "required": [
               "id",
+              "isOwn",
               "senderName",
               "senderPhotoUrl",
               "senderRole",
