@@ -1,5 +1,6 @@
 import {
   type InfeasibleReason,
+  type OfferMatch,
   type OfferRoute,
   rankOffersForRequest,
   type RideRequest,
@@ -48,22 +49,52 @@ export interface DayPlan {
   unassigned: Unassigned[];
 }
 
+interface Candidate {
+  request: DayRequest;
+  // Its feasible offers, best first, on the routes as they stand.
+  matches: readonly OfferMatch[];
+}
+
+// Minutes lost if the best seat goes to someone else; with one option left, all of them.
+const regret = ({ matches }: Candidate) =>
+  matches.length > 1
+    ? matches[1]!.detourMinutes - matches[0]!.detourMinutes
+    : Number.POSITIVE_INFINITY;
+
+const descending = (a: number, b: number) => (a === b ? 0 : a > b ? -1 : 1);
+
+// Who is seated next: whoever would otherwise make the trip by car, then whoever has the
+// most to lose by waiting, then whoever costs the driver the fewest minutes.
+function seatsFirst(a: Candidate, b: Candidate) {
+  return (
+    descending(
+      Number(avoidsCarTrip(a.request.fallbackMode)),
+      Number(avoidsCarTrip(b.request.fallbackMode)),
+    ) ||
+    descending(regret(a), regret(b)) ||
+    a.matches[0]!.detourMinutes - b.matches[0]!.detourMinutes
+  );
+}
+
 export function optimizeDay(instance: DayInstance, model: TravelTimeModel): DayPlan {
   const routes = new Map(instance.offers.map((offer) => [offer.id, offer]));
-  const assignments: Assignment[] = [];
-  const unassigned: Unassigned[] = [];
+  const seated = new Map<string, Assignment>();
+  let waiting = instance.requests;
 
-  // Whoever would otherwise make the trip by car goes first.
-  const queue = instance.requests.toSorted(
-    (a, b) => Number(avoidsCarTrip(b.fallbackMode)) - Number(avoidsCarTrip(a.fallbackMode)),
-  );
-  for (const request of queue) {
-    const { matches, reason } = rankOffersForRequest(request, [...routes.values()], model);
-    const best = matches[0];
-    if (!best) {
-      unassigned.push({ requestId: request.id, passengerId: request.passengerId, reason: reason! });
-      continue;
-    }
+  // Regret insertion: one passenger per round, until nobody waiting fits anywhere.
+  for (;;) {
+    const candidates = waiting
+      .map((request) => ({
+        request,
+        matches: rankOffersForRequest(request, [...routes.values()], model).matches,
+      }))
+      .filter((candidate) => candidate.matches.length > 0);
+    // Stable, so a full tie goes to whoever asked first.
+    const next = candidates.toSorted(seatsFirst)[0];
+    if (!next) break;
+    const { request } = next;
+    const best = next.matches[0]!;
+    waiting = waiting.filter((other) => other !== request);
     const route = routes.get(best.offerId)!;
     const stop = {
       meetingPointId: best.meetingPointId,
@@ -74,7 +105,7 @@ export function optimizeDay(instance: DayInstance, model: TravelTimeModel): DayP
       ...route,
       passengers: route.passengers.toSpliced(best.position, 0, stop),
     });
-    assignments.push({
+    seated.set(request.id, {
       requestId: request.id,
       passengerId: request.passengerId,
       offerId: best.offerId,
@@ -87,5 +118,15 @@ export function optimizeDay(instance: DayInstance, model: TravelTimeModel): DayP
     });
   }
 
-  return { assignments, unassigned };
+  const offers = [...routes.values()];
+  return {
+    // In the order the requests came.
+    assignments: instance.requests.flatMap((request) => seated.get(request.id) ?? []),
+    // Why each one is left out, on the final routes.
+    unassigned: waiting.map((request) => ({
+      requestId: request.id,
+      passengerId: request.passengerId,
+      reason: rankOffersForRequest(request, offers, model).reason!,
+    })),
+  };
 }

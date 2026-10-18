@@ -6,6 +6,7 @@ import { createTravelTimeModel, type DayRequest, type OfferRoute, optimizeDay } 
 // on a weekday and takes the TomTom factor of 7:00, 1.72.
 const places = [
   { id: "la-molina", lat: -12.077983, lng: -76.9172838 },
+  { id: "surquillo", lat: -12.1144446, lng: -77.011978 },
   { id: "san-borja", lat: -12.107075, lng: -76.9988421 },
   { id: "centro-empresarial-real", lat: -12.0975459, lng: -77.0375707 },
   { id: "san-borja-municipalidad", lat: -12.1071567, lng: -76.9991313 },
@@ -18,6 +19,9 @@ const freeFlow: Record<string, number> = {
   "la-molina>centro-empresarial-real": 20,
   "la-molina>san-borja-municipalidad": 6,
   "san-borja-municipalidad>centro-empresarial-real": 16,
+  // Lucía drives from Surquillo: the municipalidad costs her 2 + 16 − 15 = 3 minutes.
+  "surquillo>centro-empresarial-real": 15,
+  "surquillo>san-borja-municipalidad": 2,
 };
 
 const ids = places.map((place) => place.id);
@@ -92,5 +96,32 @@ describe("seats of a day assigned to maximise the car trips avoided", () => {
     expect(plan.unassigned).toEqual([
       { requestId: "necesidad-maria", passengerId: "maria", reason: "no_seats" },
     ]);
+  });
+
+  it("seats first the passenger with fewer options, so both fit", () => {
+    // Lucía leaves Surquillo at 7:20; through the municipalidad she arrives at
+    // 7:20 + 18 × 1.72 = 7:51. Carlos arrives at 7:38.
+    const lucia = offer({
+      id: "lucia",
+      originZoneId: "surquillo",
+      departureTime: "07:20",
+      seatsTotal: 1,
+      maxDetourMinutes: 10,
+    });
+    // Ana fits in both cars and costs Carlos less (3 min against 5); Bruno must arrive by
+    // 7:45, so only Carlos takes him.
+    const ana = request("ana", { windowEnd: "08:30" });
+    const bruno = request("bruno", { windowEnd: "07:45" });
+
+    const plan = optimizeDay(
+      { date: monday, offers: [offer({ seatsTotal: 1 }), lucia], requests: [ana, bruno] },
+      model,
+    );
+
+    expect(plan.assignments.map(({ passengerId, offerId }) => [passengerId, offerId])).toEqual([
+      ["ana", "lucia"],
+      ["bruno", "carlos"],
+    ]);
+    expect(plan.unassigned).toEqual([]);
   });
 });
