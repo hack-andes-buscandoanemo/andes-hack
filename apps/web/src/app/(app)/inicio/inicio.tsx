@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import EmptyState from "@/components/empty-state";
+import { pairReturns } from "@/components/return-pairs";
 import ReturnTripCard from "@/components/return-trip-card";
+import TripSummaryCard from "@/components/trip-summary-card";
 import { communitiesApi, type MyTrip } from "@/lib/communities-api";
 
-import { clockLabel, dateLabel, daysLabel } from "../buscar/schedule";
 import Proposals from "./proposals";
 
 const EMPTY_TRIPS = "Aún no tienes viajes. Busca uno o publica el que ya haces.";
@@ -39,6 +40,9 @@ export default function Inicio({
       active = false;
     };
   }, []);
+
+  // Pair outbound and return once per list, not once per card.
+  const returnsByTrip = useMemo(() => pairReturns(trips ?? []), [trips]);
 
   return (
     <main className="flex flex-col gap-5 px-4 py-4">
@@ -88,37 +92,11 @@ export default function Inicio({
       ) : (
         <section aria-label="Tus próximos viajes" className="space-y-3">
           <h2 className="text-lg font-bold">Tus próximos viajes</h2>
-          {trips.map((trip) => {
-            const outbound = trip.direction === "outbound";
-            const route = outbound
-              ? `${trip.originZoneName} → ${trip.destinationName}`
-              : `${trip.destinationName} → ${trip.originZoneName}`;
-            return (
-              <article
-                key={trip.id}
-                aria-label={`${outbound ? "Ida" : "Regreso"} · ${route}`}
-                className="space-y-2 rounded-2xl border bg-card p-4"
-              >
-                <p className="text-xs font-bold">
-                  {outbound ? "Ida" : "Regreso"} ·{" "}
-                  {trip.status === "accepted" ? "Aceptada" : "Pendiente"}
-                </p>
-                <p className="font-semibold">{route}</p>
-                <p className="text-sm">
-                  {trip.date ? dateLabel(trip.date) : daysLabel(trip.daysOfWeek ?? [])}
-                  {` · ${clockLabel(trip.time.slice(0, 5))}`}
-                </p>
-                {trip.meetingPointName ? (
-                  <p className="text-sm">{`Punto de encuentro: ${trip.meetingPointName}`}</p>
-                ) : null}
-                {trip.driver ? <p className="text-sm font-bold">{trip.driver.alias}</p> : null}
-                <Link href={`/viajes/${trip.offerId}`} className="text-sm font-bold underline">
-                  Ver viaje
-                </Link>
-                <ReturnTripCard trip={trip} trips={trips} />
-              </article>
-            );
-          })}
+          {trips.map((trip) => (
+            <TripSummaryCard key={trip.id} trip={trip}>
+              <ReturnTripCard trip={trip} returns={returnsByTrip.get(trip.id) ?? []} />
+            </TripSummaryCard>
+          ))}
         </section>
       )}
 
