@@ -1,5 +1,5 @@
 {
-  "id": "fad430a6-ee23-4e4a-8038-2d0d1d173a25",
+  "id": "fbb4f9b5-bee3-486a-a7a9-b69844d98dff",
   "prevId": "09a06024-4fa7-4879-9098-89738cb90bfa",
   "version": "7",
   "dialect": "postgresql",
@@ -1076,6 +1076,10 @@
           "name": "trip_offer_max_detour_minutes_check",
           "value": "\"trip_offer\".\"max_detour_minutes\" IN (0, 5, 10)"
         },
+        "trip_offer_schedule_check": {
+          "name": "trip_offer_schedule_check",
+          "value": "(\"trip_offer\".\"date\" IS NULL) <> (\"trip_offer\".\"days_of_week\" IS NULL)"
+        },
         "trip_offer_seats_taken_check": {
           "name": "trip_offer_seats_taken_check",
           "value": "\"trip_offer\".\"seats_taken\" BETWEEN 0 AND \"trip_offer\".\"seats_total\""
@@ -1243,7 +1247,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "trip_request_schedule_check": {
+          "name": "trip_request_schedule_check",
+          "value": "(\"trip_request\".\"date\" IS NULL) <> (\"trip_request\".\"days_of_week\" IS NULL)"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.vehicle": {

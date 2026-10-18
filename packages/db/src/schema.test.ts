@@ -147,6 +147,32 @@ async function givenOffer(values: Partial<typeof tripOffer.$inferInsert> = {}) {
   return { team, point, offer };
 }
 
+async function givenNeed(
+  communityId: string,
+  originZoneId: string,
+  values: Partial<typeof tripRequest.$inferInsert> = {},
+) {
+  const passenger = await givenMember(communityId);
+  const need = await first(
+    db
+      .insert(tripRequest)
+      .values({
+        communityId,
+        passengerId: passenger.id,
+        direction: "outbound",
+        originZoneId,
+        windowStart: "06:30",
+        windowEnd: "07:30",
+        daysOfWeek: [1, 3, 5],
+        maxWalkMinutes: 10,
+        fallbackMode: "drive_alone",
+        ...values,
+      })
+      .returning(),
+  );
+  return { passenger, need };
+}
+
 // SQLSTATE codes from the PostgreSQL manual, appendix A.
 const checkViolation = (constraint: string) => ({ cause: { code: "23514", constraint } });
 
@@ -155,23 +181,7 @@ describe("core domain schema on a freshly migrated database", () => {
     const { team, point, offer } = await givenOffer({
       note: "Salgo puntual de la puerta del parque.",
     });
-    const passenger = await givenMember(team.id);
-    const need = await first(
-      db
-        .insert(tripRequest)
-        .values({
-          communityId: team.id,
-          passengerId: passenger.id,
-          direction: "outbound",
-          originZoneId: point.zoneId,
-          windowStart: "06:30",
-          windowEnd: "07:30",
-          daysOfWeek: [1, 3, 5],
-          maxWalkMinutes: 10,
-          fallbackMode: "drive_alone",
-        })
-        .returning(),
-    );
+    const { passenger, need } = await givenNeed(team.id, point.zoneId);
 
     const booking = await first(
       db
@@ -235,5 +245,27 @@ describe("seats on an offer", () => {
         .set({ seatsTaken: sql`${tripOffer.seatsTaken} - 1` })
         .where(eq(tripOffer.id, offer.id)),
     ).rejects.toMatchObject(checkViolation("trip_offer_seats_taken_check"));
+  });
+});
+
+describe("trip schedules", () => {
+  const ambiguousSchedules = [
+    { schedule: "both a date and weekdays", date: "2026-10-19", daysOfWeek: [1] },
+    { schedule: "neither a date nor weekdays", date: null, daysOfWeek: null },
+  ];
+
+  test.each(ambiguousSchedules)("rejects an offer with $schedule", async ({ date, daysOfWeek }) => {
+    await expect(givenOffer({ date, daysOfWeek })).rejects.toMatchObject(
+      checkViolation("trip_offer_schedule_check"),
+    );
+  });
+
+  test.each(ambiguousSchedules)("rejects a need with $schedule", async ({ date, daysOfWeek }) => {
+    const team = await givenCommunity();
+    const point = await givenMeetingPoint();
+
+    await expect(givenNeed(team.id, point.zoneId, { date, daysOfWeek })).rejects.toMatchObject(
+      checkViolation("trip_request_schedule_check"),
+    );
   });
 });

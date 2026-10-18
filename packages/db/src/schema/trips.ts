@@ -79,6 +79,11 @@ export const tripOffer = pgTable(
     index("trip_offer_driver_id_idx").on(table.driverId),
     check("trip_offer_seats_total_check", sql`${table.seatsTotal} BETWEEN 1 AND 6`),
     check("trip_offer_max_detour_minutes_check", sql`${table.maxDetourMinutes} IN (0, 5, 10)`),
+    // A trip happens on one date or every week on some weekdays, never both.
+    check(
+      "trip_offer_schedule_check",
+      sql`(${table.date} IS NULL) <> (${table.daysOfWeek} IS NULL)`,
+    ),
     check(
       "trip_offer_seats_taken_check",
       sql`${table.seatsTaken} BETWEEN 0 AND ${table.seatsTotal}`,
@@ -110,6 +115,10 @@ export const tripRequest = pgTable(
   (table) => [
     index("trip_request_community_id_idx").on(table.communityId),
     index("trip_request_passenger_id_idx").on(table.passengerId),
+    check(
+      "trip_request_schedule_check",
+      sql`(${table.date} IS NULL) <> (${table.daysOfWeek} IS NULL)`,
+    ),
   ],
 );
 
