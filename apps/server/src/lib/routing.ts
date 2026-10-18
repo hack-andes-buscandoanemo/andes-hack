@@ -42,6 +42,9 @@ export function straightRoute(from: Point, to: Point): StreetRoute {
   };
 }
 
+const USER_AGENT =
+  "andes-hack-te-jalo/0.1 (https://github.com/hack-andes-buscandoanemo/andes-hack)";
+
 // The streets between two points from OpenStreetMap data, through the OSRM demo server; the
 // same one the route shapes of the zones came from. A failure draws a straight line instead,
 // so publishing a trip never depends on the service being up.
@@ -51,7 +54,10 @@ export const osrmRoute: RouteFinder = async (from, to) => {
     const url =
       `${OSRM}/${from.lng},${from.lat};${to.lng},${to.lat}` +
       "?overview=full&geometries=geojson&alternatives=false&steps=false";
-    const response = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+    const response = await fetch(url, {
+      headers: { "User-Agent": USER_AGENT },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
     if (!response.ok) return straightRoute(from, to);
     const body = (await response.json()) as {
       routes?: {
