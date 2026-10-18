@@ -50,7 +50,95 @@ export const healthRoute = createRoute({
   },
 });
 
-export const registeredOpenApiRoutes: readonly RouteConfig[] = [healthRoute];
+export const CommunityKindSchema = z.enum(["company", "university", "public_entity", "event"]);
+
+export const CommunitySummarySchema = z
+  .object({
+    id: z.string().uuid(),
+    name: z.string(),
+    kind: CommunityKindSchema,
+    isDemo: z.boolean(),
+  })
+  .openapi("CommunitySummary");
+
+export const CommunitiesResponseSchema = z
+  .object({
+    communities: z.array(CommunitySummarySchema),
+  })
+  .openapi("CommunitiesResponse");
+
+export const listCommunitiesRoute = createRoute({
+  method: "get",
+  path: "/communities",
+  tags: ["Comunidades"],
+  responses: {
+    200: {
+      description: "Lista pública de comunidades",
+      content: {
+        "application/json": {
+          schema: CommunitiesResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+export const JoinCommunityParamsSchema = z.object({
+  id: z
+    .string()
+    .uuid()
+    .openapi({ param: { name: "id", in: "path" } }),
+});
+
+export const JoinCommunityBodySchema = z
+  .object({
+    code: z.string().trim().min(1, "Ingresa tu código de acceso."),
+  })
+  .openapi("JoinCommunityRequest");
+
+export const JoinCommunityResponseSchema = z
+  .object({
+    joined: z.literal(true),
+    alreadyMember: z.boolean(),
+    communityId: z.string().uuid(),
+    communityName: z.string(),
+    verificationMethod: z.enum(["join_code", "email_domain"]),
+    isTeam: z.boolean(),
+    message: z.string(),
+  })
+  .openapi("JoinCommunityResponse");
+
+export const joinCommunityRoute = createRoute({
+  method: "post",
+  path: "/communities/{id}/join",
+  tags: ["Comunidades"],
+  request: {
+    params: JoinCommunityParamsSchema,
+    body: {
+      content: {
+        "application/json": {
+          schema: JoinCommunityBodySchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Membresía verificada en la comunidad",
+      content: {
+        "application/json": {
+          schema: JoinCommunityResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+export const registeredOpenApiRoutes: readonly RouteConfig[] = [
+  healthRoute,
+  listCommunitiesRoute,
+  joinCommunityRoute,
+];
 
 export function createOpenApiDocument(routes: readonly RouteConfig[] = registeredOpenApiRoutes) {
   const app = new OpenAPIHono();

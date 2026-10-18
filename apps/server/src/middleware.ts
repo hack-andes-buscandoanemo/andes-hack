@@ -5,11 +5,11 @@ import type { MiddlewareHandler } from "hono";
 import { logEvent } from "./lib/logger";
 import { ApiError } from "./utils/api-response";
 
-type Session = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
-type SessionResolver = (headers: Headers) => Promise<Session | null>;
-type MembershipLookup = (userId: string, communityId: string) => Promise<boolean>;
-type RateLimitCheck = (identifier: string) => Promise<{ success: boolean; reset: number }>;
-type User = Session["user"];
+export type Session = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
+export type SessionResolver = (headers: Headers) => Promise<Session | null>;
+export type MembershipLookup = (userId: string, communityId: string) => Promise<boolean>;
+export type RateLimitCheck = (identifier: string) => Promise<{ success: boolean; reset: number }>;
+export type User = Session["user"];
 
 declare module "hono" {
   interface ContextVariableMap {
