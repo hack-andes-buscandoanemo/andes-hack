@@ -351,6 +351,26 @@ describe("trips that cross midnight", () => {
   });
 });
 
+describe("stops right on the way, on the real places of Lima", () => {
+  it("takes a passenger whose meeting point is on the way of a driver who accepts no detour", () => {
+    // Back from the office at 19:00 to La Victoria, the Plaza Manco Cápac is on the way:
+    // the legs add up to the straight trip but for 2.3e-13 min of rounding error.
+    const back = { direction: "return" as const, originZoneId: "la-victoria" };
+
+    const result = bestInsertion(
+      offer({ ...back, departureTime: "19:00", maxDetourMinutes: 0 }),
+      need({ ...back, windowStart: "18:45", windowEnd: "19:45", maxWalkMinutes: 10 }),
+      createTravelTimeModel(),
+    );
+
+    expect(result).toMatchObject({
+      feasible: true,
+      meetingPointId: "la-victoria-plaza-manco-capac",
+      detourMinutes: 0,
+    });
+  });
+});
+
 describe("pairing a need with an offer", () => {
   it("refuses an offer that goes the other way", () => {
     expect(() => bestInsertion(offer({ direction: "return" }), need(), model)).toThrow(

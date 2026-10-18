@@ -213,8 +213,9 @@ function bestCandidate(
       const times = stopTimes(route, current.toSpliced(position, 0, meetingPointId), day, model);
       const end = times.at(-1)!;
       const stop = times[position]!;
-      // The maximum bounds the driver's whole detour, every passenger's together.
-      if (end - straightEnd > route.maxDetourMinutes) continue;
+      // The maximum bounds the driver's whole detour, every passenger's together. A stop
+      // right on the way adds 0 min give or take the rounding error of the legs' sum.
+      if (end - straightEnd > route.maxDetourMinutes + 1e-9) continue;
       detourKept = true;
       // Windows are about the destination: arriving there, or leaving it on the way back.
       const atDestination = outbound ? end : departure;
