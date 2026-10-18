@@ -1207,6 +1207,9 @@
           "fuelEstimate": {
             "$ref": "#/components/schemas/FuelEstimate"
           },
+          "routeMap": {
+            "$ref": "#/components/schemas/RouteMap"
+          },
           "alternatives": {
             "type": "array",
             "items": {
@@ -1233,7 +1236,70 @@
           "hasOpenNeed",
           "match",
           "booking",
-          "fuelEstimate"
+          "fuelEstimate",
+          "routeMap"
+        ]
+      },
+      "RouteMap": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          },
+          "approximate": {
+            "type": "boolean"
+          },
+          "markers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "start",
+                    "end",
+                    "meeting"
+                  ]
+                },
+                "name": {
+                  "type": "string"
+                },
+                "lat": {
+                  "type": "number"
+                },
+                "lng": {
+                  "type": "number"
+                },
+                "mine": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "role",
+                "name",
+                "lat",
+                "lng",
+                "mine"
+              ]
+            }
+          }
+        },
+        "required": [
+          "path",
+          "approximate",
+          "markers"
         ]
       },
       "MyTripsResponse": {

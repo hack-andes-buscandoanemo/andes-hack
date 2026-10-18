@@ -807,6 +807,28 @@ const BookingStatusSchema = z.enum([
   "no_show",
 ]);
 
+// The trip map (US-037): the route, the public meeting points and the two ends of the trip.
+// Never an address or a live position.
+export const RouteMapSchema = z
+  .object({
+    // [lat, lng] points of the line to draw.
+    path: z.array(z.tuple([z.number(), z.number()])),
+    // True when part of the line is straight because there is no street shape for it.
+    approximate: z.boolean(),
+    // Start, meeting points in the order the car reaches them, then the end.
+    markers: z.array(
+      z.object({
+        role: z.enum(["start", "end", "meeting"]),
+        name: z.string(),
+        lat: z.number(),
+        lng: z.number(),
+        // The person's own meeting point.
+        mine: z.boolean(),
+      }),
+    ),
+  })
+  .openapi("RouteMap");
+
 export const OfferDetailSchema = z
   .object({
     offerId: z.string().uuid(),
@@ -842,6 +864,7 @@ export const OfferDetailSchema = z
     // The person's active or rejected request on this trip, if any.
     booking: z.object({ id: z.string().uuid(), status: BookingStatusSchema }).nullable(),
     fuelEstimate: FuelEstimateSchema,
+    routeMap: RouteMapSchema,
     alternatives: z.array(TripMatchSchema).optional(),
   })
   .openapi("OfferDetail");
