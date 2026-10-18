@@ -152,7 +152,7 @@ export const sources = {
     date: travelMatrix.retrievedAt,
   },
   fuelEconomy: {
-    label: "Rendimiento de un auto a gasolina, para el CO₂ evitado",
+    label: "Rendimiento de un auto a gasolina, para el CO₂ evitado y el combustible",
     value: 35,
     unit: "km por galón",
     kind: "estimado",

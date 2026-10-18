@@ -854,6 +854,9 @@
           },
           "walkMinutes": {
             "type": "integer"
+          },
+          "fuelEstimate": {
+            "$ref": "#/components/schemas/FuelEstimate"
           }
         },
         "required": [
@@ -868,7 +871,31 @@
           "pickupAt",
           "arrivalAt",
           "detourMinutes",
-          "walkMinutes"
+          "walkMinutes",
+          "fuelEstimate"
+        ]
+      },
+      "FuelEstimate": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "tripSoles": {
+            "type": "number"
+          },
+          "perOccupantSoles": {
+            "type": "number"
+          },
+          "occupants": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "tripSoles",
+          "perOccupantSoles",
+          "occupants"
         ]
       },
       "SearchTripsRequest": {
@@ -1087,6 +1114,9 @@
               "id",
               "status"
             ]
+          },
+          "fuelEstimate": {
+            "$ref": "#/components/schemas/FuelEstimate"
           }
         },
         "required": [
@@ -1105,7 +1135,8 @@
           "note",
           "isOwn",
           "match",
-          "booking"
+          "booking",
+          "fuelEstimate"
         ]
       },
       "MyTripsResponse": {
@@ -1237,6 +1268,9 @@
             "items": {
               "type": "string"
             }
+          },
+          "fuelEstimate": {
+            "$ref": "#/components/schemas/FuelEstimate"
           }
         },
         "required": [
@@ -1255,7 +1289,8 @@
           "seatsTotal",
           "seatsFree",
           "pendingRequests",
-          "acceptedPassengers"
+          "acceptedPassengers",
+          "fuelEstimate"
         ]
       },
       "RequestSeatResponse": {
@@ -1574,6 +1609,9 @@
           },
           "walkMinutes": {
             "type": "integer"
+          },
+          "fuelEstimate": {
+            "$ref": "#/components/schemas/FuelEstimate"
           }
         },
         "required": [
@@ -1585,7 +1623,8 @@
           "meetingPointName",
           "pickupAt",
           "arrivalAt",
-          "walkMinutes"
+          "walkMinutes",
+          "fuelEstimate"
         ]
       },
       "WaitlistEntryResponse": {

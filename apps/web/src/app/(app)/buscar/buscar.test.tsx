@@ -59,6 +59,7 @@ const MATCH = {
   arrivalAt: "07:44",
   detourMinutes: 6,
   walkMinutes: 14,
+  fuelEstimate: { tripSoles: 10.04, perOccupantSoles: 5.02, occupants: 2 },
 };
 
 beforeEach(() => {
@@ -106,6 +107,38 @@ describe("search page /buscar (US-013)", () => {
     expect(screen.getByText("14 min a pie")).toBeInTheDocument();
     expect(screen.getByText("Llega 07:44")).toBeInTheDocument();
     expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+  });
+
+  it("shows each result's estimated fuel contribution per person, with its source (US-034)", async () => {
+    searchTrips.mockResolvedValue({
+      requestId: "33333333-3333-4333-8333-333333333333",
+      matches: [
+        MATCH,
+        { ...MATCH, offerId: "44444444-4444-4444-8444-444444444444", fuelEstimate: null },
+      ],
+      reason: null,
+    });
+
+    await searchFromSanBorja();
+
+    // Each card ends in its "Ver viaje" link; the chips inside a card are list items too.
+    const links = await screen.findAllByRole("link", { name: "Ver viaje" });
+    const [first, second] = links.map((link) => link.closest("li"));
+    expect(
+      within(first!).getByText("Aporte de combustible estimado: S/ 5,02 por persona"),
+    ).toBeInTheDocument();
+    expect(within(first!).getByRole("link", { name: "De dónde sale esta cifra" })).toHaveAttribute(
+      "href",
+      "/datos#impacto",
+    );
+    expect(
+      within(second!).getByText("No pudimos estimar el combustible de este tramo."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Referencial. Te Jalo no cobra ni procesa pagos; cualquier aporte es voluntario y nunca mayor al costo.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("links each result to the trip detail", async () => {

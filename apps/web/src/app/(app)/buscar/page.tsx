@@ -13,6 +13,8 @@ import {
 
 import { addDays, clockLabel, limaToday, shiftClock, TIME_SLOTS, WEEKDAYS } from "./schedule";
 import { FALLBACK_FOR_USUAL_MODE, FALLBACK_OPTIONS, REASON_MESSAGES } from "./reasons";
+import { FUEL_NOTE } from "@/components/fuel-estimate";
+
 import TripCard from "./trip-card";
 
 const selectClass =
@@ -380,6 +382,7 @@ export default function SearchPage() {
                 />
               ))}
             </ul>
+            <p className="text-xs text-muted-foreground">{FUEL_NOTE}</p>
           </>
         ) : null}
       </section>

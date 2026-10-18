@@ -1491,7 +1491,13 @@ export interface components {
       arrivalAt: string;
       detourMinutes: number;
       walkMinutes: number;
+      fuelEstimate: components["schemas"]["FuelEstimate"];
     };
+    FuelEstimate: {
+      tripSoles: number;
+      perOccupantSoles: number;
+      occupants: number;
+    } | null;
     SearchTripsRequest: {
       /** @enum {string} */
       direction: "outbound" | "return";
@@ -1548,6 +1554,7 @@ export interface components {
           | "completed"
           | "no_show";
       } | null;
+      fuelEstimate: components["schemas"]["FuelEstimate"];
     };
     MyTripsResponse: {
       trips: components["schemas"]["MyTrip"][];
@@ -1585,6 +1592,7 @@ export interface components {
       seatsFree: number | null;
       pendingRequests: number | null;
       acceptedPassengers: string[] | null;
+      fuelEstimate: components["schemas"]["FuelEstimate"];
     };
     RequestSeatResponse: {
       booking: {
@@ -1685,6 +1693,7 @@ export interface components {
       pickupAt: string;
       arrivalAt: string;
       walkMinutes: number;
+      fuelEstimate: components["schemas"]["FuelEstimate"];
     };
     WaitlistEntryResponse: {
       message: string;

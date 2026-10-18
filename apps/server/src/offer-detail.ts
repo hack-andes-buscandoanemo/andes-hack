@@ -7,6 +7,7 @@ import { vehicle } from "@andes-hack/db/schema/vehicle";
 import { places } from "@andes-hack/matching";
 import { and, desc, eq, inArray } from "drizzle-orm";
 
+import { fuelEstimateFor, occupantsSharingFuel } from "./fuel-estimate";
 import { destinationOf, matchOfferForNeed } from "./search";
 import { canSeePlate, displayName, seatsFree } from "./trip-rules";
 import { ApiError } from "./utils/api-response";
@@ -21,6 +22,7 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
       driverId: tripOffer.driverId,
       communityName: community.name,
       destinationName: community.destinationName,
+      originZoneId: tripOffer.originZoneId,
       originZoneName: zone.name,
       status: tripOffer.status,
       direction: tripOffer.direction,
@@ -80,6 +82,7 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
     );
   const isOwn = row.driverId === input.userId;
   const mine = bookings.find((booking) => booking.passengerId === input.userId);
+  const acceptedCount = bookings.filter((booking) => booking.status === "accepted").length;
 
   const destination = destinationOf(row);
   // The person's open need in this direction, saved by their last search.
@@ -119,10 +122,7 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
     date: row.date,
     daysOfWeek: row.daysOfWeek,
     // Same count the engine and the search use: accepted passengers hold the seats.
-    seatsFree: seatsFree(
-      row.seatsTotal,
-      bookings.filter((booking) => booking.status === "accepted").length,
-    ),
+    seatsFree: seatsFree(row.seatsTotal, acceptedCount),
     vehicle:
       row.make && row.model
         ? {
@@ -150,6 +150,12 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
       walkMinutes: match.walkMinutes,
     },
     booking: mine ? { id: mine.id, status: mine.status } : null,
+    fuelEstimate: fuelEstimateFor({
+      direction: row.direction,
+      originZoneId: row.originZoneId,
+      destinationId: destination.id,
+      occupants: occupantsSharingFuel(acceptedCount, isOwn || mine?.status === "accepted"),
+    }),
   };
   return { detail, need, match };
 }

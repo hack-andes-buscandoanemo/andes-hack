@@ -41,6 +41,7 @@ const PASSENGER_TRIP = {
   seatsFree: null,
   pendingRequests: null,
   acceptedPassengers: null,
+  fuelEstimate: { tripSoles: 10.04, perOccupantSoles: 5.02, occupants: 2 },
 };
 
 const DRIVER_TRIP = {
@@ -79,6 +80,36 @@ describe("Viajes", () => {
     ).toBeInTheDocument();
     expect(within(card).getByText("Carlos Q.")).toBeInTheDocument();
     expect(within(card).getByText("Placa: ABC123")).toBeInTheDocument();
+  });
+
+  it("shows the estimated fuel contribution on each trip, as a reference without any payment (US-034)", async () => {
+    render(<Viajes />);
+
+    const card = await screen.findByRole("listitem");
+    expect(
+      within(card).getByText("Aporte de combustible estimado: S/ 5,02 por persona"),
+    ).toBeInTheDocument();
+    expect(within(card).getByRole("link", { name: "De dónde sale esta cifra" })).toHaveAttribute(
+      "href",
+      "/datos#impacto",
+    );
+    expect(
+      screen.getByText(
+        "Referencial. Te Jalo no cobra ni procesa pagos; cualquier aporte es voluntario y nunca mayor al costo.",
+      ),
+    ).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/pagar|saldo|deuda|Métodos de pago/i);
+  });
+
+  it("says when a trip's fuel could not be estimated", async () => {
+    listMyTrips.mockResolvedValue({ trips: [{ ...PASSENGER_TRIP, fuelEstimate: null }] });
+
+    render(<Viajes />);
+
+    const card = await screen.findByRole("listitem");
+    expect(
+      within(card).getByText("No pudimos estimar el combustible de este tramo."),
+    ).toBeInTheDocument();
   });
 
   it("explains that there are no trips yet", async () => {
