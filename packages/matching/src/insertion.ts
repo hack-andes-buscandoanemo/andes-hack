@@ -3,15 +3,19 @@ import type { TravelTimeModel } from "./travel-time";
 // `outbound` goes to the community's destination; `return` comes back from it.
 export type Direction = "outbound" | "return";
 
-export type InfeasibleReason =
-  | "different_community"
-  | "days_mismatch"
-  | "women_only"
-  | "previously_rejected"
-  | "no_seats"
-  | "no_walkable_meeting_point"
-  | "outside_time_window"
-  | "detour_exceeded";
+// In the order they are checked, which also settles a tie for the most common reason.
+export const infeasibleReasons = [
+  "different_community",
+  "days_mismatch",
+  "women_only",
+  "previously_rejected",
+  "no_seats",
+  "no_walkable_meeting_point",
+  "outside_time_window",
+  "detour_exceeded",
+] as const;
+
+export type InfeasibleReason = (typeof infeasibleReasons)[number];
 
 // Times of day are "HH:MM" in Lima; dates are "YYYY-MM-DD"; weekdays are ISO (1 = Monday).
 
@@ -146,6 +150,8 @@ export function bestInsertion(
   request: RideRequest,
   model: TravelTimeModel,
 ): InsertionResult {
+  if (route.direction !== request.direction)
+    throw new Error("La oferta y la necesidad van en sentidos distintos");
   const reason = ruleBreak(route, request);
   if (reason) return { feasible: false, reason };
 
@@ -193,4 +199,49 @@ export function bestInsertion(
   if (!best)
     return { feasible: false, reason: windowMet ? "detour_exceeded" : "outside_time_window" };
   return best.insertion;
+}
+
+export type OfferMatch = Insertion & { offerId: string };
+
+export interface OfferRanking {
+  matches: OfferMatch[];
+  // Why nothing matched; null when something did.
+  reason: InfeasibleReason | null;
+}
+
+export function rankOffersForRequest(
+  request: RideRequest,
+  offers: readonly OfferRoute[],
+  model: TravelTimeModel,
+): OfferRanking {
+  const matches: OfferMatch[] = [];
+  const turnedDown = new Map<InfeasibleReason, number>();
+  for (const offer of offers) {
+    if (offer.direction !== request.direction) continue;
+    const result = bestInsertion(offer, request, model);
+    if (result.feasible) matches.push({ ...result, offerId: offer.id });
+    else turnedDown.set(result.reason, (turnedDown.get(result.reason) ?? 0) + 1);
+  }
+  // Minutes between the time at the destination and the middle of the passenger's window.
+  const middle = (minutesOfDay(request.windowStart) + minutesOfDay(request.windowEnd)) / 2;
+  const windowGap = (match: OfferMatch) =>
+    Math.abs(
+      minutesOfDay(request.direction === "outbound" ? match.arrivalAt : match.pickupAt) - middle,
+    );
+  matches.sort(
+    (a, b) =>
+      a.detourMinutes - b.detourMinutes ||
+      a.walkMinutes - b.walkMinutes ||
+      windowGap(a) - windowGap(b) ||
+      a.offerId.localeCompare(b.offerId),
+  );
+  if (matches.length > 0) return { matches, reason: null };
+
+  let reason: InfeasibleReason | null = null;
+  for (const candidate of infeasibleReasons) {
+    if ((turnedDown.get(candidate) ?? 0) > (reason ? turnedDown.get(reason)! : 0))
+      reason = candidate;
+  }
+  // With no offers at all, no driver leaves at that time.
+  return { matches, reason: reason ?? "outside_time_window" };
 }

@@ -1,11 +1,18 @@
 import { describe, expect, it } from "vitest";
 
-import { bestInsertion, createTravelTimeModel, type OfferRoute, type RideRequest } from "./index";
+import {
+  bestInsertion,
+  createTravelTimeModel,
+  type OfferRoute,
+  rankOffersForRequest,
+  type RideRequest,
+} from "./index";
 
-// Real coordinates, hand-made free-flow minutes. Every leg below starts between 7:00 and
-// 7:59 on a weekday, so all of them take the TomTom factor of 7:00, 1.72.
+// Real coordinates, hand-made free-flow minutes. Unless a test says otherwise, every leg
+// starts between 7:00 and 7:59 on a weekday and takes the TomTom factor of 7:00, 1.72.
 const places = [
   { id: "la-molina", lat: -12.077983, lng: -76.9172838 },
+  { id: "surquillo", lat: -12.1144446, lng: -77.011978 },
   { id: "san-borja", lat: -12.107075, lng: -76.9988421 },
   { id: "centro-empresarial-real", lat: -12.0975459, lng: -77.0375707 },
   { id: "surquillo-municipalidad", lat: -12.1127387, lng: -77.0108894 },
@@ -33,6 +40,10 @@ const freeFlow: Record<string, number> = {
   "san-borja-estacion-san-borja-sur>surquillo-municipalidad": 3,
   "surquillo-municipalidad>san-borja-estacion-san-borja-sur": 4,
   "san-borja-estacion-san-borja-sur>centro-empresarial-real": 10,
+  // A driver from Surquillo has the municipalidad on the way.
+  "surquillo>centro-empresarial-real": 18,
+  "surquillo>san-borja-municipalidad": 2,
+  "surquillo>san-borja-estacion-san-borja-sur": 9,
   // The way back.
   "centro-empresarial-real>la-molina": 20,
   "centro-empresarial-real>san-borja-municipalidad": 15,
@@ -276,6 +287,99 @@ describe("best insertion of a passenger in a driver's route", () => {
       arrivalAt: "18:21",
       detourMinutes: 0,
       walkMinutes: 14,
+    });
+  });
+});
+
+describe("pairing a need with an offer", () => {
+  it("refuses an offer that goes the other way", () => {
+    expect(() => bestInsertion(offer({ direction: "return" }), need(), model)).toThrow(
+      "La oferta y la necesidad van en sentidos distintos",
+    );
+  });
+});
+
+describe("ranking the offers for a passenger's need", () => {
+  it("lists the compatible offers with the smallest detour first", () => {
+    // With a passenger already in Surquillo she costs the driver 2 min; alone, 0.
+    const withPassenger = offer({ id: "oferta-a", passengers: [acceptedInSurquillo] });
+    const alone = offer({ id: "oferta-c" });
+
+    const { matches } = rankOffersForRequest(need(), [withPassenger, alone], model);
+
+    expect(matches.map((match) => match.offerId)).toEqual(["oferta-c", "oferta-a"]);
+  });
+
+  it("breaks a tie in detour with the shorter walk", () => {
+    // Both cost the driver nothing: from La Molina she walks 14 min to the station; from
+    // Surquillo (2 + 16 = 18 free-flow min, as straight) 1 min to the municipalidad.
+    const fromLaMolina = offer({ id: "oferta-c" });
+    const fromSurquillo = offer({
+      id: "oferta-e",
+      originZoneId: "surquillo",
+      departureTime: "07:05",
+    });
+
+    const { matches } = rankOffersForRequest(need(), [fromLaMolina, fromSurquillo], model);
+
+    expect(matches.map((match) => match.offerId)).toEqual(["oferta-e", "oferta-c"]);
+  });
+
+  it("then prefers the arrival closest to the middle of her window", () => {
+    // Same detour and walk. Leaving at 7:05 arrives at 7:39, 6 min from 7:45; leaving at
+    // 7:00 arrives at 7:34, 11 min away.
+    const at7 = offer({ id: "oferta-c" });
+    const at705 = offer({ id: "oferta-b", departureTime: "07:05" });
+
+    const { matches } = rankOffersForRequest(need(), [at7, at705], model);
+
+    expect(matches.map((match) => match.offerId)).toEqual(["oferta-b", "oferta-c"]);
+  });
+
+  it("orders offers that tie on everything by id, whatever order they come in", () => {
+    const twins = [offer({ id: "oferta-d" }), offer({ id: "oferta-b" })];
+
+    const { matches } = rankOffersForRequest(need(), twins, model);
+
+    expect(matches.map((match) => match.offerId)).toEqual(["oferta-b", "oferta-d"]);
+  });
+
+  it("explains an empty result with the reason that turned down most offers", () => {
+    const full = { seatsTotal: 1, passengers: [acceptedInSurquillo] };
+    const offers = [
+      offer({ id: "oferta-a", ...full }),
+      offer({ id: "oferta-b", ...full }),
+      // At 6:00 the factor is 1.48: it arrives at 6:30, before her window.
+      offer({ id: "oferta-c", departureTime: "06:00" }),
+    ];
+
+    expect(rankOffersForRequest(need(), offers, model)).toEqual({
+      matches: [],
+      reason: "no_seats",
+    });
+  });
+
+  it("settles a tie between reasons with the one checked first", () => {
+    const offers = [
+      offer({ id: "oferta-a", seatsTotal: 1, passengers: [acceptedInSurquillo] }),
+      offer({ id: "oferta-c", departureTime: "06:00" }),
+    ];
+
+    expect(rankOffersForRequest(need(), offers, model).reason).toBe("no_seats");
+  });
+
+  it("leaves out the offers that go the other way", () => {
+    const offers = [offer({ id: "oferta-r", direction: "return" }), offer({ id: "oferta-c" })];
+
+    const { matches } = rankOffersForRequest(need(), offers, model);
+
+    expect(matches.map((match) => match.offerId)).toEqual(["oferta-c"]);
+  });
+
+  it("says no driver leaves at that time when there are no offers at all", () => {
+    expect(rankOffersForRequest(need(), [], model)).toEqual({
+      matches: [],
+      reason: "outside_time_window",
     });
   });
 });
