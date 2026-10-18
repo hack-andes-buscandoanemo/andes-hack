@@ -74,10 +74,28 @@ export interface Objective {
   walkMinutes: number;
 }
 
+// How many would otherwise drive alone or take a taxi or app, ride public transport, or go
+// some other way.
+export interface ByFallback {
+  wouldDrive: number;
+  publicTransport: number;
+  other: number;
+}
+
 export interface DayPlan {
   assignments: Assignment[];
   unassigned: Unassigned[];
   objective: Objective;
+  // Who is seated and who is left out, group by group: the priority favours one of them.
+  metrics: { matched: ByFallback; unassigned: ByFallback };
+}
+
+function byFallback(requests: readonly DayRequest[]): ByFallback {
+  const wouldDrive = requests.filter((request) => avoidsCarTrip(request.fallbackMode)).length;
+  const publicTransport = requests.filter(
+    (request) => request.fallbackMode === "public_transport",
+  ).length;
+  return { wouldDrive, publicTransport, other: requests.length - wouldDrive - publicTransport };
 }
 
 // Someone the plan seats, with what their insertion cost.
@@ -382,5 +400,6 @@ export function optimizeDay(
       reason: rankOffersForRequest(request, routes, model, date).reason!,
     })),
     objective: total,
+    metrics: { matched: byFallback([...seated.keys()]), unassigned: byFallback(waiting()) },
   };
 }

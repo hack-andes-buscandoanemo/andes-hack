@@ -206,6 +206,13 @@ describe("seats of a day assigned to maximise the car trips avoided", () => {
       expect(seated(optimizeDay(day, farPlaza))).toEqual(["pedro"]);
     });
 
+    it("reports who was seated and who was left out by how they would travel otherwise", () => {
+      expect(optimizeDay(day, farPlaza).metrics).toEqual({
+        matched: { wouldDrive: 1, publicTransport: 0, other: 0 },
+        unassigned: { wouldDrive: 0, publicTransport: 2, other: 0 },
+      });
+    });
+
     it("takes the two bus riders when the priority is the passengers seated", () => {
       expect(seated(optimizeDay(day, farPlaza, { priority: "passengers" }))).toEqual([
         "maria",
