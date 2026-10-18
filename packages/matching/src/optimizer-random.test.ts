@@ -62,4 +62,13 @@ describe("plans for random days of Lima", () => {
     // Days where nobody fits would prove nothing.
     expect(seated).toBeGreaterThan(500);
   });
+
+  it("plans a day of 200 needs and 60 offers in under 2 seconds", () => {
+    const instance = randomDay(2, { offers: 60, requests: 200 }, model);
+
+    const start = performance.now();
+    optimizeDay(instance, model);
+
+    expect(performance.now() - start).toBeLessThan(2000);
+  });
 });
