@@ -251,4 +251,24 @@ describe("Viajes", () => {
     expect(listMyTrips).toHaveBeenCalledWith("driver", "upcoming");
     expect(listMyTrips).not.toHaveBeenCalledWith("passenger", "upcoming");
   });
+
+  it("sends one request when Pausar is tapped twice and shows the status the server answers", async () => {
+    listMyTrips.mockResolvedValue({ trips: [DRIVER_TRIP] });
+    let answer: (value: { id: string; status: string }) => void = () => {};
+    updateOfferStatus.mockReturnValueOnce(new Promise((resolve) => (answer = resolve)));
+    render(<Viajes />);
+    await userEvent.click(screen.getByRole("button", { name: "Como conductor" }));
+    const button = await screen.findByRole("button", { name: "Pausar" });
+
+    await userEvent.dblClick(button);
+
+    expect(updateOfferStatus).toHaveBeenCalledTimes(1);
+    expect(button).toBeDisabled();
+    expect(screen.getByText("Activo")).toBeInTheDocument();
+
+    answer({ id: OFFER_ID, status: "paused" });
+
+    expect(await screen.findByText("Pausado")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reactivar" })).toBeEnabled();
+  });
 });

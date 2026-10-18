@@ -21,7 +21,15 @@ const STATUS_LABELS: Record<MyTrip["status"], string> = {
   active: "Activo",
 };
 
-function TripCard({ trip, onToggle }: { trip: MyTrip; onToggle: (trip: MyTrip) => void }) {
+function TripCard({
+  trip,
+  busy,
+  onToggle,
+}: {
+  trip: MyTrip;
+  busy: boolean;
+  onToggle: (trip: MyTrip) => void;
+}) {
   const outbound = trip.direction === "outbound";
   const from = outbound ? trip.originZoneName : trip.destinationName;
   const to = outbound ? trip.destinationName : trip.originZoneName;
@@ -66,7 +74,13 @@ function TripCard({ trip, onToggle }: { trip: MyTrip; onToggle: (trip: MyTrip) =
         Ver viaje
       </Link>
       {trip.role === "driver" && (trip.status === "active" || trip.status === "paused") ? (
-        <Button type="button" variant="outline" size="sm" onClick={() => onToggle(trip)}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={busy}
+          onClick={() => onToggle(trip)}
+        >
           {trip.status === "paused" ? "Reactivar" : "Pausar"}
         </Button>
       ) : null}
@@ -88,6 +102,7 @@ export default function Viajes() {
   );
   const [failed, setFailed] = useState(false);
   const [toggleFailed, setToggleFailed] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
@@ -116,18 +131,26 @@ export default function Viajes() {
   }, [role, scope, attempt]);
 
   async function toggle(trip: MyTrip) {
-    const status = trip.status === "paused" ? "active" : "paused";
+    if (togglingId) return;
     setToggleFailed(false);
+    setTogglingId(trip.id);
     try {
-      await communitiesApi.updateOfferStatus(trip.offerId, status);
+      // Show what the server saved, not what we asked for.
+      const saved = await communitiesApi.updateOfferStatus(
+        trip.offerId,
+        trip.status === "paused" ? "active" : "paused",
+      );
+      setTrips(
+        (current) =>
+          current?.map((item) =>
+            item.id === trip.id ? { ...item, status: saved.status } : item,
+          ) ?? null,
+      );
     } catch {
       setToggleFailed(true);
-      return;
+    } finally {
+      setTogglingId(null);
     }
-    setTrips(
-      (current) =>
-        current?.map((item) => (item.id === trip.id ? { ...item, status } : item)) ?? null,
-    );
   }
 
   return (
@@ -198,7 +221,7 @@ export default function Viajes() {
       ) : (
         <ul className="space-y-3">
           {trips.map((trip) => (
-            <TripCard key={trip.id} trip={trip} onToggle={toggle} />
+            <TripCard key={trip.id} trip={trip} busy={togglingId === trip.id} onToggle={toggle} />
           ))}
         </ul>
       )}
