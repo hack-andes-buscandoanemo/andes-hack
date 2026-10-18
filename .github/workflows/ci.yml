@@ -29,6 +29,9 @@ jobs:
       - name: Type check
         run: bun run check-types
 
+      - name: Verify OpenAPI contract
+        run: bun run openapi:verify
+
       - name: Build
         run: bun run build
 

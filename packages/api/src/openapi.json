@@ -6,14 +6,65 @@
   },
   "servers": [
     {
+      "url": "https://andes-hack-server-diego.diegorafaelcisnerostafur.workers.dev",
+      "description": "Production server"
+    },
+    {
       "url": "http://localhost:3000",
       "description": "Local development server"
     }
   ],
+  "tags": [
+    {
+      "name": "Comunidades",
+      "description": "Acceso y gestión de comunidades e instituciones aliadas"
+    },
+    {
+      "name": "Ofertas",
+      "description": "Publicación y gestión de recorridos ofrecidos por conductores"
+    },
+    {
+      "name": "Búsqueda",
+      "description": "Búsqueda de viajes compatibles para pasajeros"
+    },
+    {
+      "name": "Solicitudes",
+      "description": "Solicitudes de asiento y confirmación de pasajeros"
+    },
+    {
+      "name": "Emparejamiento",
+      "description": "Compatibilidad de rutas, horarios y gasto compartido"
+    },
+    {
+      "name": "Público",
+      "description": "Rutas públicas y estado del servicio"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      }
+    },
+    "parameters": {}
+  },
   "paths": {
     "/health": {
       "get": {
-        "tags": ["System"],
+        "tags": [
+          "Público"
+        ],
         "responses": {
           "200": {
             "description": "Service health",
@@ -29,18 +80,5 @@
       }
     }
   },
-  "components": {
-    "schemas": {
-      "HealthResponse": {
-        "type": "object",
-        "required": ["status"],
-        "properties": {
-          "status": {
-            "type": "string",
-            "enum": ["ok"]
-          }
-        }
-      }
-    }
-  }
+  "webhooks": {}
 }

@@ -1,0 +1,117 @@
+import { createRoute, z } from "@hono/zod-openapi";
+import { expect, it } from "vitest";
+
+import { createOpenApiDocument, HealthResponseSchema } from "./index";
+
+it("generates the OpenAPI 3.1 contract from registered routes with the public API server and domain tags", () => {
+  const doc = createOpenApiDocument();
+
+  expect(doc.openapi).toBe("3.1.0");
+  expect(doc.servers).toEqual(
+    expect.arrayContaining([
+      {
+        url: "https://andes-hack-server-diego.diegorafaelcisnerostafur.workers.dev",
+        description: "Production server",
+      },
+      {
+        url: "http://localhost:3000",
+        description: "Local development server",
+      },
+    ]),
+  );
+  expect(doc.tags?.map((tag: { name: string }) => tag.name)).toEqual([
+    "Comunidades",
+    "Ofertas",
+    "Búsqueda",
+    "Solicitudes",
+    "Emparejamiento",
+    "Público",
+  ]);
+  expect(doc.paths?.["/health"]?.get?.tags).toEqual(["Público"]);
+  expect(doc.components?.schemas?.HealthResponse).toEqual({
+    type: "object",
+    required: ["status"],
+    properties: {
+      status: {
+        type: "string",
+        enum: ["ok"],
+      },
+    },
+  });
+});
+
+it("includes newly declared createRoute routes when generating the OpenAPI document", () => {
+  const customRoute = createRoute({
+    method: "get",
+    path: "/comunidades",
+    tags: ["Comunidades"],
+    responses: {
+      200: {
+        description: "Lista de comunidades",
+        content: {
+          "application/json": {
+            schema: z
+              .object({
+                id: z.string(),
+              })
+              .openapi("CommunitySummary"),
+          },
+        },
+      },
+    },
+  });
+
+  const doc = createOpenApiDocument([customRoute]);
+
+  expect(doc.paths?.["/comunidades"]?.get?.tags).toEqual(["Comunidades"]);
+  expect(doc.components?.schemas?.CommunitySummary).toEqual({
+    type: "object",
+    required: ["id"],
+    properties: {
+      id: {
+        type: "string",
+      },
+    },
+  });
+  expect(HealthResponseSchema.parse({ status: "ok" })).toEqual({ status: "ok" });
+});
+
+it("fails with the exact drift message when a route changes without regenerating openapi.json", async () => {
+  const { verifyOpenApiDocument } = await import("./verify-openapi");
+  const extraRoute = createRoute({
+    method: "get",
+    path: "/ofertas",
+    tags: ["Ofertas"],
+    responses: {
+      200: {
+        description: "Ofertas disponibles",
+        content: {
+          "application/json": {
+            schema: z.object({ id: z.string() }).openapi("OfferItem"),
+          },
+        },
+      },
+    },
+  });
+
+  const result = verifyOpenApiDocument({
+    committedDocument: createOpenApiDocument(),
+    regeneratedDocument: createOpenApiDocument([extraRoute]),
+  });
+
+  expect(result).toEqual({
+    ok: false,
+    message: "OpenAPI document drift detected. Regenerate the committed spec.",
+  });
+});
+
+it("passes verification when the committed openapi.json matches the generated routes", async () => {
+  const { verifyOpenApiDocument } = await import("./verify-openapi");
+
+  const result = verifyOpenApiDocument();
+
+  expect(result).toEqual({
+    ok: true,
+    message: "OpenAPI document is up to date.",
+  });
+});

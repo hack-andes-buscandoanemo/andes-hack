@@ -1,7 +1,7 @@
-import { createOpenApiDocument, HealthResponseSchema } from "@andes-hack/api";
+import { healthRoute, OPENAPI_DOCUMENT_CONFIG } from "@andes-hack/api";
 import { auth } from "@andes-hack/auth";
 import { env } from "@andes-hack/env/server";
-import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
+import { OpenAPIHono } from "@hono/zod-openapi";
 import { apiReference } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -27,27 +27,11 @@ app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
 const openApiApp = new OpenAPIHono({ defaultHook: validationHook });
 
-const healthRoute = createRoute({
-  method: "get",
-  path: "/health",
-  tags: ["System"],
-  responses: {
-    200: {
-      description: "Service health",
-      content: {
-        "application/json": {
-          schema: HealthResponseSchema,
-        },
-      },
-    },
-  },
-});
-
 openApiApp.openapi(healthRoute, (c) => {
   return c.json({ status: "ok" as const });
 });
 
-openApiApp.doc("/openapi.json", createOpenApiDocument());
+openApiApp.doc31("/openapi.json", OPENAPI_DOCUMENT_CONFIG);
 openApiApp.get("/docs", apiReference({ spec: { url: "/openapi.json" } }));
 app.route("/", openApiApp);
 
