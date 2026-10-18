@@ -16,9 +16,13 @@ function Figure({ label, value }: { label: string; value: string }) {
 
 export default function MyImpact({ communityId }: { communityId: string }) {
   const [impact, setImpact] = useState<Impact | null>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    void communitiesApi.getMyImpact(communityId).then(setImpact);
+    void communitiesApi
+      .getMyImpact(communityId)
+      .then(setImpact)
+      .catch(() => setFailed(true));
   }, [communityId]);
 
   return (
@@ -40,6 +44,11 @@ export default function MyImpact({ communityId }: { communityId: string }) {
             </p>
           ) : null}
         </>
+      ) : null}
+      {failed ? (
+        <p role="alert" className="text-sm">
+          No pudimos cargar tu impacto. Inténtalo de nuevo.
+        </p>
       ) : null}
     </section>
   );

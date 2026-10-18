@@ -206,6 +206,18 @@ describe("perfil: mi impacto (US-035)", () => {
   });
 });
 
+describe("perfil: mi impacto sin conexión (US-035)", () => {
+  it("says the impact could not be loaded instead of leaving the section empty", async () => {
+    getMyImpact.mockRejectedValue(serverError(500, "Ocurrió un error inesperado."));
+    render(<Perfil name="Ana Torres" email="ana@alfa.pe" membership={MEMBERSHIP} />);
+
+    const impact = screen.getByRole("region", { name: "Mi impacto" });
+    expect(
+      await within(impact).findByText("No pudimos cargar tu impacto. Inténtalo de nuevo."),
+    ).toBeInTheDocument();
+  });
+});
+
 describe("perfil: preferencias de viaje (US-026)", () => {
   it("turns on Solo mujeres for a woman who already declared it and confirms it", async () => {
     updateTravelPreferences.mockResolvedValue({
