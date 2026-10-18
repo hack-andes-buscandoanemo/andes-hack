@@ -257,6 +257,7 @@ Contexto único de dominio en `AGENTS.md` / `CLAUDE.md` (más `GLOSSARY.md` cuan
 - Profile photos use staged, signed R2 uploads and community-scoped signed reads (`apps/server/src/profile-photos.ts`); persist only the managed object key in `user.image`.
 - `DELETE /me` invokes `public.delete_personal_data(text)` so retained trip history is anonymized in one SQL statement; Drizzle's Neon HTTP driver does not support interactive transactions.
 - `trip_message` stores trip chat, with polling cursors based on the last message UUID so messages sharing a timestamp are not skipped.
+- `incident_report` is created by a trip driver or accepted passenger; only community admins can list or review it, and the reporter identity is never returned. Public stats expose the total, suppress counts from 1 to 9, and keep the zero count visible.
 - The public impact panel is backed by `GET /public/communities/{slug}/stats`; it returns aggregates only and suppresses small groups.
 
 ## Project Structure

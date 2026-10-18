@@ -259,6 +259,7 @@ Contexto único de dominio en `AGENTS.md` / `CLAUDE.md` (más `GLOSSARY.md` cuan
 - `DELETE /me` invokes `public.delete_personal_data(text)` so retained trip history is anonymized in one SQL statement; Drizzle's Neon HTTP driver does not support interactive transactions.
 - `trip_message` stores trip chat, with polling cursors based on the last message UUID so messages sharing a timestamp are not skipped.
 - Trip progress is stored per accepted booking and Lima trip date in `seat_booking_day`; recurring bookings stay accepted across occurrences. Apply migrations `0009_conscious_hex.sql` and `0010_preserve_trip_day_history.sql` before deploying this feature. Account deletion retains anonymized completed occurrences. Completed daily trips feed public community statistics; no-shows affect attendance only.
+- `incident_report` is created by a trip driver or accepted passenger; only community admins can list or review it, and the reporter identity is never returned. Public stats expose the total, suppress counts from 1 to 9, and keep the zero count visible.
 - The public impact panel is backed by `GET /public/communities/{slug}/stats`; it returns aggregates only and suppresses small groups.
 
 ## Project Structure

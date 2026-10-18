@@ -187,7 +187,9 @@ export default function Panel() {
       activity.openNeeds +
       activity.acceptedRequests +
       activity.completedTrips >
-    0;
+      0 ||
+    activity.incidentReports === null ||
+    activity.incidentReports > 0;
   return (
     <Shell>
       {selector}
@@ -209,6 +211,14 @@ export default function Panel() {
               />
               <Card label="Solicitudes aceptadas" value={String(activity.acceptedRequests)} />
               <Card label="Viajes completados" value={String(activity.completedTrips)} />
+              <Card
+                label="Reportes de incidentes"
+                value={
+                  activity.incidentReports === null
+                    ? "menos de 10"
+                    : String(activity.incidentReports)
+                }
+              />
             </section>
             <Block title="Impacto vehicular">
               <p className="text-sm font-semibold">Viajes en auto evitados</p>
