@@ -1447,7 +1447,12 @@ export const waitlistSummaryRoute = createRoute({
 });
 
 export const PublicStatsParamsSchema = z.object({
-  slug: z.string().openapi({ param: { name: "slug", in: "path" } }),
+  slug: z
+    .string()
+    .min(1)
+    .max(64)
+    .regex(/^[a-z0-9-]+$/)
+    .openapi({ param: { name: "slug", in: "path" } }),
 });
 
 const CarTripsAvoidedSchema = z.object({
@@ -1507,6 +1512,7 @@ export const publicStatsRoute = createRoute({
       content: { "application/json": { schema: PublicStatsSchema } },
     },
     404: apiErrorResponse("Comunidad no encontrada"),
+    422: apiErrorResponse("El identificador de la comunidad no es válido"),
     429: apiErrorResponse("Demasiadas consultas desde la misma IP"),
   },
 });

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -28,6 +29,14 @@ function TripCard({
   return (
     <li>
       <TripSummaryCard trip={trip}>
+        {trip.role === "driver" && (trip.status === "active" || trip.status === "paused") ? (
+          <Link
+            href={`/viajes/${trip.offerId}/solicitudes`}
+            className="w-fit text-sm font-bold underline"
+          >
+            Solicitudes
+          </Link>
+        ) : null}
         {trip.role === "driver" && (trip.status === "active" || trip.status === "paused") ? (
           <Button
             type="button"

@@ -16,10 +16,11 @@ vi.hoisted(() => {
 import { user } from "@andes-hack/db/schema/auth";
 import { community, communityMember } from "@andes-hack/db/schema/community";
 import { meetingPoint, zone } from "@andes-hack/db/schema/places";
-import { seatBooking, tripOffer, tripRequest } from "@andes-hack/db/schema/trips";
+import { seatBooking, tripOffer, tripRequest, tripShareLink } from "@andes-hack/db/schema/trips";
 import { vehicle } from "@andes-hack/db/schema/vehicle";
 import { createTestDb } from "@andes-hack/db/test-db";
 import { eq } from "drizzle-orm";
+import { createHash } from "node:crypto";
 
 import { createApp, type AppDeps } from "./index";
 
@@ -198,7 +199,9 @@ async function shareAs(person: { id: string }, bookingId: string, deps: Partial<
 }
 
 async function openLink(token: string, deps: Partial<AppDeps> = {}) {
-  return (await appFor(null, deps).request(`/public/share/${token}`)) as unknown as Reply;
+  return (await appFor(null, deps).request(`/public/share/${token}`, {
+    headers: { "cf-connecting-ip": "203.0.113.7" },
+  })) as unknown as Reply;
 }
 
 async function world() {
@@ -249,6 +252,16 @@ const UNAVAILABLE = {
 };
 
 describe("an unavailable link", () => {
+  it("keeps only the SHA-256 of the token, so the table cannot open a link", async () => {
+    const { passenger, booking } = await world();
+
+    const { token, id } = await (await shareAs(passenger, booking.id)).json();
+
+    const [stored] = await testDb.select().from(tripShareLink).where(eq(tripShareLink.id, id));
+    expect(stored!.tokenHash).not.toBe(token);
+    expect(stored!.tokenHash).toBe(createHash("sha256").update(token).digest("hex"));
+  });
+
   it("answers the same for a token that never existed", async () => {
     await world();
 
@@ -365,6 +378,40 @@ describe("the status of the trip", () => {
 });
 
 describe("sharing again", () => {
+  it("leaves exactly one active link when the passenger shares twice at the same moment", async () => {
+    const { passenger, booking } = await world();
+
+    const replies = await Promise.all([
+      shareAs(passenger, booking.id),
+      shareAs(passenger, booking.id),
+    ]);
+
+    expect(replies.map((reply) => reply.status)).toEqual([201, 201]);
+    const links = await testDb
+      .select()
+      .from(tripShareLink)
+      .where(eq(tripShareLink.bookingId, booking.id));
+    expect(links.filter((link) => link.revokedAt === null)).toHaveLength(1);
+  });
+
+  it("refuses a second active link for the same booking at the database", async () => {
+    const { booking } = await world();
+    const link = (tokenHash: string) => ({
+      bookingId: booking.id,
+      tokenHash,
+      expiresAt: new Date("2026-10-20T05:00:00.000Z"),
+    });
+    await testDb.insert(tripShareLink).values(link("hash-one"));
+
+    await expect(testDb.insert(tripShareLink).values(link("hash-two"))).rejects.toThrow();
+
+    await testDb
+      .update(tripShareLink)
+      .set({ revokedAt: NOW })
+      .where(eq(tripShareLink.tokenHash, "hash-one"));
+    await expect(testDb.insert(tripShareLink).values(link("hash-two"))).resolves.toBeDefined();
+  });
+
   it("replaces the previous link, so only the newest one opens", async () => {
     const { passenger, booking } = await world();
     const first = await (await shareAs(passenger, booking.id)).json();
@@ -421,6 +468,28 @@ describe("the public view is guarded", () => {
     expect(await reply.json()).toMatchObject({
       details: { code: "too_many_share_requests" },
     });
+  });
+
+  it("still opens the link when the rate limiter is down, because a safety link must not 500", async () => {
+    const { passenger, booking } = await world();
+    const { token } = await (await shareAs(passenger, booking.id)).json();
+
+    const reply = await openLink(token, {
+      shareRateLimit: async () => {
+        throw new Error("Redis unavailable");
+      },
+    });
+
+    expect(reply.status).toBe(200);
+  });
+
+  it("also keeps a refused (429) answer out of caches", async () => {
+    const reply = await openLink("C".repeat(43), {
+      shareRateLimit: async () => ({ success: false, reset: NOW.getTime() + 30_000 }),
+    });
+
+    expect(reply.status).toBe(429);
+    expect(reply.headers.get("Cache-Control")).toBe("no-store");
   });
 
   it("tells browsers and proxies not to keep what it shows", async () => {

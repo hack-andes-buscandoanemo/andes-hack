@@ -1,5 +1,5 @@
 {
-  "id": "37f8bd9e-3c38-489b-8716-ceab3405e89e",
+  "id": "4758724f-70b1-4535-8e21-9a3d5d94cadd",
   "prevId": "87ebeaee-e8c2-4909-a213-a48b16ba2601",
   "version": "7",
   "dialect": "postgresql",
@@ -1947,6 +1947,22 @@
             }
           ],
           "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "trip_share_link_active_booking_idx": {
+          "name": "trip_share_link_active_booking_idx",
+          "columns": [
+            {
+              "expression": "booking_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"trip_share_link\".\"revoked_at\" IS NULL",
           "concurrently": false,
           "method": "btree",
           "with": {}
