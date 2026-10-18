@@ -185,6 +185,86 @@ function requestAs(person: { id: string }, path: string) {
 }
 
 describe("GET /me/trips", () => {
+  it("prefills the latest return window in the passenger's own community", async () => {
+    const org = await seedWorld();
+    const driver = await createMember(org.id, "driver", "Driver");
+    const passenger = await createMember(org.id, "passenger", "Passenger");
+    const { offer } = await createOffer(org.id, driver.id);
+    await book(offer, passenger.id, "accepted");
+    await testDb.insert(tripRequest).values({
+      communityId: org.id,
+      passengerId: passenger.id,
+      direction: "return",
+      originZoneId: "san-borja",
+      daysOfWeek: [1, 2, 3],
+      windowStart: "18:00",
+      windowEnd: "18:30",
+      maxWalkMinutes: 15,
+      fallbackMode: "public_transport",
+      updatedAt: new Date("2026-10-19T15:00:00Z"),
+    });
+    await testDb.insert(tripRequest).values({
+      communityId: org.id,
+      passengerId: passenger.id,
+      direction: "return",
+      originZoneId: "san-borja",
+      daysOfWeek: [1],
+      windowStart: "17:00",
+      windowEnd: "17:30",
+      maxWalkMinutes: 15,
+      fallbackMode: "other",
+      status: "matched",
+      createdAt: new Date("2026-10-20T15:00:00Z"),
+      updatedAt: new Date("2026-10-18T15:00:00Z"),
+    });
+    const body = await (
+      await requestAs(passenger, "/me/trips?role=passenger&scope=upcoming")
+    ).json();
+    expect(body.trips[0]?.passengerRequest).toMatchObject({
+      returnWindow: { start: "18:00", end: "18:30" },
+      fallbackMode: "public_transport",
+    });
+  });
+  it("does not borrow another person's, community's, or cancelled return window", async () => {
+    const org = await seedWorld();
+    const driver = await createMember(org.id, "driver", "Driver");
+    const passenger = await createMember(org.id, "passenger", "Passenger");
+    const { offer } = await createOffer(org.id, driver.id);
+    await book(offer, passenger.id, "accepted");
+    const [other] = await testDb
+      .insert(community)
+      .values({
+        slug: "beta",
+        name: "Beta",
+        kind: "company",
+        destinationName: "Other",
+        destinationLat: -12,
+        destinationLng: -77,
+      })
+      .returning();
+    const base = {
+      direction: "return" as const,
+      originZoneId: "san-borja",
+      daysOfWeek: [1],
+      windowStart: "19:00",
+      windowEnd: "19:30",
+      maxWalkMinutes: 15,
+      fallbackMode: "public_transport" as const,
+    };
+    await testDb.insert(tripRequest).values([
+      { ...base, communityId: org.id, passengerId: driver.id },
+      { ...base, communityId: other!.id, passengerId: passenger.id },
+      { ...base, communityId: org.id, passengerId: passenger.id, status: "cancelled" },
+    ]);
+    const body = await (
+      await requestAs(passenger, "/me/trips?role=passenger&scope=upcoming")
+    ).json();
+    expect(body.trips[0]?.passengerRequest).toMatchObject({
+      returnWindow: null,
+      fallbackMode: "taxi_app",
+      communityId: org.id,
+    });
+  });
   it("shows an accepted trip to the passenger with the driver's alias and plate", async () => {
     const org = await seedWorld();
     const driver = await createMember(org.id, "driver-1", "Carlos Quispe", "Carlos Q.");
@@ -214,6 +294,14 @@ describe("GET /me/trips", () => {
           seatsFree: null,
           pendingRequests: null,
           acceptedPassengers: null,
+          passengerRequest: {
+            communityId: org.id,
+            originZoneId: "san-borja",
+            date: null,
+            daysOfWeek: [1, 2, 3],
+            fallbackMode: "taxi_app",
+            returnWindow: null,
+          },
         },
       ],
     });

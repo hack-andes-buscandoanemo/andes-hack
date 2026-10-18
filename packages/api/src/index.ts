@@ -722,6 +722,17 @@ export const MyTripSchema = z
     // Driver view only: requests waiting for an answer, and the aliases of accepted passengers.
     pendingRequests: z.number().int().nullable(),
     acceptedPassengers: z.array(z.string()).nullable(),
+    // Passenger's own need, which can differ from the driver's zone and calendar.
+    passengerRequest: z
+      .object({
+        communityId: z.string().uuid(),
+        originZoneId: z.string(),
+        date: z.string().nullable(),
+        daysOfWeek: z.array(z.number().int()).nullable(),
+        fallbackMode: FallbackModeSchema,
+        returnWindow: z.object({ start: z.string(), end: z.string() }).nullable(),
+      })
+      .optional(),
   })
   .openapi("MyTrip");
 

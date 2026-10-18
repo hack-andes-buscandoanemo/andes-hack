@@ -1205,6 +1205,69 @@
             "items": {
               "type": "string"
             }
+          },
+          "passengerRequest": {
+            "type": "object",
+            "properties": {
+              "communityId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "originZoneId": {
+                "type": "string"
+              },
+              "date": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "daysOfWeek": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "fallbackMode": {
+                "type": "string",
+                "enum": [
+                  "drive_alone",
+                  "taxi_app",
+                  "public_transport",
+                  "picked_up",
+                  "other"
+                ]
+              },
+              "returnWindow": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "start": {
+                    "type": "string"
+                  },
+                  "end": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "start",
+                  "end"
+                ]
+              }
+            },
+            "required": [
+              "communityId",
+              "originZoneId",
+              "date",
+              "daysOfWeek",
+              "fallbackMode",
+              "returnWindow"
+            ]
           }
         },
         "required": [

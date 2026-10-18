@@ -2,10 +2,10 @@ import type { db as defaultDb } from "@andes-hack/db";
 import { user as userTable } from "@andes-hack/db/schema/auth";
 import { community, communityMember } from "@andes-hack/db/schema/community";
 import { zone } from "@andes-hack/db/schema/places";
-import { seatBooking, tripOffer } from "@andes-hack/db/schema/trips";
+import { seatBooking, tripOffer, tripRequest } from "@andes-hack/db/schema/trips";
 import { vehicle } from "@andes-hack/db/schema/vehicle";
 import { places } from "@andes-hack/matching";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, ne } from "drizzle-orm";
 
 import { destinationOf } from "./search";
 import {
@@ -29,6 +29,11 @@ async function passengerTrips(database: Database, userId: string, scope: TripSco
     .select({
       id: seatBooking.id,
       offerId: tripOffer.id,
+      communityId: tripRequest.communityId,
+      requestOriginZoneId: tripRequest.originZoneId,
+      requestDate: tripRequest.date,
+      requestDays: tripRequest.daysOfWeek,
+      fallbackMode: tripRequest.fallbackMode,
       status: seatBooking.status,
       offerStatus: tripOffer.status,
       direction: tripOffer.direction,
@@ -43,6 +48,7 @@ async function passengerTrips(database: Database, userId: string, scope: TripSco
       plate: vehicle.plate,
     })
     .from(seatBooking)
+    .innerJoin(tripRequest, eq(seatBooking.requestId, tripRequest.id))
     .innerJoin(tripOffer, eq(seatBooking.offerId, tripOffer.id))
     .innerJoin(community, eq(tripOffer.communityId, community.id))
     .innerJoin(zone, eq(tripOffer.originZoneId, zone.id))
@@ -58,6 +64,29 @@ async function passengerTrips(database: Database, userId: string, scope: TripSco
     .where(eq(seatBooking.passengerId, userId))
     .orderBy(desc(seatBooking.createdAt));
 
+  const returnNeeds =
+    rows.length === 0
+      ? []
+      : await database
+          .select({
+            communityId: tripRequest.communityId,
+            windowStart: tripRequest.windowStart,
+            windowEnd: tripRequest.windowEnd,
+            fallbackMode: tripRequest.fallbackMode,
+          })
+          .from(tripRequest)
+          .where(
+            and(
+              eq(tripRequest.passengerId, userId),
+              eq(tripRequest.direction, "return"),
+              ne(tripRequest.status, "cancelled"),
+              inArray(
+                tripRequest.communityId,
+                rows.map((row) => row.communityId),
+              ),
+            ),
+          )
+          .orderBy(desc(tripRequest.updatedAt), desc(tripRequest.id));
   const clock = limaClock();
   return rows
     .map((row) => {
@@ -93,6 +122,21 @@ async function passengerTrips(database: Database, userId: string, scope: TripSco
       seatsFree: null,
       pendingRequests: null,
       acceptedPassengers: null,
+      passengerRequest: {
+        communityId: row.communityId,
+        originZoneId: row.requestOriginZoneId,
+        date: row.requestDate,
+        daysOfWeek: row.requestDays,
+        fallbackMode:
+          returnNeeds.find((need) => need.communityId === row.communityId)?.fallbackMode ??
+          row.fallbackMode,
+        returnWindow: (() => {
+          const need = returnNeeds.find((need) => need.communityId === row.communityId);
+          return need
+            ? { start: need.windowStart.slice(0, 5), end: need.windowEnd.slice(0, 5) }
+            : null;
+        })(),
+      },
     }));
 }
 
