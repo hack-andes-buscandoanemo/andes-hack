@@ -6,6 +6,7 @@ import type { MyTrip } from "@/lib/communities-api";
 
 const listMyTrips = vi.fn();
 const updateOfferStatus = vi.fn();
+const createShareLink = vi.fn();
 const push = vi.fn();
 let tab: string | null = null;
 let roleParam: string | null = null;
@@ -20,6 +21,7 @@ vi.mock("@/lib/communities-api", () => ({
   communitiesApi: {
     listMyTrips: (...args: unknown[]) => listMyTrips(...args),
     updateOfferStatus: (...args: unknown[]) => updateOfferStatus(...args),
+    createShareLink: (...args: unknown[]) => createShareLink(...args),
   },
 }));
 
@@ -89,10 +91,35 @@ beforeEach(() => {
   roleParam = null;
   listMyTrips.mockReset().mockResolvedValue({ trips: [PASSENGER_TRIP] });
   updateOfferStatus.mockReset();
+  createShareLink.mockReset().mockResolvedValue({ id: "link-1", token: "t", expiresAt: "" });
   push.mockReset();
 });
 
 describe("Viajes", () => {
+  it("offers Compartir viaje on an accepted passenger trip and nowhere else (US-028)", async () => {
+    listMyTrips.mockResolvedValue({
+      trips: [
+        PASSENGER_TRIP,
+        { ...PASSENGER_TRIP, id: "pending-1", status: "pending", driver: null },
+        DRIVER_TRIP,
+      ],
+    });
+    render(<Viajes />);
+
+    await screen.findAllByRole("listitem");
+
+    expect(screen.getAllByRole("button", { name: "Compartir viaje" })).toHaveLength(1);
+  });
+
+  it("shares the booking of the trip, not the offer", async () => {
+    render(<Viajes />);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Compartir viaje" }));
+
+    expect(createShareLink).toHaveBeenCalledWith(BOOKING_ID);
+    expect(createShareLink).not.toHaveBeenCalledWith(OFFER_ID);
+  });
+
   it.each([
     ["pending", { ...RETURN, status: "pending" }],
     ["driver", { ...RETURN, role: "driver" }],

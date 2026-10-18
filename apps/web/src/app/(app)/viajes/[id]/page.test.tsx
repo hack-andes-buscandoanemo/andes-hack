@@ -294,6 +294,38 @@ describe("trip detail /viajes/{id} (US-014)", () => {
     expect(screen.queryByRole("button", { name: "Solicitar asiento" })).toBeNull();
   });
 
+  it("lists Compartir detalles del viaje with the other safety items, disabled until the seat is accepted (US-028)", async () => {
+    for (const booking of [undefined, { id: "b-1", status: "pending" as const }]) {
+      getOfferDetail.mockResolvedValue({ ...DETAIL, booking });
+      const view = render(<TripDetailPage />);
+      const safety = (await screen.findByText("Seguridad del viaje")).closest("section")!;
+
+      const share = within(safety).getByRole("button", { name: /Compartir detalles del viaje/ });
+      expect(share).toBeDisabled();
+      expect(share.closest("ul")).toBe(
+        within(safety).getByText("Miembro verificado").closest("ul"),
+      );
+      expect(
+        within(safety).getByText("Disponible cuando el conductor acepte tu solicitud."),
+      ).toBeTruthy();
+      view.unmount();
+    }
+  });
+
+  it("opens the share flow from that tile once the seat is accepted (US-028)", async () => {
+    getOfferDetail.mockResolvedValue({ ...DETAIL, booking: { id: "b-1", status: "accepted" } });
+    render(<TripDetailPage />);
+    const safety = (await screen.findByText("Seguridad del viaje")).closest("section")!;
+
+    const share = within(safety).getByRole("button", { name: "Compartir detalles del viaje" });
+
+    expect(share).toBeEnabled();
+    expect(share.closest("ul")).toBe(within(safety).getByText("Miembro verificado").closest("ul"));
+    expect(
+      within(safety).queryByText("Disponible cuando el conductor acepte tu solicitud."),
+    ).toBeNull();
+  });
+
   it("shows the previous rejection and hides another request action", async () => {
     getOfferDetail.mockResolvedValue({ ...DETAIL, booking: { id: "b-1", status: "rejected" } });
     render(<TripDetailPage />);
@@ -353,11 +385,12 @@ describe("trip detail /viajes/{id} (US-014)", () => {
       .getAllByRole("listitem")
       .map((item) => item.textContent);
 
-    expect(items).toEqual([
+    expect(items.slice(0, 3)).toEqual([
       "Miembro verificado",
       "Vehículo registrado",
       "Info del vehículo disponible",
     ]);
+    expect(items).toHaveLength(4);
     expect(document.body.textContent).not.toMatch(/garantiza|100% seguro|precio|cobro(?!:)/i);
   });
 
