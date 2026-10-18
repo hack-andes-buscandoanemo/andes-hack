@@ -74,7 +74,7 @@ async function createMember(
   communityId: string,
   id: string,
   name: string,
-  options: { role?: "member" | "admin"; alias?: string } = {},
+  options: { role?: "member" | "admin"; alias?: string; identifiesAsWoman?: boolean } = {},
 ) {
   const [person] = await testDb
     .insert(user)
@@ -90,6 +90,7 @@ async function createMember(
     usualMode: "drove_alone",
     travelRole: "both",
     alias: options.alias ?? null,
+    identifiesAsWoman: options.identifiesAsWoman ?? false,
   });
   return person!;
 }
@@ -258,6 +259,24 @@ describe("POST /communities/{id}/match-runs (US-019)", () => {
         },
       ],
     });
+  });
+
+  it("never recommends a man driver to a woman whose need asked for Solo mujeres", async () => {
+    const alfa = await createCommunity();
+    const admin = await createMember(alfa.id, "u-admin", "Admin", { role: "admin" });
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const lucia = await createMember(alfa.id, "u-lucia", "Lucía", { identifiesAsWoman: true });
+    await seedOffer(alfa.id, driver.id);
+    await seedNeed(alfa.id, lucia.id, { womenOnly: true });
+
+    const res = await runMatching(admin, alfa.id);
+
+    const body = (await res.json()) as {
+      optimizer: { passengersMatched: number; unassigned: number };
+      suggestions: unknown[];
+    };
+    expect(body.optimizer).toMatchObject({ passengersMatched: 0, unassigned: 1 });
+    expect(body.suggestions).toEqual([]);
   });
 
   it("lets only an administrator of that community run it", async () => {
