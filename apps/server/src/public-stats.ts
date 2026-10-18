@@ -64,33 +64,8 @@ export function createPublicStatsRoutes(deps: PublicStatsDeps = {}) {
       return checkPublicStatsRateLimit(identifier);
     });
 
-  app.openapi(publicStatsRoute, async (c) => {
-    const ip = clientIp(c);
-    // Redis down must not take the panel down: without a verdict the request goes through.
-    const allowed = ip
-      ? await limit(`public-stats:${ip}`).catch(() => {
-          logEvent("public_stats_rate_limit_unavailable");
-          return { success: true, reset: 0 };
-        })
-      : { success: true, reset: 0 };
-    if (!allowed.success) {
-      c.header(
-        "Retry-After",
-        String(Math.max(1, Math.ceil((allowed.reset - getNow().getTime()) / 1000))),
-      );
-      throw new ApiError(429, "Demasiadas consultas. Inténtalo en un momento.", {
-        code: "too_many_public_stats_requests",
-      });
-    }
-
-    const { slug } = c.req.valid("param");
-    const cacheKey = `andes-hack:public-stats:${slug}`;
-    const cached = await cache.get(cacheKey).catch(() => {
-      logEvent("public_stats_cache_unavailable", { operation: "get" });
-      return null;
-    });
-    if (cached) return c.json(cached as PublicStats, 200);
-
+  const inFlight = new Map<string, Promise<PublicStats>>();
+  const compute = async (slug: string, cacheKey: string): Promise<PublicStats> => {
     const db = await getDb();
     const [org] = await db.select().from(community).where(eq(community.slug, slug)).limit(1);
     if (!org) throw new ApiError(404, "Comunidad no encontrada.", { code: "community_not_found" });
@@ -154,7 +129,43 @@ export function createPublicStatsRoutes(deps: PublicStatsDeps = {}) {
     void (async () => cache.set(cacheKey, stats, CACHE_TTL_SECONDS))().catch(() => {
       logEvent("public_stats_cache_unavailable", { operation: "set" });
     });
-    return c.json(stats, 200);
+    return stats;
+  };
+
+  app.openapi(publicStatsRoute, async (c) => {
+    const ip = clientIp(c);
+    // Redis down must not take the panel down: without a verdict the request goes through.
+    const allowed = ip
+      ? await limit(`public-stats:${ip}`).catch(() => {
+          logEvent("public_stats_rate_limit_unavailable");
+          return { success: true, reset: 0 };
+        })
+      : { success: true, reset: 0 };
+    if (!allowed.success) {
+      c.header(
+        "Retry-After",
+        String(Math.max(1, Math.ceil((allowed.reset - getNow().getTime()) / 1000))),
+      );
+      throw new ApiError(429, "Demasiadas consultas. Inténtalo en un momento.", {
+        code: "too_many_public_stats_requests",
+      });
+    }
+
+    const { slug } = c.req.valid("param");
+    const cacheKey = `andes-hack:public-stats:${slug}`;
+    const cached = await cache.get(cacheKey).catch(() => {
+      logEvent("public_stats_cache_unavailable", { operation: "get" });
+      return null;
+    });
+    if (cached) return c.json(cached as PublicStats, 200);
+
+    // After an expiry every waiting request would recompute the same figures: they share one.
+    let pending = inFlight.get(slug);
+    if (!pending) {
+      pending = compute(slug, cacheKey).finally(() => inFlight.delete(slug));
+      inFlight.set(slug, pending);
+    }
+    return c.json(await pending, 200);
   });
 
   return app;

@@ -537,6 +537,27 @@ describe("GET /public/communities/{slug}/stats", () => {
     expect(response.status).toBe(200);
   });
 
+  it("shares one computation between concurrent requests for the same community", async () => {
+    const org = await seedCommunity();
+    await addMember(org.id, "ana");
+    const writes: string[] = [];
+    const cache = {
+      get: async () => null,
+      set: async (key: string) => {
+        writes.push(key);
+      },
+    };
+    const app = statsApp({ cache });
+
+    const responses = await Promise.all([
+      app.request("/public/communities/alfa/stats"),
+      app.request("/public/communities/alfa/stats"),
+    ]);
+
+    expect(responses.map((response) => response.status)).toEqual([200, 200]);
+    expect(writes).toHaveLength(1);
+  });
+
   it("serves the second call within 30 seconds from the cache and recomputes after", async () => {
     const org = await seedCommunity();
     await addMember(org.id, "ana");
