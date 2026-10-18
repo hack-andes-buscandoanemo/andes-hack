@@ -274,4 +274,70 @@ describe("Panel", () => {
     expect(await screen.findByText("13")).toBeInTheDocument();
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
+
+  it("does not start a refresh while the previous one is still pending", async () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    render(<Panel />);
+    await screen.findByText("Personas inscritas");
+    statsResponse.mockReturnValue(new Promise(() => {}));
+
+    await act(async () => {
+      vi.advanceTimersByTime(30_000);
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(60_000);
+    });
+
+    expect(statsResponse).toHaveBeenCalledTimes(2);
+  });
+
+  it("ignores the answer of a community that is no longer selected", async () => {
+    let answerAlfa: (value: unknown) => void = () => {};
+    statsResponse.mockImplementation((url: string) =>
+      url.includes("comunidad-alfa")
+        ? new Promise((resolve) => (answerAlfa = resolve))
+        : Promise.resolve({ ...STATS, activity: { ...STATS.activity, enrolled: 77 } }),
+    );
+    render(<Panel />);
+    await userEvent.selectOptions(
+      await screen.findByRole("combobox", { name: "Comunidad" }),
+      "Beta",
+    );
+    expect(await screen.findByText("77")).toBeInTheDocument();
+
+    await act(async () => answerAlfa(STATS));
+
+    expect(screen.getByText("77")).toBeInTheDocument();
+    expect(screen.queryByText("12")).not.toBeInTheDocument();
+  });
+
+  it("pauses the refresh while the tab is hidden and resumes when it is visible", async () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    const visibility = vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
+    render(<Panel />);
+    await screen.findByText("Personas inscritas");
+    const initial = statsResponse.mock.calls.length;
+
+    await act(async () => {
+      vi.advanceTimersByTime(90_000);
+    });
+    expect(statsResponse).toHaveBeenCalledTimes(initial);
+
+    visibility.mockReturnValue("visible");
+    await act(async () => {
+      vi.advanceTimersByTime(30_000);
+    });
+    expect(statsResponse).toHaveBeenCalledTimes(initial + 1);
+    visibility.mockRestore();
+  });
+
+  it("announces the figures politely to screen readers", async () => {
+    render(<Panel />);
+    await screen.findByText("Personas inscritas");
+
+    expect(screen.getByText("Personas inscritas").closest("[aria-live]")).toHaveAttribute(
+      "aria-live",
+      "polite",
+    );
+  });
 });
