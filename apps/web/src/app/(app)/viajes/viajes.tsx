@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import EmptyState from "@/components/empty-state";
+import { CancelTripDialog } from "@/components/cancel-trip-dialog";
 import { pairReturns, type PairedReturn } from "@/components/return-pairs";
 import ReturnTripCard from "@/components/return-trip-card";
 import ShareTrip from "@/components/share-trip";
@@ -13,19 +14,72 @@ import { FUEL_NOTE } from "@/components/fuel-estimate";
 import { Button } from "@/components/ui/button";
 import { communitiesApi, type MyTrip } from "@/lib/communities-api";
 
+function isLateTrip(trip: MyTrip): boolean {
+  try {
+    const [hours, minutes] = trip.time.slice(0, 5).split(":").map(Number);
+    if (hours === undefined || minutes === undefined) return false;
+    const now = new Date();
+    const todayLima = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Lima" }).format(now);
+    let targetDateStr = trip.date;
+    if (!targetDateStr && trip.daysOfWeek && trip.daysOfWeek.length > 0) {
+      const limaDay = new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/Lima",
+        weekday: "short",
+      }).format(now);
+      const dayMap: Record<string, number> = {
+        Mon: 1,
+        Tue: 2,
+        Wed: 3,
+        Thu: 4,
+        Fri: 5,
+        Sat: 6,
+        Sun: 7,
+      };
+      const currentIsoDay = dayMap[limaDay];
+      if (currentIsoDay && trip.daysOfWeek.includes(currentIsoDay)) {
+        targetDateStr = todayLima;
+      } else {
+        return false;
+      }
+    }
+    if (!targetDateStr) return false;
+    const target = new Date(
+      `${targetDateStr}T${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:00-05:00`,
+    );
+    const diff = target.getTime() - now.getTime();
+    return diff < 60 * 60 * 1000;
+  } catch {
+    return false;
+  }
+}
+
 function TripCard({
   trip,
   busy,
   onToggle,
+  onCancel,
+  isCancelling,
+  cancelSubmitting,
+  onConfirmCancel,
+  onDismissCancel,
   coordinateReturn,
   returns,
 }: {
   trip: MyTrip;
   busy: boolean;
   onToggle: (trip: MyTrip) => void;
+  onCancel: (trip: MyTrip) => void;
+  isCancelling: boolean;
+  cancelSubmitting: boolean;
+  onConfirmCancel: (trip: MyTrip) => void;
+  onDismissCancel: () => void;
   coordinateReturn: boolean;
   returns: PairedReturn[];
 }) {
+  const canCancel =
+    (trip.role === "driver" && (trip.status === "active" || trip.status === "paused")) ||
+    (trip.role === "passenger" && (trip.status === "accepted" || trip.status === "pending"));
+
   return (
     <li>
       <TripSummaryCard trip={trip}>
@@ -50,6 +104,27 @@ function TripCard({
         ) : null}
         {trip.role === "passenger" && trip.status === "accepted" ? (
           <ShareTrip bookingId={trip.id} label="Compartir viaje" />
+        ) : null}
+        {canCancel ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={busy}
+            className="text-destructive hover:text-destructive"
+            onClick={() => onCancel(trip)}
+          >
+            Cancelar viaje
+          </Button>
+        ) : null}
+        {isCancelling ? (
+          <CancelTripDialog
+            isOpen={true}
+            isLate={isLateTrip(trip)}
+            submitting={cancelSubmitting}
+            onConfirm={() => onConfirmCancel(trip)}
+            onDismiss={onDismissCancel}
+          />
         ) : null}
         {coordinateReturn ? <ReturnTripCard trip={trip} returns={returns} /> : null}
       </TripSummaryCard>
@@ -76,13 +151,17 @@ export default function Viajes() {
   }, [tabParam]);
   const [failed, setFailed] = useState(false);
   const [toggleFailed, setToggleFailed] = useState(false);
+  const [cancelFailed, setCancelFailed] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [cancellingTripId, setCancellingTripId] = useState<string | null>(null);
+  const [cancelSubmitting, setCancelSubmitting] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let active = true;
     setFailed(false);
     setTrips(null);
+    setCancellingTripId(null);
     (async () => {
       const response = await communitiesApi.listMyTrips(role, scope);
       if (!decided.current && role === "passenger" && scope === "upcoming") {
@@ -127,6 +206,29 @@ export default function Viajes() {
       setToggleFailed(true);
     } finally {
       setTogglingId(null);
+    }
+  }
+
+  async function handleCancel(trip: MyTrip) {
+    if (cancelSubmitting) return;
+    setCancelSubmitting(true);
+    setCancelFailed(false);
+    try {
+      if (trip.role === "driver") {
+        await communitiesApi.cancelOffer(trip.offerId);
+      } else {
+        await communitiesApi.cancelBooking(trip.id);
+      }
+      setTrips(
+        (current) =>
+          current?.map((item) => (item.id === trip.id ? { ...item, status: "cancelled" } : item)) ??
+          null,
+      );
+      setCancellingTripId(null);
+    } catch {
+      setCancelFailed(true);
+    } finally {
+      setCancelSubmitting(false);
     }
   }
 
@@ -199,6 +301,11 @@ export default function Viajes() {
             No pudimos actualizar el viaje. Inténtalo de nuevo.
           </p>
         ) : null}
+        {cancelFailed ? (
+          <p role="alert" className="text-sm text-destructive">
+            No pudimos cancelar el viaje. Inténtalo de nuevo.
+          </p>
+        ) : null}
         {failed ? (
           <div role="alert" className="flex flex-col gap-2 rounded-2xl border bg-card p-4">
             <p>No pudimos cargar tus viajes.</p>
@@ -219,8 +326,15 @@ export default function Viajes() {
                 <TripCard
                   key={trip.id}
                   trip={trip}
-                  busy={togglingId === trip.id}
+                  busy={
+                    togglingId === trip.id || (cancelSubmitting && cancellingTripId === trip.id)
+                  }
                   onToggle={toggle}
+                  onCancel={(t) => setCancellingTripId(t.id)}
+                  isCancelling={cancellingTripId === trip.id}
+                  cancelSubmitting={cancelSubmitting}
+                  onConfirmCancel={handleCancel}
+                  onDismissCancel={() => setCancellingTripId(null)}
                   coordinateReturn={scope === "upcoming"}
                   returns={returnsByTrip.get(trip.id) ?? []}
                 />
