@@ -363,4 +363,23 @@ describe("GET /me/trips", () => {
     expect(await statuses("upcoming")).toEqual(["paused"]);
     expect(await statuses("past")).toEqual(["cancelled", "completed"]);
   });
+
+  it("reveals no passengers on a cancelled offer", async () => {
+    const org = await seedWorld();
+    const driver = await createMember(org.id, "driver-1", "Carlos Quispe", "Carlos Q.");
+    const accepted = await createMember(org.id, "pax-1", "Lucía Ramos", "Lucía R.");
+    const waiting = await createMember(org.id, "pax-2", "Mario Soto", "Mario S.");
+    const { offer } = await createOffer(org.id, driver.id, { status: "cancelled" });
+    await book(offer, accepted.id, "accepted");
+    await book(offer, waiting.id, "pending");
+
+    const body = await (await requestAs(driver, "/me/trips?role=driver&scope=past")).json();
+
+    expect(body.trips[0]).toMatchObject({
+      status: "cancelled",
+      pendingRequests: 0,
+      acceptedPassengers: [],
+    });
+    expect(JSON.stringify(body)).not.toContain("Lucía");
+  });
 });

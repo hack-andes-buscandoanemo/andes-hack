@@ -10,6 +10,7 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import type { z } from "zod";
 
 import { destinationOf } from "./search";
+import { hasPassed, limaClock } from "./trip-rules";
 
 type Database = typeof defaultDb;
 
@@ -26,21 +27,6 @@ function passengerStatus(
     return "cancelled";
   }
   return status;
-}
-
-// Lima has no daylight saving time, so UTC-5 all year.
-function limaClock(now = new Date()) {
-  const iso = new Date(now.getTime() - 5 * 60 * 60 * 1000).toISOString();
-  return { today: iso.slice(0, 10), time: iso.slice(11, 19) };
-}
-
-// A weekly trip never ends by itself; a one-off one ends after its date and time.
-function hasPassed(
-  trip: { date: string | null; time: string },
-  clock: ReturnType<typeof limaClock>,
-) {
-  if (!trip.date) return false;
-  return trip.date < clock.today || (trip.date === clock.today && trip.time < clock.time);
 }
 
 // Only a request still waiting or accepted can be ahead of the person.
@@ -164,7 +150,9 @@ async function driverTrips(database: Database, userId: string, scope: TripScope)
   return offers
     .map((offer) => {
       const status = driverStatus(offer, clock);
-      const mine = bookings.filter((booking) => booking.offerId === offer.id);
+      // A cancelled offer reveals nobody: its requests were released.
+      const mine =
+        status === "cancelled" ? [] : bookings.filter((booking) => booking.offerId === offer.id);
       return {
         id: offer.id,
         offerId: offer.id,
