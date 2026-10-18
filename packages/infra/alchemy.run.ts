@@ -16,6 +16,7 @@ export const server = await Worker("server", {
   compatibilityFlags: ["nodejs_compat"],
   bindings: {
     DATABASE_URL: alchemy.secret.env.DATABASE_URL!,
+    OPENAI_API_KEY: alchemy.secret.env.OPENAI_API_KEY!,
     BETTER_AUTH_SECRET: alchemy.secret.env.BETTER_AUTH_SECRET!,
     BETTER_AUTH_URL: alchemy.env.BETTER_AUTH_URL!,
     UPSTASH_REDIS_REST_URL: alchemy.secret.env.UPSTASH_REDIS_REST_URL!,
