@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import EmptyState from "@/components/empty-state";
 import { pairReturns, type PairedReturn } from "@/components/return-pairs";
 import ReturnTripCard from "@/components/return-trip-card";
+import ShareTrip from "@/components/share-trip";
 import TripSummaryCard from "@/components/trip-summary-card";
 import { FUEL_NOTE } from "@/components/fuel-estimate";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,9 @@ function TripCard({
           >
             {trip.status === "paused" ? "Reactivar" : "Pausar"}
           </Button>
+        ) : null}
+        {trip.role === "passenger" && trip.status === "accepted" ? (
+          <ShareTrip bookingId={trip.id} label="Compartir viaje" />
         ) : null}
         {coordinateReturn ? <ReturnTripCard trip={trip} returns={returns} /> : null}
       </TripSummaryCard>

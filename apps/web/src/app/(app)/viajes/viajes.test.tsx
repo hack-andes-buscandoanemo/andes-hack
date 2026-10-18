@@ -93,6 +93,21 @@ beforeEach(() => {
 });
 
 describe("Viajes", () => {
+  it("offers Compartir viaje on an accepted passenger trip and nowhere else (US-028)", async () => {
+    listMyTrips.mockResolvedValue({
+      trips: [
+        PASSENGER_TRIP,
+        { ...PASSENGER_TRIP, id: "pending-1", status: "pending", driver: null },
+        DRIVER_TRIP,
+      ],
+    });
+    render(<Viajes />);
+
+    await screen.findAllByRole("listitem");
+
+    expect(screen.getAllByRole("button", { name: "Compartir viaje" })).toHaveLength(1);
+  });
+
   it.each([
     ["pending", { ...RETURN, status: "pending" }],
     ["driver", { ...RETURN, role: "driver" }],

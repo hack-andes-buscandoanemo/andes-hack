@@ -288,6 +288,22 @@ describe("trip detail /viajes/{id} (US-014)", () => {
     expect(screen.queryByRole("button", { name: "Solicitar asiento" })).toBeNull();
   });
 
+  it("offers to share the trip details only once the seat is accepted (US-028)", async () => {
+    getOfferDetail.mockResolvedValue({ ...DETAIL, booking: { id: "b-1", status: "pending" } });
+    const pending = render(<TripDetailPage />);
+    await screen.findByText("Seguridad del viaje");
+    expect(screen.queryByRole("button", { name: "Compartir detalles del viaje" })).toBeNull();
+    pending.unmount();
+
+    getOfferDetail.mockResolvedValue({ ...DETAIL, booking: { id: "b-1", status: "accepted" } });
+    render(<TripDetailPage />);
+    const safety = (await screen.findByText("Seguridad del viaje")).closest("section")!;
+
+    expect(
+      within(safety).getByRole("button", { name: "Compartir detalles del viaje" }),
+    ).toBeTruthy();
+  });
+
   it("announces that the trip is loading", async () => {
     getOfferDetail.mockReturnValue(new Promise(() => {}));
     render(<TripDetailPage />);

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import EmptyState from "@/components/empty-state";
 import { FuelEstimateDetail } from "@/components/fuel-estimate";
+import ShareTrip from "@/components/share-trip";
 import SourceInfo from "@/components/source-info";
 import { Button } from "@/components/ui/button";
 import { reasonOf } from "@/lib/api-error";
@@ -247,6 +248,9 @@ export default function TripDetailPage() {
           {detail.vehicle ? <li>Vehículo registrado</li> : null}
           {detail.vehicle ? <li>Info del vehículo disponible</li> : null}
         </ul>
+        {detail.booking?.status === "accepted" && !withdrawn ? (
+          <ShareTrip bookingId={detail.booking.id} label="Compartir detalles del viaje" />
+        ) : null}
       </section>
       {detail.note ? (
         <section className="rounded-2xl border bg-card p-4 text-sm shadow-sm">
