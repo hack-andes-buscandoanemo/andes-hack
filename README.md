@@ -39,6 +39,9 @@ Mediante un **sistema de emparejamiento inteligente**, la aplicación identifica
 > [!IMPORTANT]
 > **Filosofía de Gasto Compartido (Sin Ánimo de Lucro Comercial):** A diferencia de los aplicativos de taxi tradicionales, los pasajeros dividen únicamente el costo operativo del viaje (combustible/peajes). Esto garantiza la comodidad y seguridad de un vehículo privado a una tarifa cercana a la del transporte público.
 
+> [!NOTE]
+> **Alcance del MVP — regreso:** Te Jalo permite buscar y coordinar el regreso, sujeto a viajes disponibles y a la aceptación del conductor. La disponibilidad del regreso no está asegurada. El MVP no ofrece una garantía institucional pagada de regreso; este servicio queda fuera de su alcance.
+
 ---
 
 ## 🚨 Problemática en Lima

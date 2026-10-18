@@ -1,12 +1,18 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import EmptyState from "@/components/empty-state";
+import ReturnTripCard from "@/components/return-trip-card";
+import { communitiesApi, type MyTrip } from "@/lib/communities-api";
 
+import { clockLabel, dateLabel, daysLabel } from "../buscar/schedule";
 import Proposals from "./proposals";
 
 const EMPTY_TRIPS = "Aún no tienes viajes. Busca uno o publica el que ya haces.";
 
-// ponytail: "Tu próximo viaje", matches (US-016) and impact (US-030) show empty states until built.
+// ponytail: matches (US-016) and impact (US-030) show empty states until built.
 export default function Inicio({
   name,
   communityId,
@@ -16,6 +22,24 @@ export default function Inicio({
   communityId?: string;
   communityName?: string;
 }) {
+  const [trips, setTrips] = useState<MyTrip[] | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    communitiesApi.listMyTrips("passenger", "upcoming").then(
+      (response) => {
+        if (active) setTrips(response.trips);
+      },
+      () => {
+        if (active) setFailed(true);
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <main className="flex flex-col gap-5 px-4 py-4">
       <div className="flex items-start justify-between gap-3">
@@ -50,7 +74,53 @@ export default function Inicio({
 
       {communityId ? <Proposals communityId={communityId} /> : null}
 
-      <EmptyState tone="dark">{EMPTY_TRIPS}</EmptyState>
+      {failed ? (
+        <p role="alert">
+          No pudimos cargar tus viajes.{" "}
+          <Link href="/viajes" className="underline">
+            Ver viajes
+          </Link>
+        </p>
+      ) : trips === null ? (
+        <p role="status">Cargando viajes…</p>
+      ) : trips.length === 0 ? (
+        <EmptyState tone="dark">{EMPTY_TRIPS}</EmptyState>
+      ) : (
+        <section aria-label="Tus próximos viajes" className="space-y-3">
+          <h2 className="text-lg font-bold">Tus próximos viajes</h2>
+          {trips.map((trip) => {
+            const outbound = trip.direction === "outbound";
+            const route = outbound
+              ? `${trip.originZoneName} → ${trip.destinationName}`
+              : `${trip.destinationName} → ${trip.originZoneName}`;
+            return (
+              <article
+                key={trip.id}
+                aria-label={`${outbound ? "Ida" : "Regreso"} · ${route}`}
+                className="space-y-2 rounded-2xl border bg-card p-4"
+              >
+                <p className="text-xs font-bold">
+                  {outbound ? "Ida" : "Regreso"} ·{" "}
+                  {trip.status === "accepted" ? "Aceptada" : "Pendiente"}
+                </p>
+                <p className="font-semibold">{route}</p>
+                <p className="text-sm">
+                  {trip.date ? dateLabel(trip.date) : daysLabel(trip.daysOfWeek ?? [])}
+                  {` · ${clockLabel(trip.time.slice(0, 5))}`}
+                </p>
+                {trip.meetingPointName ? (
+                  <p className="text-sm">{`Punto de encuentro: ${trip.meetingPointName}`}</p>
+                ) : null}
+                {trip.driver ? <p className="text-sm font-bold">{trip.driver.alias}</p> : null}
+                <Link href={`/viajes/${trip.offerId}`} className="text-sm font-bold underline">
+                  Ver viaje
+                </Link>
+                <ReturnTripCard trip={trip} trips={trips} />
+              </article>
+            );
+          })}
+        </section>
+      )}
 
       <section aria-labelledby="matches" className="flex flex-col gap-2">
         <div className="flex items-baseline justify-between">
