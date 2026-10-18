@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createTravelTimeModel } from "./index";
+import { createTravelTimeModel, places as lima } from "./index";
 
 // A hand-made matrix: real coordinates, but round free-flow minutes so the expected
 // values can be worked out by hand.
@@ -83,5 +83,34 @@ describe("travel times between places of Lima", () => {
 
     // 0.774 km in a straight line × 1.29 road km per straight km ÷ 4.5 km/h.
     expect(model.walkMinutes("la-molina", "parque-la-balsa")).toBeCloseTo(13.31, 2);
+  });
+});
+
+describe("travel times with the real places of Lima", () => {
+  it("takes about 42 minutes from La Molina to the Centro Empresarial Real at 8:00 on a weekday", () => {
+    const model = createTravelTimeModel();
+
+    // Reference in US-015: OSRM gives 21.0 min at free flow, × 2.01 at 8:00.
+    const trip = model.minutes(
+      "la-molina-plaza-de-armas",
+      "centro-empresarial-real",
+      mondayAt("08:00"),
+    );
+
+    expect(trip.minutes).toBeCloseTo(42, 0);
+    expect(trip.kind).toBe("dato");
+  });
+
+  it("has an OSRM time between every pair of places, so none falls back to an estimate", () => {
+    const model = createTravelTimeModel();
+    const ids = [...lima.zones, ...lima.meetingPoints, ...lima.destinations].map(({ id }) => id);
+
+    const estimated = ids.flatMap((from) =>
+      ids
+        .filter((to) => model.minutes(from, to, mondayAt("08:00")).kind === "estimado")
+        .map((to) => `${from} → ${to}`),
+    );
+
+    expect(estimated).toEqual([]);
   });
 });

@@ -1,5 +1,7 @@
 import { haversineKm } from "./geo";
+import { places } from "./places";
 import { type Source, type SourceKind, sources } from "./sources";
+import { travelMatrix } from "./travel-matrix";
 
 export interface PlacePoint {
   id: string;
@@ -66,7 +68,13 @@ function weekdayFactor(hour: number): { value: number; kind: SourceKind } {
   return { value, kind: "estimado" };
 }
 
-export function createTravelTimeModel(data: TravelTimeData): TravelTimeModel {
+const lima: TravelTimeData = {
+  places: [...places.zones, ...places.meetingPoints, ...places.destinations],
+  matrix: travelMatrix,
+};
+
+// Built on the real places of Lima unless other data is given, as tests do.
+export function createTravelTimeModel(data: TravelTimeData = lima): TravelTimeModel {
   const index = new Map(data.matrix.ids.map((id, position) => [id, position]));
   const placesById = new Map(data.places.map((place) => [place.id, place]));
 
