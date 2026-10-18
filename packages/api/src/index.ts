@@ -155,11 +155,108 @@ export const verifyEmailCommunityRoute = createRoute({
   },
 });
 
+export const UsualModeSchema = z.enum(
+  ["drove_alone", "drove_with_others", "car_passenger", "public_transport", "taxi_app", "other"],
+  { message: "Elige cómo viajaste la última vez." },
+);
+
+export const TravelRoleSchema = z.enum(["driver", "passenger", "both"]);
+
+export const MembershipSummarySchema = z
+  .object({
+    id: z.string().uuid(),
+    communityId: z.string().uuid(),
+    communityName: z.string(),
+    destinationName: z.string(),
+    role: z.enum(["member", "admin"]),
+    verificationMethod: z.enum(["join_code", "email_domain"]),
+    consentVersion: z.string().nullable(),
+    consentAt: z.string().nullable(),
+    usualMode: UsualModeSchema.nullable(),
+    travelRole: TravelRoleSchema.nullable(),
+    alias: z.string().nullable(),
+    identifiesAsWoman: z.boolean(),
+    womenOnly: z.boolean(),
+    isTeam: z.boolean(),
+  })
+  .openapi("MembershipSummary");
+
+export const MeResponseSchema = z
+  .object({
+    user: z.object({
+      id: z.string(),
+      name: z.string(),
+      email: z.string().email(),
+    }),
+    memberships: z.array(MembershipSummarySchema),
+  })
+  .openapi("MeResponse");
+
+export const getMeRoute = createRoute({
+  method: "get",
+  path: "/me",
+  tags: ["Comunidades"],
+  responses: {
+    200: {
+      description: "Perfil y membresías de la persona autenticada",
+      content: {
+        "application/json": {
+          schema: MeResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+export const UpdateMembershipBodySchema = z
+  .object({
+    consentAccepted: z.boolean().refine((value) => value === true, {
+      message: "Debes aceptar las condiciones para continuar.",
+    }),
+    usualMode: UsualModeSchema,
+    travelRole: TravelRoleSchema,
+    alias: z
+      .string()
+      .trim()
+      .min(2, "El nombre visible debe tener entre 2 y 30 caracteres.")
+      .max(30, "El nombre visible debe tener entre 2 y 30 caracteres.")
+      .optional(),
+  })
+  .openapi("UpdateMembershipRequest");
+
+export const updateMembershipRoute = createRoute({
+  method: "patch",
+  path: "/communities/{id}/membership",
+  tags: ["Comunidades"],
+  request: {
+    params: JoinCommunityParamsSchema,
+    body: {
+      content: {
+        "application/json": {
+          schema: UpdateMembershipBodySchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Consentimiento, modo habitual y rol de viaje actualizados",
+      content: {
+        "application/json": {
+          schema: MembershipSummarySchema,
+        },
+      },
+    },
+  },
+});
+
 export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   healthRoute,
   listCommunitiesRoute,
   joinCommunityRoute,
   verifyEmailCommunityRoute,
+  getMeRoute,
+  updateMembershipRoute,
 ];
 
 export function createOpenApiDocument(routes: readonly RouteConfig[] = registeredOpenApiRoutes) {
