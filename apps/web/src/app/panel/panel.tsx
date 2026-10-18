@@ -104,11 +104,22 @@ export default function Panel() {
       setStats(next);
       setFailed(false);
     };
-    communitiesApi.getPublicStats(slug).then(showStats, () => current && setFailed(true));
+    // One request at a time: a slow answer is awaited, never overtaken by a second one.
+    let inFlight = false;
+    const load = (onError: () => void) => {
+      inFlight = true;
+      communitiesApi
+        .getPublicStats(slug)
+        .then(showStats, onError)
+        .finally(() => (inFlight = false));
+    };
+    load(() => current && setFailed(true));
     // The server caches for 30 s, so asking more often would only repeat its answer. A
-    // failed refresh keeps the figures on screen instead of replacing them with an error.
+    // failed refresh keeps the figures on screen instead of replacing them with an error, and
+    // a hidden tab asks for nothing.
     const timer = setInterval(() => {
-      communitiesApi.getPublicStats(slug).then(showStats, () => undefined);
+      if (inFlight || document.visibilityState === "hidden") return;
+      load(() => undefined);
     }, REFRESH_MS);
     return () => {
       current = false;
@@ -173,84 +184,99 @@ export default function Panel() {
   }
   const { activity } = stats;
   const hasActivity =
-    activity.enrolled + activity.activeOffers + activity.openNeeds + activity.acceptedRequests > 0;
+    activity.enrolled +
+      activity.activeOffers +
+      activity.openNeeds +
+      activity.acceptedRequests +
+      activity.completedTrips >
+    0;
   return (
     <Shell>
       {selector}
-      {!hasActivity ? (
-        <EmptyState>Aún no hay actividad en esta comunidad.</EmptyState>
-      ) : (
-        <>
-          <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <Card label="Personas inscritas" value={String(activity.enrolled)} />
-            <Card label="Conductores" value={String(activity.drivers)} />
-            <Card label="Ofertas activas" value={String(activity.activeOffers)} />
-            <Card label="Necesidades abiertas" value={String(activity.openNeeds)} />
-            <Card
-              label="Cobertura"
-              value={activity.coverage === null ? "—" : `${Math.round(activity.coverage * 100)} %`}
-            />
-            <Card label="Solicitudes aceptadas" value={String(activity.acceptedRequests)} />
-            <Card label="Viajes completados" value={String(activity.completedTrips)} />
-          </section>
-          <Block title="Impacto vehicular">
-            <p className="text-sm font-semibold">Viajes en auto evitados</p>
-            <Row label="Potenciales" value={String(stats.vehicleImpact.potential.trips)} />
-            <Row label="Verificados" value={String(stats.vehicleImpact.verified.trips)} />
-            <Row label="Inducidos" value={String(stats.vehicleImpact.induced)} />
-            <Row label="Neto" value={String(stats.vehicleImpact.net)} />
-            <Row
-              label="CO₂ evitado (estimado)"
-              value={`${kg(stats.vehicleImpact.potential.co2Kg)} potencial · ${kg(stats.vehicleImpact.verified.co2Kg)} verificado`}
-            />
-          </Block>
-          <Block title="Beneficio para las personas">
-            <Row label="Personas transportadas" value={String(stats.people.transported)} />
-            <Row
-              label="Desde transporte público"
-              value={String(stats.people.fromPublicTransport)}
-            />
-          </Block>
-          <Block title="Lista de espera">
-            <p className="text-sm text-muted-foreground">Totales de toda la plataforma.</p>
-            <Row label="Instituciones" value={String(stats.waitlist.institutions)} />
-            <Row label="Personas" value={String(stats.waitlist.individuals)} />
-          </Block>
-          {stats.districts.length > 0 ? (
-            <Block title="Personas por distrito">
-              {stats.districts.map(({ district, people }) => (
-                <Row
-                  key={district}
-                  label={district}
-                  value={people === null ? "menos de 10" : String(people)}
-                />
-              ))}
+      <div className="space-y-6">
+        {!hasActivity ? (
+          <EmptyState>Aún no hay actividad en esta comunidad.</EmptyState>
+        ) : (
+          <>
+            <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <Card label="Personas inscritas" value={String(activity.enrolled)} />
+              <Card label="Conductores" value={String(activity.drivers)} />
+              <Card label="Ofertas activas" value={String(activity.activeOffers)} />
+              <Card label="Necesidades abiertas" value={String(activity.openNeeds)} />
+              <Card
+                label="Cobertura"
+                value={
+                  activity.coverage === null ? "—" : `${Math.round(activity.coverage * 100)} %`
+                }
+              />
+              <Card label="Solicitudes aceptadas" value={String(activity.acceptedRequests)} />
+              <Card label="Viajes completados" value={String(activity.completedTrips)} />
+            </section>
+            <Block title="Impacto vehicular">
+              <p className="text-sm font-semibold">Viajes en auto evitados</p>
+              <Row label="Potenciales" value={String(stats.vehicleImpact.potential.trips)} />
+              <Row label="Verificados" value={String(stats.vehicleImpact.verified.trips)} />
+              <Row label="Inducidos" value={String(stats.vehicleImpact.induced)} />
+              <Row label="Neto" value={String(stats.vehicleImpact.net)} />
+              <Row
+                label="CO₂ evitado (estimado)"
+                value={`${kg(stats.vehicleImpact.potential.co2Kg)} potencial · ${kg(stats.vehicleImpact.verified.co2Kg)} verificado`}
+              />
             </Block>
-          ) : null}
-        </>
-      )}
-      {stats.comparison ? (
-        <Block title="Optimizador vs. primero en llegar">
-          <p className="text-sm text-muted-foreground">{`Recomendaciones para el ${stats.comparison.date} · ${stats.comparison.direction === "outbound" ? "Ida" : "Regreso"}`}</p>
-          <p className="text-sm text-muted-foreground">
-            Son recomendaciones, no viajes aceptados ni completados.
-          </p>
-          {(
-            [
-              ["Optimizador", stats.comparison.optimizer],
-              ["Primero en llegar", stats.comparison.firstComeFirstServed],
-            ] as const
-          ).map(([name, counts]) => (
-            <div key={name} role="group" aria-label={name} className="space-y-2">
-              <h3 className="font-semibold">{name}</h3>
-              <Row label="Viajes en auto evitados" value={String(counts.carTripsAvoided)} />
-              <Row label="Personas emparejadas" value={String(counts.passengersMatched)} />
-            </div>
-          ))}
-        </Block>
-      ) : null}
+            <Block title="Beneficio para las personas">
+              <Row label="Personas transportadas" value={String(stats.people.transported)} />
+              <Row
+                label="Desde transporte público"
+                value={String(stats.people.fromPublicTransport)}
+              />
+            </Block>
+            <Block title="Lista de espera">
+              <p className="text-sm text-muted-foreground">Totales de toda la plataforma.</p>
+              <Row label="Instituciones" value={String(stats.waitlist.institutions)} />
+              <Row label="Personas" value={String(stats.waitlist.individuals)} />
+            </Block>
+            {stats.districts.length > 0 ? (
+              <Block title="Personas por distrito">
+                {stats.districts.map(({ district, people }) => (
+                  <Row
+                    key={district}
+                    label={district}
+                    value={people === null ? "menos de 10" : String(people)}
+                  />
+                ))}
+              </Block>
+            ) : null}
+          </>
+        )}
+        {stats.comparison ? (
+          <Block title="Optimizador vs. primero en llegar">
+            <p className="text-sm text-muted-foreground">{`Recomendaciones para el ${stats.comparison.date} · ${stats.comparison.direction === "outbound" ? "Ida" : "Regreso"}`}</p>
+            <p className="text-sm text-muted-foreground">
+              Son recomendaciones, no viajes aceptados ni completados.
+            </p>
+            {(
+              [
+                ["Optimizador", stats.comparison.optimizer],
+                ["Primero en llegar", stats.comparison.firstComeFirstServed],
+              ] as const
+            ).map(([name, counts]) => (
+              <div key={name} role="group" aria-label={name} className="space-y-2">
+                <h3 className="font-semibold">{name}</h3>
+                <Row label="Viajes en auto evitados" value={String(counts.carTripsAvoided)} />
+                <Row label="Personas emparejadas" value={String(counts.passengersMatched)} />
+              </div>
+            ))}
+          </Block>
+        ) : (
+          <Block title="Optimizador vs. primero en llegar">
+            <p className="text-sm text-muted-foreground">
+              Aún no hay una comparación para esta comunidad.
+            </p>
+          </Block>
+        )}
+      </div>
       <p className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
-        <span>{`Actualizado a las ${limaClock.format(new Date(stats.updatedAt))} (hora del servidor)`}</span>
+        <span aria-live="polite">{`Actualizado a las ${limaClock.format(new Date(stats.updatedAt))} (hora del servidor)`}</span>
         <Link href="/datos" className="font-semibold underline">
           ¿Cómo calculamos esto?
         </Link>

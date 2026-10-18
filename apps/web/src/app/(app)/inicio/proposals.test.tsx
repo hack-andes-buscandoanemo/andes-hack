@@ -22,6 +22,7 @@ const PROPOSAL = {
   suggestionId: "s-1",
   offerId: "22222222-2222-4222-8222-222222222222",
   driverName: "Mateo Q.",
+  driverPhotoUrl: "https://r2.example/mateo.jpg?signature=read",
   direction: "outbound" as const,
   date: "2026-10-19",
   meetingPointName: "Estación San Borja Sur (Línea 1)",
@@ -45,6 +46,10 @@ describe("proposals on Inicio (US-019)", () => {
     expect(
       await screen.findByText("Tenemos una propuesta para ti: viaje de Mateo Q."),
     ).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Foto de Mateo Q." })).toHaveAttribute(
+      "src",
+      PROPOSAL.driverPhotoUrl,
+    );
     expect(screen.getByText("Ida · Lunes 19 de octubre")).toBeInTheDocument();
     expect(
       screen.getByText("Estación San Borja Sur (Línea 1) · Recogida 7:29 a. m."),

@@ -4,2616 +4,2543 @@
  */
 
 export interface paths {
-  "/health": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Service health */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["HealthResponse"];
-          };
+    "/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/communities": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Lista pública de comunidades */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["CommunitiesResponse"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/communities/{id}/join": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: {
-        content: {
-          "application/json": components["schemas"]["JoinCommunityRequest"];
-        };
-      };
-      responses: {
-        /** @description Membresía verificada en la comunidad */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["JoinCommunityResponse"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/communities/{id}/verify-email": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Membresía verificada con correo institucional */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["JoinCommunityResponse"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/me": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Perfil y membresías de la persona autenticada */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["MeResponse"];
-          };
-        };
-        /** @description La cuenta ya no existe */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Cuenta eliminada y datos personales borrados */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["DeleteMeResponse"];
-          };
-        };
-        /** @description La cuenta ya no existe */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/me/profile-photo/upload": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: {
-        content: {
-          "application/json": components["schemas"]["ProfilePhotoUploadRequest"];
-        };
-      };
-      responses: {
-        /** @description URL de corta duración para subir la foto directamente a R2 */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ProfilePhotoUploadResponse"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/me/profile-photo/confirm": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: {
-        content: {
-          "application/json": {
-            key: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Foto comprobada y guardada en el perfil */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": {
-              /** Format: uri */
-              photoUrl: string;
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
             };
-          };
-        };
-        /** @description La imagen no cumple el formato o tamaño permitidos */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/me/profile-photo": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description URL temporal de la propia foto de perfil */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["MyProfilePhotoResponse"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Foto de perfil eliminada */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": {
-              message: string;
+            requestBody?: never;
+            responses: {
+                /** @description Service health */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["HealthResponse"];
+                    };
+                };
             };
-          };
         };
-      };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/communities/{id}/membership": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/communities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Lista pública de comunidades */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CommunitiesResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
+    "/communities/{id}/join": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        cookie?: never;
-      };
-      requestBody?: {
-        content: {
-          "application/json": components["schemas"]["UpdateMembershipRequest"];
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["JoinCommunityRequest"];
+                };
+            };
+            responses: {
+                /** @description Membresía verificada en la comunidad */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["JoinCommunityResponse"];
+                    };
+                };
+            };
         };
-      };
-      responses: {
-        /** @description Consentimiento, modo habitual y rol de viaje actualizados */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["MembershipSummary"];
-          };
-        };
-      };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    trace?: never;
-  };
-  "/communities/{id}/preferences": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/communities/{id}/verify-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Membresía verificada con correo institucional */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["JoinCommunityResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
+    "/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        cookie?: never;
-      };
-      requestBody?: {
-        content: {
-          "application/json": components["schemas"]["TravelPreferences"];
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Perfil y membresías de la persona autenticada */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MeResponse"];
+                    };
+                };
+                /** @description La cuenta ya no existe */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
         };
-      };
-      responses: {
-        /** @description Preferencias de viaje guardadas */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["TravelPreferencesResponse"];
-          };
+        put?: never;
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Cuenta eliminada y datos personales borrados */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DeleteMeResponse"];
+                    };
+                };
+                /** @description La cuenta ya no existe */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
         };
-        /** @description No hay sesión iniciada (`unauthorized`) */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description No es miembro de la comunidad (`community_membership_required`) */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description Solo mujeres sin confirmar que se identifica como mujer (`women_only_requires_declaration`), o datos no válidos (`validation_error`) */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-      };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/vehicles": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/me/profile-photo/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["ProfilePhotoUploadRequest"];
+                };
+            };
+            responses: {
+                /** @description URL de corta duración para subir la foto directamente a R2 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProfilePhotoUploadResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Vehículos registrados por la persona autenticada */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["VehiclesResponse"];
-          };
+    "/me/profile-photo/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        key: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Foto comprobada y guardada en el perfil */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uri */
+                            photoUrl: string;
+                        };
+                    };
+                };
+                /** @description La imagen no cumple el formato o tamaño permitidos */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: {
-        content: {
-          "application/json": components["schemas"]["CreateVehicleRequest"];
+    "/me/profile-photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
-      responses: {
-        /** @description Vehículo registrado */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["VehicleSummary"];
-          };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description URL temporal de la propia foto de perfil */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MyProfilePhotoResponse"];
+                    };
+                };
+            };
         };
-      };
+        put?: never;
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Foto de perfil eliminada */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            message: string;
+                        };
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/communities/{id}/zones": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/communities/{id}/membership": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["UpdateMembershipRequest"];
+                };
+            };
+            responses: {
+                /** @description Consentimiento, modo habitual y rol de viaje actualizados */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MembershipSummary"];
+                    };
+                };
+            };
+        };
+        trace?: never;
     };
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
+    "/communities/{id}/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Zonas disponibles para la comunidad */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ZonesResponse"];
-          };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["TravelPreferences"];
+                };
+            };
+            responses: {
+                /** @description Preferencias de viaje guardadas */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TravelPreferencesResponse"];
+                    };
+                };
+                /** @description No hay sesión iniciada (`unauthorized`) */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description No es miembro de la comunidad (`community_membership_required`) */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Solo mujeres sin confirmar que se identifica como mujer (`women_only_requires_declaration`), o datos no válidos (`validation_error`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
         };
-      };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/communities/{id}/offers": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/vehicles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Vehículos registrados por la persona autenticada */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VehiclesResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["CreateVehicleRequest"];
+                };
+            };
+            responses: {
+                /** @description Vehículo registrado */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VehicleSummary"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
+    "/communities/{id}/zones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Viajes ofrecidos por la persona autenticada en la comunidad */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["TripOffersResponse"];
-          };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Zonas disponibles para la comunidad */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ZonesResponse"];
+                    };
+                };
+            };
         };
-      };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
+    "/communities/{id}/offers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        cookie?: never;
-      };
-      requestBody?: {
-        content: {
-          "application/json": components["schemas"]["CreateTripOfferRequest"];
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Viajes ofrecidos por la persona autenticada en la comunidad */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TripOffersResponse"];
+                    };
+                };
+            };
         };
-      };
-      responses: {
-        /** @description Viaje ofrecido creado */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["CreateTripOfferResponse"];
-          };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["CreateTripOfferRequest"];
+                };
+            };
+            responses: {
+                /** @description Viaje ofrecido creado */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CreateTripOfferResponse"];
+                    };
+                };
+            };
         };
-      };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/offers/{id}/status": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/offers/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["UpdateOfferStatusRequest"];
+                };
+            };
+            responses: {
+                /** @description Estado de la oferta actualizado */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TripOfferSummary"];
+                    };
+                };
+            };
+        };
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
+    "/communities/{id}/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        cookie?: never;
-      };
-      requestBody?: {
-        content: {
-          "application/json": components["schemas"]["UpdateOfferStatusRequest"];
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["SearchTripsRequest"];
+                };
+            };
+            responses: {
+                /** @description Viajes compatibles con la necesidad guardada de la persona */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SearchTripsResponse"];
+                    };
+                };
+                /** @description La zona elegida no existe (`zone_not_found`) */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description No hay sesión iniciada (`unauthorized`) */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description No es miembro de la comunidad o no activó Solo mujeres (`women_only_not_allowed`) */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description La sede de la comunidad no se puede usar para buscar (`unknown_destination`) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Los datos enviados no son válidos (`validation_error`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
         };
-      };
-      responses: {
-        /** @description Estado de la oferta actualizado */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["TripOfferSummary"];
-          };
-        };
-      };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    trace?: never;
-  };
-  "/communities/{id}/search": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/offers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Detalle del viaje para miembros de su comunidad, sin placa hasta la aceptación */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OfferDetail"];
+                    };
+                };
+                /** @description No hay sesión iniciada (`unauthorized`) */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description El viaje no existe o no pertenece a tu comunidad (`offer_not_found`) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description El identificador no es válido (`validation_error`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
+    "/me/trips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        cookie?: never;
-      };
-      requestBody?: {
-        content: {
-          "application/json": components["schemas"]["SearchTripsRequest"];
+        get: {
+            parameters: {
+                query?: {
+                    role?: "passenger" | "driver";
+                    scope?: "upcoming" | "past";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Viajes de la persona como pasajera o conductora; la placa y el alias del otro solo en viajes aceptados */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MyTripsResponse"];
+                    };
+                };
+                /** @description No hay sesión iniciada (`unauthorized`) */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description El rol o el periodo no son válidos (`validation_error`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
         };
-      };
-      responses: {
-        /** @description Viajes compatibles con la necesidad guardada de la persona */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["SearchTripsResponse"];
-          };
-        };
-        /** @description La zona elegida no existe (`zone_not_found`) */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description No hay sesión iniciada (`unauthorized`) */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description No es miembro de la comunidad o no activó Solo mujeres (`women_only_not_allowed`) */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description La sede de la comunidad no se puede usar para buscar (`unknown_destination`) */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description Los datos enviados no son válidos (`validation_error`) */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-      };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/offers/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/offers/{id}/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Solicitudes visibles para el conductor del viaje */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OfferBookingsResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["RequestSeatRequest"];
+                };
+            };
+            responses: {
+                /** @description Solicitud pendiente con el punto de encuentro y la recogida calculados por el servidor */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RequestSeatResponse"];
+                    };
+                };
+                /** @description No hay sesión iniciada (`unauthorized`) */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description No puedes solicitar un asiento en este viaje (`forbidden`) */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description El viaje o la comunidad no existen (`offer_not_found`) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description No se puede solicitar este asiento (`booking_conflict`) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Los datos enviados no son válidos (`validation_error`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
+    "/bookings/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Detalle del viaje para miembros de su comunidad, sin placa hasta la aceptación */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["OfferDetail"];
-          };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Solicitud aceptada y asiento reservado */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AcceptBookingResponse"];
+                    };
+                };
+            };
         };
-        /** @description No hay sesión iniciada (`unauthorized`) */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description El viaje no existe o no pertenece a tu comunidad (`offer_not_found`) */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description El identificador no es válido (`validation_error`) */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-      };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/me/trips": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/bookings/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Solicitud rechazada */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RejectBookingResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: {
-      parameters: {
-        query?: {
-          role?: "passenger" | "driver";
-          scope?: "upcoming" | "past";
+    "/bookings/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Viajes de la persona como pasajera o conductora; la placa y el alias del otro solo en viajes aceptados */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["MyTripsResponse"];
-          };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description La solicitud pendiente quedó retirada */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CancelBookingResponse"];
+                    };
+                };
+                /** @description No hay sesión iniciada (`unauthorized`) */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description La solicitud no existe (`booking_not_found`) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description No se puede retirar esta solicitud (`booking_conflict`) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description El identificador no es válido (`validation_error`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
         };
-        /** @description No hay sesión iniciada (`unauthorized`) */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description El rol o el periodo no son válidos (`validation_error`) */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-      };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/offers/{id}/bookings": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/communities/{id}/match-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["RunMatchingRequest"];
+                };
+            };
+            responses: {
+                /** @description Las dos corridas guardadas, optimizador y primero en llegar, con las asignaciones recomendadas */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MatchRunsResponse"];
+                    };
+                };
+                /** @description No hay sesión iniciada (`unauthorized`) */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description No es miembro (`community_membership_required`) o no es administrador (`admin_required`) */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description La comunidad no existe (`community_not_found`) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Ya hay un emparejamiento en curso para esta jornada (`match_run_in_progress`), no hay ofertas ni necesidades (`no_journey_inputs`) o la sede no se puede usar (`unknown_destination`) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Los datos enviados no son válidos (`validation_error`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
+    "/communities/{id}/match-runs/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Solicitudes visibles para el conductor del viaje */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["OfferBookingsResponse"];
-          };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description La última jornada emparejada, con ambas corridas y sus recomendaciones */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MatchRunsResponse"];
+                    };
+                };
+                /** @description No hay sesión iniciada (`unauthorized`) */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description No es miembro (`community_membership_required`) o no es administrador (`admin_required`) */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description La comunidad no existe (`community_not_found`) o nunca se ejecutó el emparejamiento (`no_match_runs`) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description El identificador no es válido (`validation_error`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
         };
-      };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
+    "/communities/{id}/proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        cookie?: never;
-      };
-      requestBody?: {
-        content: {
-          "application/json": components["schemas"]["RequestSeatRequest"];
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Los viajes recomendados a la persona en los que todavía no solicitó asiento, el más próximo primero */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MatchProposalsResponse"];
+                    };
+                };
+                /** @description No hay sesión iniciada (`unauthorized`) */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description No es miembro de la comunidad (`community_membership_required`) */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description El identificador no es válido (`validation_error`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
         };
-      };
-      responses: {
-        /** @description Solicitud pendiente con el punto de encuentro y la recogida calculados por el servidor */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["RequestSeatResponse"];
-          };
-        };
-        /** @description No hay sesión iniciada (`unauthorized`) */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description No puedes solicitar un asiento en este viaje (`forbidden`) */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description El viaje o la comunidad no existen (`offer_not_found`) */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description No se puede solicitar este asiento (`booking_conflict`) */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description Los datos enviados no son válidos (`validation_error`) */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-      };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/bookings/{id}/accept": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/me/chats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Viajes con asiento aceptado */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MyChatsResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
+    "/offers/{id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Solicitud aceptada y asiento reservado */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["AcceptBookingResponse"];
-          };
+        get: {
+            parameters: {
+                query?: {
+                    after?: string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Mensajes y participantes aceptados del viaje */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TripMessagesResponse"];
+                    };
+                };
+            };
         };
-      };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        kind: "text";
+                        body: string;
+                    } | {
+                        /** @enum {string} */
+                        kind: "quick";
+                        /** @enum {string} */
+                        body: "Ya salí" | "Estoy en el punto de encuentro" | "Llego en 5 min" | "Hoy no podré ir";
+                    };
+                };
+            };
+            responses: {
+                /** @description Mensaje enviado */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SendTripMessageResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/bookings/{id}/reject": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/public/waitlist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["WaitlistEntryRequest"];
+                };
+            };
+            responses: {
+                /** @description Inscripción recibida en la lista de espera */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WaitlistEntryResponse"];
+                    };
+                };
+                /** @description Ya está en la lista: «Ya estás en la lista.» */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Datos incompletos o sin consentimiento */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Demasiados envíos desde la misma IP: «Inténtalo en unos minutos.» */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
+    "/public/waitlist/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Solicitud rechazada */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["RejectBookingResponse"];
-          };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Totales de la lista de espera, sin datos de contacto */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WaitlistSummary"];
+                    };
+                };
+            };
         };
-      };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/bookings/{id}/cancel": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/public/communities/{slug}/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    slug: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Cifras de impacto de la comunidad, sin cuentas del equipo ni datos personales */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PublicStats"];
+                    };
+                };
+                /** @description Comunidad no encontrada */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description El identificador de la comunidad no es válido */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Demasiadas consultas desde la misma IP */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
+    "/bookings/{id}/share-links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description La solicitud pendiente quedó retirada */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["CancelBookingResponse"];
-          };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Enlace para compartir el viaje; reemplaza al anterior y vence al final del día del viaje */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CreateShareLinkResponse"];
+                    };
+                };
+                /** @description No hay sesión iniciada (`unauthorized`) */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description La reserva no existe o no es de la persona (`booking_not_found`) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description El viaje no se puede compartir (`booking_not_shareable`) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description El identificador no es válido (`validation_error`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
         };
-        /** @description No hay sesión iniciada (`unauthorized`) */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description La solicitud no existe (`booking_not_found`) */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description No se puede retirar esta solicitud (`booking_conflict`) */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description El identificador no es válido (`validation_error`) */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-      };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/communities/{id}/match-runs": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/share-links/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description El enlace dejó de funcionar; repetir la acción no cambia nada */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RevokeShareLinkResponse"];
+                    };
+                };
+                /** @description No hay sesión iniciada (`unauthorized`) */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description El enlace no existe o no es de la persona (`share_link_not_found`) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description El identificador no es válido (`validation_error`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
+    "/public/share/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        cookie?: never;
-      };
-      requestBody?: {
-        content: {
-          "application/json": components["schemas"]["RunMatchingRequest"];
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    token: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Lo mínimo para acompañar el viaje: alias, vehículo con placa, punto de encuentro, hora y estado. Sin correos, zonas de origen ni datos del pasajero más allá de su alias */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SharedTrip"];
+                    };
+                };
+                /** @description El enlace no existe, venció o se dejó de compartir; la respuesta es la misma en los tres casos (`share_link_unavailable`) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description El enlace no tiene un formato válido (`validation_error`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Demasiadas consultas desde la misma IP (`too_many_share_requests`) */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
         };
-      };
-      responses: {
-        /** @description Las dos corridas guardadas, optimizador y primero en llegar, con las asignaciones recomendadas */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["MatchRunsResponse"];
-          };
-        };
-        /** @description No hay sesión iniciada (`unauthorized`) */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description No es miembro (`community_membership_required`) o no es administrador (`admin_required`) */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description La comunidad no existe (`community_not_found`) */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description Ya hay un emparejamiento en curso para esta jornada (`match_run_in_progress`), no hay ofertas ni necesidades (`no_journey_inputs`) o la sede no se puede usar (`unknown_destination`) */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description Los datos enviados no son válidos (`validation_error`) */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-      };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/communities/{id}/match-runs/latest": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/public/data-sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Cada constante de los tiempos y del impacto, con su tipo, fuente y fecha */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DataSourcesResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description La última jornada emparejada, con ambas corridas y sus recomendaciones */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["MatchRunsResponse"];
-          };
-        };
-        /** @description No hay sesión iniciada (`unauthorized`) */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description No es miembro (`community_membership_required`) o no es administrador (`admin_required`) */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description La comunidad no existe (`community_not_found`) o nunca se ejecutó el emparejamiento (`no_match_runs`) */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description El identificador no es válido (`validation_error`) */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/communities/{id}/proposals": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Los viajes recomendados a la persona en los que todavía no solicitó asiento, el más próximo primero */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["MatchProposalsResponse"];
-          };
-        };
-        /** @description No hay sesión iniciada (`unauthorized`) */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description No es miembro de la comunidad (`community_membership_required`) */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description El identificador no es válido (`validation_error`) */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/me/chats": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Viajes con asiento aceptado */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["MyChatsResponse"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/offers/{id}/messages": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: {
-      parameters: {
-        query?: {
-          after?: string;
-        };
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Mensajes y participantes aceptados del viaje */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["TripMessagesResponse"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: {
-        content: {
-          "application/json":
-            | {
-                /** @enum {string} */
-                kind: "text";
-                body: string;
-              }
-            | {
-                /** @enum {string} */
-                kind: "quick";
-                /** @enum {string} */
-                body:
-                  | "Ya salí"
-                  | "Estoy en el punto de encuentro"
-                  | "Llego en 5 min"
-                  | "Hoy no podré ir";
-              };
-        };
-      };
-      responses: {
-        /** @description Mensaje enviado */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["SendTripMessageResponse"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/public/waitlist": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: {
-        content: {
-          "application/json": components["schemas"]["WaitlistEntryRequest"];
-        };
-      };
-      responses: {
-        /** @description Inscripción recibida en la lista de espera */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["WaitlistEntryResponse"];
-          };
-        };
-        /** @description Ya está en la lista: «Ya estás en la lista.» */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description Datos incompletos o sin consentimiento */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description Demasiados envíos desde la misma IP: «Inténtalo en unos minutos.» */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/public/waitlist/summary": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Totales de la lista de espera, sin datos de contacto */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["WaitlistSummary"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/public/communities/{slug}/stats": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          slug: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Cifras de impacto de la comunidad, sin cuentas del equipo ni datos personales */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["PublicStats"];
-          };
-        };
-        /** @description Comunidad no encontrada */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description Demasiadas consultas desde la misma IP */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/bookings/{id}/share-links": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Enlace para compartir el viaje; reemplaza al anterior y vence al final del día del viaje */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["CreateShareLinkResponse"];
-          };
-        };
-        /** @description No hay sesión iniciada (`unauthorized`) */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description La reserva no existe o no es de la persona (`booking_not_found`) */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description El viaje no se puede compartir (`booking_not_shareable`) */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description El identificador no es válido (`validation_error`) */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/share-links/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description El enlace dejó de funcionar; repetir la acción no cambia nada */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["RevokeShareLinkResponse"];
-          };
-        };
-        /** @description No hay sesión iniciada (`unauthorized`) */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description El enlace no existe o no es de la persona (`share_link_not_found`) */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description El identificador no es válido (`validation_error`) */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/public/share/{token}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          token: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Lo mínimo para acompañar el viaje: alias, vehículo con placa, punto de encuentro, hora y estado. Sin correos, zonas de origen ni datos del pasajero más allá de su alias */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["SharedTrip"];
-          };
-        };
-        /** @description El enlace no existe, venció o se dejó de compartir; la respuesta es la misma en los tres casos (`share_link_unavailable`) */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description El enlace no tiene un formato válido (`validation_error`) */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-        /** @description Demasiadas consultas desde la misma IP (`too_many_share_requests`) */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["ApiError"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/public/data-sources": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Cada constante de los tiempos y del impacto, con su tipo, fuente y fecha */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            "application/json": components["schemas"]["DataSourcesResponse"];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    HealthResponse: {
-      /** @enum {string} */
-      status: "ok";
-    };
-    CommunitiesResponse: {
-      communities: components["schemas"]["CommunitySummary"][];
-    };
-    CommunitySummary: {
-      /** Format: uuid */
-      id: string;
-      slug: string;
-      name: string;
-      /** @enum {string} */
-      kind: "company" | "university" | "public_entity" | "event";
-      isDemo: boolean;
-      hasEmailVerification: boolean;
-      matchedEmailDomain: string | null;
-    };
-    JoinCommunityResponse: {
-      /** @enum {boolean} */
-      joined: true;
-      alreadyMember: boolean;
-      /** Format: uuid */
-      communityId: string;
-      communityName: string;
-      /** @enum {string} */
-      verificationMethod: "join_code" | "email_domain";
-      isTeam: boolean;
-      message: string;
-    };
-    JoinCommunityRequest: {
-      code: string;
-    };
-    MeResponse: {
-      user: {
-        id: string;
-        name: string;
-        /** Format: email */
-        email: string;
-      };
-      memberships: components["schemas"]["MembershipSummary"][];
-    };
-    MembershipSummary: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      communityId: string;
-      communityName: string;
-      destinationName: string;
-      /** @enum {string} */
-      role: "member" | "admin";
-      /** @enum {string} */
-      verificationMethod: "join_code" | "email_domain";
-      consentVersion: string | null;
-      consentAt: string | null;
-      /** @enum {string|null} */
-      usualMode:
-        | "drove_alone"
-        | "drove_with_others"
-        | "car_passenger"
-        | "public_transport"
-        | "taxi_app"
-        | "other"
-        | null;
-      /** @enum {string|null} */
-      travelRole: "driver" | "passenger" | "both" | null;
-      alias: string | null;
-      identifiesAsWoman: boolean;
-      womenOnly: boolean;
-      isTeam: boolean;
-    };
-    ApiError: {
-      /** @enum {boolean} */
-      success: false;
-      status: number;
-      error: string;
-      details?: {
-        code: string;
-        fields?: string[];
-      } & {
-        [key: string]: unknown;
-      };
-    };
-    DeleteMeResponse: {
-      message: string;
-      /** Format: date-time */
-      deletedAt: string;
-    };
-    ProfilePhotoUploadResponse: {
-      /** Format: uri */
-      uploadUrl: string;
-      key: string;
-      expiresIn: number;
-    };
-    ProfilePhotoUploadRequest: {
-      /** @enum {string} */
-      contentType: "image/jpeg" | "image/png" | "image/webp";
-      size: number;
-    };
-    MyProfilePhotoResponse: {
-      /** Format: uri */
-      photoUrl: string | null;
-    };
-    UpdateMembershipRequest: {
-      consentAccepted: boolean;
-      /** @enum {string} */
-      usualMode:
-        | "drove_alone"
-        | "drove_with_others"
-        | "car_passenger"
-        | "public_transport"
-        | "taxi_app"
-        | "other";
-      /** @enum {string} */
-      travelRole: "driver" | "passenger" | "both";
-      alias?: string;
-    };
-    TravelPreferencesResponse: components["schemas"]["TravelPreferences"] & {
-      message: string;
-    };
-    TravelPreferences: {
-      identifiesAsWoman: boolean;
-      womenOnly: boolean;
-    };
-    VehiclesResponse: {
-      vehicles: components["schemas"]["VehicleSummary"][];
-    };
-    VehicleSummary: {
-      /** Format: uuid */
-      id: string;
-      plate: string;
-      make: string;
-      model: string;
-      color: string;
-      seats: number;
-    };
-    CreateVehicleRequest: {
-      plate: string;
-      makeModel?: string;
-      make?: string;
-      model?: string;
-      color: string;
-      seats: number;
-    };
-    ZonesResponse: {
-      zones: components["schemas"]["ZoneSummary"][];
-    };
-    ZoneSummary: {
-      id: string;
-      name: string;
-      district: string;
-      lat: number;
-      lng: number;
-    };
-    TripOffersResponse: {
-      offers: components["schemas"]["TripOfferSummary"][];
-    };
-    TripOfferSummary: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      communityId: string;
-      driverId: string | null;
-      /** Format: uuid */
-      vehicleId: string | null;
-      /** @enum {string} */
-      direction: "outbound" | "return";
-      originZoneId: string;
-      originZoneName?: string;
-      departureTime: string;
-      daysOfWeek: number[] | null;
-      date: string | null;
-      seatsTotal: number;
-      seatsTaken: number;
-      maxDetourMinutes: number;
-      womenOnly: boolean;
-      note: string | null;
-      /** @enum {string} */
-      status: "active" | "paused" | "cancelled";
-    };
-    CreateTripOfferResponse: {
-      offer: components["schemas"]["TripOfferSummary"];
-      message: string;
-    };
-    CreateTripOfferRequest: {
-      /** Format: uuid */
-      vehicleId: string;
-      /** @enum {string} */
-      direction: "outbound" | "return";
-      originZoneId: string;
-      departureTime: string;
-      daysOfWeek?: number[] | null;
-      date?: string | null;
-      seatsTotal: number;
-      maxDetourMinutes: 0 | 5 | 10;
-      /** @default false */
-      womenOnly: boolean;
-      note?: string | null;
-    };
-    UpdateOfferStatusRequest: {
-      /** @enum {string} */
-      status: "active" | "paused";
-    };
-    SearchTripsResponse: {
-      /** Format: uuid */
-      requestId: string;
-      matches: components["schemas"]["TripMatch"][];
-      /** @enum {string|null} */
-      reason:
-        | "different_community"
-        | "days_mismatch"
-        | "women_only"
-        | "previously_rejected"
-        | "no_seats"
-        | "no_walkable_meeting_point"
-        | "outside_time_window"
-        | "detour_exceeded"
-        | null;
-    };
-    TripMatch: {
-      /** Format: uuid */
-      offerId: string;
-      driverName: string;
-      /** Format: uri */
-      driverPhotoUrl: string | null;
-      originZoneName: string;
-      destinationName: string;
-      /** @enum {string} */
-      direction: "outbound" | "return";
-      departureTime: string;
-      seatsFree: number;
-      meetingPointName: string;
-      pickupAt: string;
-      arrivalAt: string;
-      detourMinutes: number;
-      walkMinutes: number;
-      fuelEstimate: components["schemas"]["FuelEstimate"];
-    };
-    FuelEstimate: {
-      tripSoles: number;
-      perOccupantSoles: number;
-      occupants: number;
-    } | null;
-    SearchTripsRequest: {
-      /** @enum {string} */
-      direction: "outbound" | "return";
-      originZoneId: string;
-      windowStart: string;
-      windowEnd: string;
-      daysOfWeek?: number[] | null;
-      date?: string | null;
-      /** @default 15 */
-      maxWalkMinutes: number;
-      /** @enum {string} */
-      fallbackMode: "drive_alone" | "taxi_app" | "public_transport" | "picked_up" | "other";
-      womenOnly?: boolean;
-    };
-    OfferDetail: {
-      /** Format: uuid */
-      offerId: string;
-      /** @enum {string} */
-      status: "active" | "paused" | "cancelled";
-      driverName: string;
-      /** Format: uri */
-      driverPhotoUrl: string | null;
-      communityName: string;
-      originZoneName: string;
-      destinationName: string;
-      /** @enum {string} */
-      direction: "outbound" | "return";
-      departureTime: string;
-      date: string | null;
-      daysOfWeek: number[] | null;
-      seatsFree: number;
-      vehicle: {
-        make: string;
-        model: string;
-        plate: string | null;
-      } | null;
-      note: string | null;
-      isOwn: boolean;
-      hasOpenNeed: boolean;
-      match: {
-        meetingPointName: string;
-        pickupAt: string;
-        arrivalAt: string;
-        detourMinutes: number;
-        walkMinutes: number;
-      } | null;
-      booking: {
-        /** Format: uuid */
-        id: string;
-        /** @enum {string} */
-        status:
-          | "pending"
-          | "accepted"
-          | "rejected"
-          | "cancelled_by_passenger"
-          | "cancelled_by_driver"
-          | "completed"
-          | "no_show";
-      } | null;
-      fuelEstimate: components["schemas"]["FuelEstimate"];
-    };
-    MyTripsResponse: {
-      trips: components["schemas"]["MyTrip"][];
-    };
-    MyTrip: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      offerId: string;
-      /** @enum {string} */
-      role: "passenger" | "driver";
-      /** @enum {string} */
-      status:
-        | "pending"
-        | "accepted"
-        | "rejected"
-        | "cancelled"
-        | "completed"
-        | "no_show"
-        | "paused"
-        | "active";
-      /** @enum {string} */
-      direction: "outbound" | "return";
-      date: string | null;
-      daysOfWeek: number[] | null;
-      time: string;
-      originZoneName: string;
-      destinationName: string;
-      meetingPointName: string | null;
-      driver: {
-        alias: string;
-        plate: string | null;
-      } | null;
-      seatsTotal: number | null;
-      seatsFree: number | null;
-      pendingRequests: number | null;
-      acceptedPassengers: string[] | null;
-      passengerRequest?: {
-        /** Format: uuid */
-        communityId: string;
-        originZoneId: string;
-        date: string | null;
-        daysOfWeek: number[] | null;
-        /** @enum {string} */
-        fallbackMode: "drive_alone" | "taxi_app" | "public_transport" | "picked_up" | "other";
-        returnWindow: {
-          start: string;
-          end: string;
+    schemas: {
+        HealthResponse: {
+            /** @enum {string} */
+            status: "ok";
+        };
+        CommunitiesResponse: {
+            communities: components["schemas"]["CommunitySummary"][];
+        };
+        CommunitySummary: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            name: string;
+            /** @enum {string} */
+            kind: "company" | "university" | "public_entity" | "event";
+            isDemo: boolean;
+            hasEmailVerification: boolean;
+            matchedEmailDomain: string | null;
+        };
+        JoinCommunityResponse: {
+            /** @enum {boolean} */
+            joined: true;
+            alreadyMember: boolean;
+            /** Format: uuid */
+            communityId: string;
+            communityName: string;
+            /** @enum {string} */
+            verificationMethod: "join_code" | "email_domain";
+            isTeam: boolean;
+            message: string;
+        };
+        JoinCommunityRequest: {
+            code: string;
+        };
+        MeResponse: {
+            user: {
+                id: string;
+                name: string;
+                /** Format: email */
+                email: string;
+            };
+            memberships: components["schemas"]["MembershipSummary"][];
+        };
+        MembershipSummary: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            communityId: string;
+            communityName: string;
+            destinationName: string;
+            /** @enum {string} */
+            role: "member" | "admin";
+            /** @enum {string} */
+            verificationMethod: "join_code" | "email_domain";
+            consentVersion: string | null;
+            consentAt: string | null;
+            /** @enum {string|null} */
+            usualMode: "drove_alone" | "drove_with_others" | "car_passenger" | "public_transport" | "taxi_app" | "other" | null;
+            /** @enum {string|null} */
+            travelRole: "driver" | "passenger" | "both" | null;
+            alias: string | null;
+            identifiesAsWoman: boolean;
+            womenOnly: boolean;
+            isTeam: boolean;
+        };
+        ApiError: {
+            /** @enum {boolean} */
+            success: false;
+            status: number;
+            error: string;
+            details?: {
+                code: string;
+                fields?: string[];
+            } & {
+                [key: string]: unknown;
+            };
+        };
+        DeleteMeResponse: {
+            message: string;
+            /** Format: date-time */
+            deletedAt: string;
+        };
+        ProfilePhotoUploadResponse: {
+            /** Format: uri */
+            uploadUrl: string;
+            key: string;
+            expiresIn: number;
+        };
+        ProfilePhotoUploadRequest: {
+            /** @enum {string} */
+            contentType: "image/jpeg" | "image/png" | "image/webp";
+            size: number;
+        };
+        MyProfilePhotoResponse: {
+            /** Format: uri */
+            photoUrl: string | null;
+        };
+        UpdateMembershipRequest: {
+            consentAccepted: boolean;
+            /** @enum {string} */
+            usualMode: "drove_alone" | "drove_with_others" | "car_passenger" | "public_transport" | "taxi_app" | "other";
+            /** @enum {string} */
+            travelRole: "driver" | "passenger" | "both";
+            alias?: string;
+        };
+        TravelPreferencesResponse: components["schemas"]["TravelPreferences"] & {
+            message: string;
+        };
+        TravelPreferences: {
+            identifiesAsWoman: boolean;
+            womenOnly: boolean;
+        };
+        VehiclesResponse: {
+            vehicles: components["schemas"]["VehicleSummary"][];
+        };
+        VehicleSummary: {
+            /** Format: uuid */
+            id: string;
+            plate: string;
+            make: string;
+            model: string;
+            color: string;
+            seats: number;
+        };
+        CreateVehicleRequest: {
+            plate: string;
+            makeModel?: string;
+            make?: string;
+            model?: string;
+            color: string;
+            seats: number;
+        };
+        ZonesResponse: {
+            zones: components["schemas"]["ZoneSummary"][];
+        };
+        ZoneSummary: {
+            id: string;
+            name: string;
+            district: string;
+            lat: number;
+            lng: number;
+        };
+        TripOffersResponse: {
+            offers: components["schemas"]["TripOfferSummary"][];
+        };
+        TripOfferSummary: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            communityId: string;
+            driverId: string | null;
+            /** Format: uuid */
+            vehicleId: string | null;
+            /** @enum {string} */
+            direction: "outbound" | "return";
+            originZoneId: string;
+            originZoneName?: string;
+            departureTime: string;
+            daysOfWeek: number[] | null;
+            date: string | null;
+            seatsTotal: number;
+            seatsTaken: number;
+            maxDetourMinutes: number;
+            womenOnly: boolean;
+            note: string | null;
+            /** @enum {string} */
+            status: "active" | "paused" | "cancelled";
+        };
+        CreateTripOfferResponse: {
+            offer: components["schemas"]["TripOfferSummary"];
+            message: string;
+        };
+        CreateTripOfferRequest: {
+            /** Format: uuid */
+            vehicleId: string;
+            /** @enum {string} */
+            direction: "outbound" | "return";
+            originZoneId: string;
+            departureTime: string;
+            daysOfWeek?: number[] | null;
+            date?: string | null;
+            seatsTotal: number;
+            maxDetourMinutes: 0 | 5 | 10;
+            /** @default false */
+            womenOnly: boolean;
+            note?: string | null;
+        };
+        UpdateOfferStatusRequest: {
+            /** @enum {string} */
+            status: "active" | "paused";
+        };
+        SearchTripsResponse: {
+            /** Format: uuid */
+            requestId: string;
+            matches: components["schemas"]["TripMatch"][];
+            /** @enum {string|null} */
+            reason: "different_community" | "days_mismatch" | "women_only" | "previously_rejected" | "no_seats" | "no_walkable_meeting_point" | "outside_time_window" | "detour_exceeded" | null;
+        };
+        TripMatch: {
+            /** Format: uuid */
+            offerId: string;
+            driverName: string;
+            /** Format: uri */
+            driverPhotoUrl: string | null;
+            originZoneName: string;
+            destinationName: string;
+            /** @enum {string} */
+            direction: "outbound" | "return";
+            departureTime: string;
+            seatsFree: number;
+            meetingPointName: string;
+            pickupAt: string;
+            arrivalAt: string;
+            detourMinutes: number;
+            walkMinutes: number;
+            fuelEstimate: components["schemas"]["FuelEstimate"];
+        };
+        FuelEstimate: {
+            tripSoles: number;
+            perOccupantSoles: number;
+            occupants: number;
         } | null;
-      };
-      fuelEstimate: components["schemas"]["FuelEstimate"];
-    };
-    RequestSeatResponse: {
-      booking: {
-        /** Format: uuid */
-        id: string;
-        /** @enum {string} */
-        status:
-          | "pending"
-          | "accepted"
-          | "rejected"
-          | "cancelled_by_passenger"
-          | "cancelled_by_driver"
-          | "completed"
-          | "no_show";
-        message: string | null;
-        meetingPointName: string;
-        pickupAt: string;
-        arrivalAt: string;
-        detourMinutes: number;
-        walkMinutes: number;
-      };
-    };
-    RequestSeatRequest: {
-      message?: string;
-    };
-    AcceptBookingResponse: {
-      booking: {
-        /** Format: uuid */
-        id: string;
-        /** @enum {string} */
-        status:
-          | "pending"
-          | "accepted"
-          | "rejected"
-          | "cancelled_by_passenger"
-          | "cancelled_by_driver"
-          | "completed"
-          | "no_show";
-      };
-    };
-    RejectBookingResponse: {
-      booking: {
-        /** Format: uuid */
-        id: string;
-        /** @enum {string} */
-        status:
-          | "pending"
-          | "accepted"
-          | "rejected"
-          | "cancelled_by_passenger"
-          | "cancelled_by_driver"
-          | "completed"
-          | "no_show";
-      };
-    };
-    OfferBookingsResponse: {
-      /** Format: uuid */
-      offerId: string;
-      seatsTaken: number;
-      seatsTotal: number;
-      bookings: {
-        /** Format: uuid */
-        id: string;
-        passengerName: string;
-        /** Format: uri */
-        passengerPhotoUrl: string | null;
-        /** @enum {string} */
-        status:
-          | "pending"
-          | "accepted"
-          | "rejected"
-          | "cancelled_by_passenger"
-          | "cancelled_by_driver"
-          | "completed"
-          | "no_show";
-        meetingPointName: string;
-        pickupAt: string;
-        detourMinutes: number;
-        message: string | null;
-        avoidsCar: boolean;
-        recommended: boolean;
-      }[];
-    };
-    CancelBookingResponse: {
-      booking: {
-        /** Format: uuid */
-        id: string;
-        /** @enum {string} */
-        status:
-          | "pending"
-          | "accepted"
-          | "rejected"
-          | "cancelled_by_passenger"
-          | "cancelled_by_driver"
-          | "completed"
-          | "no_show";
-      };
-    };
-    MatchRunsResponse: {
-      /** @enum {string} */
-      direction: "outbound" | "return";
-      date: string;
-      optimizer: components["schemas"]["MatchRunSummary"];
-      firstComeFirstServed: components["schemas"]["MatchRunSummary"];
-      suggestions: components["schemas"]["MatchSuggestion"][];
-    };
-    MatchRunSummary: {
-      /** Format: uuid */
-      id: string;
-      carTripsAvoided: number;
-      passengersMatched: number;
-      detourMinutes: number;
-      walkMinutes: number;
-      unassigned: number;
-      offers: number;
-      requests: number;
-      durationMs: number;
-      createdAt: string;
-    };
-    MatchSuggestion: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      offerId: string;
-      driverName: string;
-      /** Format: uuid */
-      requestId: string;
-      passengerName: string;
-      meetingPointName: string;
-      pickupAt: string;
-      arrivalAt: string;
-      detourMinutes: number;
-      walkMinutes: number;
-      avoidsCarTrip: boolean;
-      /** @enum {string} */
-      status: "proposed" | "accepted" | "rejected";
-    };
-    RunMatchingRequest: {
-      /** @enum {string} */
-      direction: "outbound" | "return";
-      date: string;
-    };
-    MatchProposalsResponse: {
-      proposals: components["schemas"]["MatchProposal"][];
-    };
-    MatchProposal: {
-      /** Format: uuid */
-      suggestionId: string;
-      /** Format: uuid */
-      offerId: string;
-      driverName: string;
-      /** Format: uri */
-      driverPhotoUrl: string | null;
-      /** @enum {string} */
-      direction: "outbound" | "return";
-      date: string;
-      meetingPointName: string;
-      pickupAt: string;
-      arrivalAt: string;
-      walkMinutes: number;
-      fuelEstimate: components["schemas"]["FuelEstimate"];
-    };
-    MyChatsResponse: {
-      chats: {
-        /** Format: uuid */
-        offerId: string;
-        /** @enum {string} */
-        role: "driver" | "passenger";
-        driverName: string;
-        /** Format: uri */
-        driverPhotoUrl: string | null;
-        communityName: string;
-        originZoneName: string;
-        destinationName: string;
-        departureTime: string;
-        date: string | null;
-        daysOfWeek: number[] | null;
-        meetingPointName: string | null;
-      }[];
-    };
-    TripMessagesResponse: {
-      conversation: {
-        /** Format: uuid */
-        offerId: string;
-        communityName: string;
-        origin: string;
-        destination: string;
-        departureTime: string;
-        date: string | null;
-        daysOfWeek: number[] | null;
-        /** @enum {string} */
-        role: "driver" | "passenger";
-        participants: {
-          name: string;
-          /** @enum {string} */
-          role: "driver" | "passenger";
-          /** Format: uri */
-          photoUrl: string | null;
-        }[];
-        meetingPoints: {
-          participantName: string;
-          name: string;
-        }[];
-      };
-      messages: {
-        /** Format: uuid */
-        id: string;
-        senderName: string;
-        /** Format: uri */
-        senderPhotoUrl: string | null;
-        /** @enum {string} */
-        senderRole: "driver" | "passenger";
-        /** @enum {string} */
-        kind: "text" | "quick";
-        body: string;
-        /** Format: date-time */
-        createdAt: string;
-      }[];
-    };
-    SendTripMessageResponse: {
-      message: {
-        /** Format: uuid */
-        id: string;
-        senderName: string;
-        /** Format: uri */
-        senderPhotoUrl: string | null;
-        /** @enum {string} */
-        senderRole: "driver" | "passenger";
-        /** @enum {string} */
-        kind: "text" | "quick";
-        body: string;
-        /** Format: date-time */
-        createdAt: string;
-      };
-    };
-    WaitlistEntryResponse: {
-      message: string;
-    };
-    WaitlistEntryRequest:
-      | {
-          /** @enum {string} */
-          kind: "institution";
-          institution: string;
-          /** Format: email */
-          email: string;
-          /** @enum {boolean} */
-          consent: true;
-          website?: string;
-          role: string;
-          onSiteCount: number;
-          wantsPilot: boolean;
-        }
-      | {
-          /** @enum {string} */
-          kind: "individual";
-          institution: string;
-          /** Format: email */
-          email: string;
-          /** @enum {boolean} */
-          consent: true;
-          website?: string;
+        SearchTripsRequest: {
+            /** @enum {string} */
+            direction: "outbound" | "return";
+            originZoneId: string;
+            windowStart: string;
+            windowEnd: string;
+            daysOfWeek?: number[] | null;
+            date?: string | null;
+            /** @default 15 */
+            maxWalkMinutes: number;
+            /** @enum {string} */
+            fallbackMode: "drive_alone" | "taxi_app" | "public_transport" | "picked_up" | "other";
+            womenOnly?: boolean;
         };
-    WaitlistSummary: {
-      institutions: number;
-      individuals: number;
-    };
-    PublicStats: {
-      community: {
-        name: string;
-        isDemo: boolean;
-      };
-      /** Format: date-time */
-      updatedAt: string;
-      activity: {
-        enrolled: number;
-        drivers: number;
-        activeOffers: number;
-        openNeeds: number;
-        coverage: number | null;
-        acceptedRequests: number;
-        completedTrips: number;
-      };
-      waitlist: {
-        institutions: number;
-        individuals: number;
-      };
-      comparison: {
-        date: string;
-        /** @enum {string} */
-        direction: "outbound" | "return";
-        optimizer: {
-          carTripsAvoided: number;
-          passengersMatched: number;
+        OfferDetail: {
+            /** Format: uuid */
+            offerId: string;
+            /** @enum {string} */
+            status: "active" | "paused" | "cancelled";
+            driverName: string;
+            /** Format: uri */
+            driverPhotoUrl: string | null;
+            communityName: string;
+            originZoneName: string;
+            destinationName: string;
+            /** @enum {string} */
+            direction: "outbound" | "return";
+            departureTime: string;
+            date: string | null;
+            daysOfWeek: number[] | null;
+            seatsFree: number;
+            vehicle: {
+                make: string;
+                model: string;
+                plate: string | null;
+            } | null;
+            note: string | null;
+            isOwn: boolean;
+            hasOpenNeed: boolean;
+            match: {
+                meetingPointName: string;
+                pickupAt: string;
+                arrivalAt: string;
+                detourMinutes: number;
+                walkMinutes: number;
+            } | null;
+            booking: {
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                status: "pending" | "accepted" | "rejected" | "cancelled_by_passenger" | "cancelled_by_driver" | "completed" | "no_show";
+            } | null;
+            fuelEstimate: components["schemas"]["FuelEstimate"];
         };
-        firstComeFirstServed: {
-          carTripsAvoided: number;
-          passengersMatched: number;
+        MyTripsResponse: {
+            trips: components["schemas"]["MyTrip"][];
         };
-      } | null;
-      districts: {
-        district: string;
-        people: number | null;
-      }[];
-      people: {
-        transported: number;
-        fromPublicTransport: number;
-      };
-      vehicleImpact: {
-        potential: {
-          trips: number;
-          km: number;
-          co2Kg: number;
+        MyTrip: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            offerId: string;
+            /** @enum {string} */
+            role: "passenger" | "driver";
+            /** @enum {string} */
+            status: "pending" | "accepted" | "rejected" | "cancelled" | "completed" | "no_show" | "paused" | "active";
+            /** @enum {string} */
+            direction: "outbound" | "return";
+            date: string | null;
+            daysOfWeek: number[] | null;
+            time: string;
+            originZoneName: string;
+            destinationName: string;
+            meetingPointName: string | null;
+            driver: {
+                alias: string;
+                plate: string | null;
+            } | null;
+            seatsTotal: number | null;
+            seatsFree: number | null;
+            pendingRequests: number | null;
+            acceptedPassengers: string[] | null;
+            passengerRequest?: {
+                /** Format: uuid */
+                communityId: string;
+                originZoneId: string;
+                date: string | null;
+                daysOfWeek: number[] | null;
+                /** @enum {string} */
+                fallbackMode: "drive_alone" | "taxi_app" | "public_transport" | "picked_up" | "other";
+                returnWindow: {
+                    start: string;
+                    end: string;
+                } | null;
+            };
+            fuelEstimate: components["schemas"]["FuelEstimate"];
         };
-        verified: {
-          trips: number;
-          km: number;
-          co2Kg: number;
+        RequestSeatResponse: {
+            booking: {
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                status: "pending" | "accepted" | "rejected" | "cancelled_by_passenger" | "cancelled_by_driver" | "completed" | "no_show";
+                message: string | null;
+                meetingPointName: string;
+                pickupAt: string;
+                arrivalAt: string;
+                detourMinutes: number;
+                walkMinutes: number;
+            };
         };
-        induced: number;
-        net: number;
-      };
-    };
-    CreateShareLinkResponse: {
-      /** Format: uuid */
-      id: string;
-      token: string;
-      /** Format: date-time */
-      expiresAt: string;
-    };
-    RevokeShareLinkResponse: {
-      /** Format: uuid */
-      id: string;
-      /** Format: date-time */
-      revokedAt: string;
-    };
-    SharedTrip: {
-      passengerAlias: string;
-      driverAlias: string;
-      vehicle: {
-        make: string;
-        model: string;
-        color: string;
-        plate: string;
-      };
-      meetingPointName: string;
-      estimatedTime: string;
-      /** @enum {string} */
-      status: "not_started" | "in_progress" | "arrived";
-    };
-    DataSourcesResponse: {
-      sources: components["schemas"]["DataSource"][];
-    };
-    DataSource:
-      | {
-          id: string;
-          /** @enum {string} */
-          topic: "tiempos" | "impacto" | "contexto";
-          label: string;
-          value: number | string;
-          unit: string;
-          source: string;
-          /** Format: date */
-          date: string;
-          /** @enum {string} */
-          kind: "dato";
-          /** Format: uri */
-          url: string;
-        }
-      | {
-          id: string;
-          /** @enum {string} */
-          topic: "tiempos" | "impacto" | "contexto";
-          label: string;
-          value: number | string;
-          unit: string;
-          source: string;
-          /** Format: date */
-          date: string;
-          /** @enum {string} */
-          kind: "estimado";
-          url: null;
+        RequestSeatRequest: {
+            message?: string;
         };
-  };
-  responses: never;
-  parameters: never;
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+        AcceptBookingResponse: {
+            booking: {
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                status: "pending" | "accepted" | "rejected" | "cancelled_by_passenger" | "cancelled_by_driver" | "completed" | "no_show";
+            };
+        };
+        RejectBookingResponse: {
+            booking: {
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                status: "pending" | "accepted" | "rejected" | "cancelled_by_passenger" | "cancelled_by_driver" | "completed" | "no_show";
+            };
+        };
+        OfferBookingsResponse: {
+            /** Format: uuid */
+            offerId: string;
+            seatsTaken: number;
+            seatsTotal: number;
+            bookings: {
+                /** Format: uuid */
+                id: string;
+                passengerName: string;
+                /** Format: uri */
+                passengerPhotoUrl: string | null;
+                /** @enum {string} */
+                status: "pending" | "accepted" | "rejected" | "cancelled_by_passenger" | "cancelled_by_driver" | "completed" | "no_show";
+                meetingPointName: string;
+                pickupAt: string;
+                detourMinutes: number;
+                message: string | null;
+                avoidsCar: boolean;
+                recommended: boolean;
+            }[];
+        };
+        CancelBookingResponse: {
+            booking: {
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                status: "pending" | "accepted" | "rejected" | "cancelled_by_passenger" | "cancelled_by_driver" | "completed" | "no_show";
+            };
+        };
+        MatchRunsResponse: {
+            /** @enum {string} */
+            direction: "outbound" | "return";
+            date: string;
+            optimizer: components["schemas"]["MatchRunSummary"];
+            firstComeFirstServed: components["schemas"]["MatchRunSummary"];
+            suggestions: components["schemas"]["MatchSuggestion"][];
+        };
+        MatchRunSummary: {
+            /** Format: uuid */
+            id: string;
+            carTripsAvoided: number;
+            passengersMatched: number;
+            detourMinutes: number;
+            walkMinutes: number;
+            unassigned: number;
+            offers: number;
+            requests: number;
+            durationMs: number;
+            createdAt: string;
+        };
+        MatchSuggestion: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            offerId: string;
+            driverName: string;
+            /** Format: uuid */
+            requestId: string;
+            passengerName: string;
+            meetingPointName: string;
+            pickupAt: string;
+            arrivalAt: string;
+            detourMinutes: number;
+            walkMinutes: number;
+            avoidsCarTrip: boolean;
+            /** @enum {string} */
+            status: "proposed" | "accepted" | "rejected";
+        };
+        RunMatchingRequest: {
+            /** @enum {string} */
+            direction: "outbound" | "return";
+            date: string;
+        };
+        MatchProposalsResponse: {
+            proposals: components["schemas"]["MatchProposal"][];
+        };
+        MatchProposal: {
+            /** Format: uuid */
+            suggestionId: string;
+            /** Format: uuid */
+            offerId: string;
+            driverName: string;
+            /** Format: uri */
+            driverPhotoUrl: string | null;
+            /** @enum {string} */
+            direction: "outbound" | "return";
+            date: string;
+            meetingPointName: string;
+            pickupAt: string;
+            arrivalAt: string;
+            walkMinutes: number;
+            fuelEstimate: components["schemas"]["FuelEstimate"];
+        };
+        MyChatsResponse: {
+            chats: {
+                /** Format: uuid */
+                offerId: string;
+                /** @enum {string} */
+                role: "driver" | "passenger";
+                driverName: string;
+                /** Format: uri */
+                driverPhotoUrl: string | null;
+                communityName: string;
+                originZoneName: string;
+                destinationName: string;
+                departureTime: string;
+                date: string | null;
+                daysOfWeek: number[] | null;
+                meetingPointName: string | null;
+            }[];
+        };
+        TripMessagesResponse: {
+            conversation: {
+                /** Format: uuid */
+                offerId: string;
+                communityName: string;
+                origin: string;
+                destination: string;
+                departureTime: string;
+                date: string | null;
+                daysOfWeek: number[] | null;
+                /** @enum {string} */
+                role: "driver" | "passenger";
+                participants: {
+                    name: string;
+                    /** @enum {string} */
+                    role: "driver" | "passenger";
+                    /** Format: uri */
+                    photoUrl: string | null;
+                }[];
+                meetingPoints: {
+                    participantName: string;
+                    name: string;
+                }[];
+            };
+            messages: {
+                /** Format: uuid */
+                id: string;
+                senderName: string;
+                /** Format: uri */
+                senderPhotoUrl: string | null;
+                /** @enum {string} */
+                senderRole: "driver" | "passenger";
+                /** @enum {string} */
+                kind: "text" | "quick";
+                body: string;
+                /** Format: date-time */
+                createdAt: string;
+            }[];
+        };
+        SendTripMessageResponse: {
+            message: {
+                /** Format: uuid */
+                id: string;
+                senderName: string;
+                /** Format: uri */
+                senderPhotoUrl: string | null;
+                /** @enum {string} */
+                senderRole: "driver" | "passenger";
+                /** @enum {string} */
+                kind: "text" | "quick";
+                body: string;
+                /** Format: date-time */
+                createdAt: string;
+            };
+        };
+        WaitlistEntryResponse: {
+            message: string;
+        };
+        WaitlistEntryRequest: {
+            /** @enum {string} */
+            kind: "institution";
+            institution: string;
+            /** Format: email */
+            email: string;
+            /** @enum {boolean} */
+            consent: true;
+            website?: string;
+            role: string;
+            onSiteCount: number;
+            wantsPilot: boolean;
+        } | {
+            /** @enum {string} */
+            kind: "individual";
+            institution: string;
+            /** Format: email */
+            email: string;
+            /** @enum {boolean} */
+            consent: true;
+            website?: string;
+        };
+        WaitlistSummary: {
+            institutions: number;
+            individuals: number;
+        };
+        PublicStats: {
+            community: {
+                name: string;
+                isDemo: boolean;
+            };
+            /** Format: date-time */
+            updatedAt: string;
+            activity: {
+                enrolled: number;
+                drivers: number;
+                activeOffers: number;
+                openNeeds: number;
+                coverage: number | null;
+                acceptedRequests: number;
+                completedTrips: number;
+            };
+            waitlist: {
+                institutions: number;
+                individuals: number;
+            };
+            comparison: {
+                date: string;
+                /** @enum {string} */
+                direction: "outbound" | "return";
+                optimizer: {
+                    carTripsAvoided: number;
+                    passengersMatched: number;
+                };
+                firstComeFirstServed: {
+                    carTripsAvoided: number;
+                    passengersMatched: number;
+                };
+            } | null;
+            districts: {
+                district: string;
+                people: number | null;
+            }[];
+            people: {
+                transported: number;
+                fromPublicTransport: number;
+            };
+            vehicleImpact: {
+                potential: {
+                    trips: number;
+                    km: number;
+                    co2Kg: number;
+                };
+                verified: {
+                    trips: number;
+                    km: number;
+                    co2Kg: number;
+                };
+                induced: number;
+                net: number;
+            };
+        };
+        CreateShareLinkResponse: {
+            /** Format: uuid */
+            id: string;
+            token: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        RevokeShareLinkResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            revokedAt: string;
+        };
+        SharedTrip: {
+            passengerAlias: string;
+            driverAlias: string;
+            vehicle: {
+                make: string;
+                model: string;
+                color: string;
+                plate: string;
+            };
+            meetingPointName: string;
+            estimatedTime: string;
+            /** @enum {string} */
+            status: "not_started" | "in_progress" | "arrived";
+        };
+        DataSourcesResponse: {
+            sources: components["schemas"]["DataSource"][];
+        };
+        DataSource: {
+            id: string;
+            /** @enum {string} */
+            topic: "tiempos" | "impacto" | "contexto";
+            label: string;
+            value: number | string;
+            unit: string;
+            source: string;
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            kind: "dato";
+            /** Format: uri */
+            url: string;
+        } | {
+            id: string;
+            /** @enum {string} */
+            topic: "tiempos" | "impacto" | "contexto";
+            label: string;
+            value: number | string;
+            unit: string;
+            source: string;
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            kind: "estimado";
+            url: null;
+        };
+    };
+    responses: never;
+    parameters: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export type operations = Record<string, never>;

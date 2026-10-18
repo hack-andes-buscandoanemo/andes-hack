@@ -322,6 +322,10 @@ describe("Viajes", () => {
     expect(within(card).getByText("2 de 3 asientos libres")).toBeInTheDocument();
     expect(within(card).getByText("2 solicitudes pendientes")).toBeInTheDocument();
     expect(within(card).getByText("Pasajeros: Lucía R.")).toBeInTheDocument();
+    expect(within(card).getByRole("link", { name: "Solicitudes" })).toHaveAttribute(
+      "href",
+      `/viajes/${OFFER_ID}/solicitudes`,
+    );
     expect(within(card).queryByText(/Placa/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Como conductor" })).toHaveAttribute(
       "aria-pressed",

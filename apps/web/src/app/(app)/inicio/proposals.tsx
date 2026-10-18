@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { FUEL_NOTE, FuelShareLine } from "@/components/fuel-estimate";
+import ProfileAvatar from "@/components/profile-avatar";
 import { Button } from "@/components/ui/button";
 import { reasonOf } from "@/lib/api-error";
 import { communitiesApi, type MatchProposal } from "@/lib/communities-api";
@@ -62,7 +63,14 @@ export default function Proposals({ communityId }: { communityId: string }) {
           key={proposal.suggestionId}
           className="flex flex-col gap-1 rounded-2xl border-2 border-brand-yellow bg-card p-4 text-sm shadow-sm"
         >
-          <p className="font-bold">{`Tenemos una propuesta para ti: viaje de ${proposal.driverName}`}</p>
+          <div className="flex items-center gap-3">
+            <ProfileAvatar
+              name={proposal.driverName}
+              photoUrl={proposal.driverPhotoUrl}
+              className="size-10"
+            />
+            <p className="font-bold">{`Tenemos una propuesta para ti: viaje de ${proposal.driverName}`}</p>
+          </div>
           <p className="text-muted-foreground">
             {`${proposal.direction === "outbound" ? "Ida" : "Regreso"} · ${dateLabel(proposal.date)}`}
           </p>
