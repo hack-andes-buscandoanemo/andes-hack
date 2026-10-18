@@ -801,6 +801,170 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/offers/{id}/live-location": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Posición del auto para quien maneja y los pasajeros aceptados; los demás solo saben si está activo */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LiveLocation"];
+                    };
+                };
+                /** @description No hay sesión iniciada (`unauthorized`) */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description El viaje no existe o no es de tu comunidad (`offer_not_found`) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["ShareLiveLocationRequest"];
+                };
+            };
+            responses: {
+                /** @description Te Jalo activo: la posición del auto quedó guardada */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LiveLocation"];
+                    };
+                };
+                /** @description No hay sesión iniciada (`unauthorized`) */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Solo quien maneja puede compartir la posición (`not_the_driver`) */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description El viaje no existe (`offer_not_found`) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description El viaje no está activo (`offer_not_active`) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Te Jalo apagado: la posición del auto se borró */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LiveLocation"];
+                    };
+                };
+                /** @description No hay sesión iniciada (`unauthorized`) */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Solo quien maneja puede dejar de compartir (`not_the_driver`) */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description El viaje no existe (`offer_not_found`) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/offers/{id}": {
         parameters: {
             query?: never;
@@ -2711,6 +2875,9 @@ export interface components {
             maxDetourMinutes: number;
             womenOnly: boolean;
             note: string | null;
+            priceCents: number | null;
+            paymentMethods: ("yape" | "cash")[];
+            live: boolean;
             /** @enum {string} */
             status: "active" | "paused" | "cancelled";
         };
@@ -2732,6 +2899,9 @@ export interface components {
             /** @default false */
             womenOnly: boolean;
             note?: string | null;
+            priceCents?: number | null;
+            /** @default [] */
+            paymentMethods: ("yape" | "cash")[];
         };
         UpdateOfferStatusRequest: {
             /** @enum {string} */
@@ -2740,6 +2910,8 @@ export interface components {
         SearchTripsResponse: {
             /** Format: uuid */
             requestId: string;
+            originZoneId: string;
+            originZoneName: string;
             matches: components["schemas"]["TripMatch"][];
             /** @enum {string|null} */
             reason: "different_community" | "days_mismatch" | "women_only" | "previously_rejected" | "no_seats" | "no_walkable_meeting_point" | "outside_time_window" | "detour_exceeded" | null;
@@ -2762,6 +2934,9 @@ export interface components {
             detourMinutes: number;
             walkMinutes: number;
             fuelEstimate: components["schemas"]["FuelEstimate"];
+            priceCents: number | null;
+            paymentMethods: ("yape" | "cash")[];
+            live: boolean;
         };
         FuelEstimate: {
             tripSoles: number;
@@ -2771,7 +2946,8 @@ export interface components {
         SearchTripsRequest: {
             /** @enum {string} */
             direction: "outbound" | "return";
-            originZoneId: string;
+            originZoneId?: string;
+            location?: components["schemas"]["LatLng"];
             windowStart: string;
             windowEnd: string;
             daysOfWeek?: number[] | null;
@@ -2781,6 +2957,18 @@ export interface components {
             /** @enum {string} */
             fallbackMode: "drive_alone" | "taxi_app" | "public_transport" | "picked_up" | "other";
             womenOnly?: boolean;
+        };
+        LatLng: {
+            lat: number;
+            lng: number;
+        };
+        LiveLocation: {
+            active: boolean;
+            position: {
+                lat: number;
+                lng: number;
+                recordedAt: string;
+            } | null;
         };
         OfferDetail: {
             /** Format: uuid */
@@ -2825,6 +3013,9 @@ export interface components {
                 status: "pending" | "accepted" | "rejected" | "cancelled_by_passenger" | "cancelled_by_driver" | "completed" | "no_show";
             } | null;
             fuelEstimate: components["schemas"]["FuelEstimate"];
+            priceCents: number | null;
+            paymentMethods: ("yape" | "cash")[];
+            live: boolean;
             routeMap: components["schemas"]["RouteMap"];
             alternatives?: components["schemas"]["TripMatch"][];
         };
@@ -2842,6 +3033,10 @@ export interface components {
                 lng: number;
                 mine: boolean;
             }[];
+        };
+        ShareLiveLocationRequest: {
+            lat: number;
+            lng: number;
         };
         MyTripsResponse: {
             trips: components["schemas"]["MyTrip"][];

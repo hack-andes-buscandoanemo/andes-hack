@@ -20,6 +20,8 @@ export type SearchTripsResponse = components["schemas"]["SearchTripsResponse"];
 export type TripMatch = components["schemas"]["TripMatch"];
 export type OfferDetail = components["schemas"]["OfferDetail"];
 export type RouteMap = components["schemas"]["RouteMap"];
+export type LiveLocation = components["schemas"]["LiveLocation"];
+export type PaymentMethod = TripOfferSummary["paymentMethods"][number];
 export type MyTrip = components["schemas"]["MyTrip"];
 export type MyTripsResponse = components["schemas"]["MyTripsResponse"];
 export type RequestSeatRequest = components["schemas"]["RequestSeatRequest"];
@@ -182,6 +184,28 @@ export const communitiesApi = {
   },
   async getOfferDetail(offerId: string): Promise<OfferDetail> {
     const response = await httpClient.get(`/offers/${offerId}` as "/offers/{id}");
+    return response.data;
+  },
+  async shareLiveLocation(
+    offerId: string,
+    position: { lat: number; lng: number },
+  ): Promise<LiveLocation> {
+    const response = await httpClient.post(
+      `/offers/${offerId}/live-location` as "/offers/{id}/live-location",
+      position,
+    );
+    return response.data;
+  },
+  async stopLiveLocation(offerId: string): Promise<LiveLocation> {
+    const response = await httpClient.delete(
+      `/offers/${offerId}/live-location` as "/offers/{id}/live-location",
+    );
+    return response.data;
+  },
+  async getLiveLocation(offerId: string): Promise<LiveLocation> {
+    const response = await httpClient.get(
+      `/offers/${offerId}/live-location` as "/offers/{id}/live-location",
+    );
     return response.data;
   },
   async listMyTrips(

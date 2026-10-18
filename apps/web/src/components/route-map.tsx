@@ -10,11 +10,18 @@ export interface TileEvents {
   onFail(): void;
 }
 
+// What removes the map; when it comes from the real map it also moves the live car and the
+// suggested drop-off, which a stand-in map may leave out.
+export type MapHandle = (() => void) & {
+  setLivePosition?: (position: { lat: number; lng: number } | null) => void;
+  setDropOff?: (point: { lat: number; lng: number; name: string } | null) => void;
+};
+
 export type DrawRouteMap = (
   container: HTMLElement,
   route: RouteMapData,
   events: TileEvents,
-) => () => void;
+) => MapHandle;
 
 // Leaflet is a separate chunk, downloaded only when a map is on screen.
 const loadLeaflet = () => import("./leaflet-map").then((module) => module.drawRouteMap);
@@ -28,17 +35,33 @@ function routeText(route: RouteMapData) {
 
 export default function RouteMap({
   route,
+  livePosition = null,
+  dropOff = null,
   loadMap = loadLeaflet,
 }: {
   route: RouteMapData;
+  // Where the car is right now (Te Jalo); null while nobody shares it.
+  livePosition?: { lat: number; lng: number } | null;
+  // The stop suggested to the passenger, near where they are really going.
+  dropOff?: { lat: number; lng: number; name: string } | null;
   loadMap?: () => Promise<DrawRouteMap>;
 }) {
   const container = useRef<HTMLDivElement>(null);
+  const handle = useRef<MapHandle | null>(null);
+  const latest = useRef({ livePosition, dropOff });
+  latest.current = { livePosition, dropOff };
   const [state, setState] = useState<"loading" | "ready" | "failed">("loading");
 
   useEffect(() => {
+    handle.current?.setLivePosition?.(livePosition);
+  }, [livePosition]);
+  useEffect(() => {
+    handle.current?.setDropOff?.(dropOff);
+  }, [dropOff]);
+
+  useEffect(() => {
     let active = true;
-    let remove: (() => void) | undefined;
+    let remove: MapHandle | undefined;
     setState("loading");
     loadMap()
       .then((draw) => {
@@ -52,12 +75,17 @@ export default function RouteMap({
             if (active) setState("failed");
           },
         });
+        handle.current = remove;
+        // A position or stop that arrived while the map was loading is drawn now.
+        remove.setLivePosition?.(latest.current.livePosition);
+        remove.setDropOff?.(latest.current.dropOff);
       })
       .catch(() => {
         if (active) setState("failed");
       });
     return () => {
       active = false;
+      handle.current = null;
       remove?.();
     };
   }, [route, loadMap]);

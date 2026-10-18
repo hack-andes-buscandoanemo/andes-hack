@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Route } from "next";
 
 import { FuelShareLine } from "@/components/fuel-estimate";
+import { LiveBadge, TripPrice } from "@/components/trip-price";
 import ProfileAvatar from "@/components/profile-avatar";
 import type { TripMatch } from "@/lib/communities-api";
 
@@ -50,6 +51,8 @@ export default function TripCard({
         <li className="rounded-full bg-muted px-2.5 py-0.5">{`${match.walkMinutes} min a pie`}</li>
         <li className="rounded-full bg-muted px-2.5 py-0.5">{`Llega ${match.arrivalAt}`}</li>
       </ul>
+      {match.live ? <LiveBadge /> : null}
+      <TripPrice priceCents={match.priceCents} paymentMethods={match.paymentMethods} />
       <FuelShareLine estimate={match.fuelEstimate} />
       <Link
         href={`/viajes/${match.offerId}` as Route}

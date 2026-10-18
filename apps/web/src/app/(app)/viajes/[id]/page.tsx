@@ -6,15 +6,19 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { CancelTripDialog } from "@/components/cancel-trip-dialog";
+import DropOffSuggestion, { type DropOff } from "@/components/drop-off-suggestion";
 import EmptyState from "@/components/empty-state";
 import { FuelEstimateDetail } from "@/components/fuel-estimate";
+import LiveTrip from "@/components/live-trip";
 import ShareTrip from "@/components/share-trip";
 import SourceInfo from "@/components/source-info";
 import ProfileAvatar from "@/components/profile-avatar";
 import RouteMap from "@/components/route-map";
 import { Button } from "@/components/ui/button";
+import { LiveBadge, TripPrice } from "@/components/trip-price";
 import { reasonOf } from "@/lib/api-error";
 import { communitiesApi, type OfferDetail } from "@/lib/communities-api";
+import type { Coordinates } from "@/lib/geo";
 
 import { clockLabel, dateLabel, daysLabel } from "../../buscar/schedule";
 
@@ -32,6 +36,8 @@ export default function TripDetailPage() {
   const [driverCancelled, setDriverCancelled] = useState(false);
   const [passengerCancelled, setPassengerCancelled] = useState(false);
   const [showAlternatives, setShowAlternatives] = useState(false);
+  const [livePosition, setLivePosition] = useState<Coordinates | null>(null);
+  const [dropOff, setDropOff] = useState<DropOff | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -47,6 +53,8 @@ export default function TripDetailPage() {
     setDriverCancelled(false);
     setPassengerCancelled(false);
     setShowAlternatives(false);
+    setLivePosition(null);
+    setDropOff(null);
     communitiesApi
       .getOfferDetail(id)
       .then((loaded) => {
@@ -369,7 +377,7 @@ export default function TripDetailPage() {
       </section>
       <section className="space-y-1 rounded-2xl border bg-card p-4 shadow-sm">
         <p className="font-semibold">{`${from} → ${to}`}</p>
-        <RouteMap route={detail.routeMap} />
+        <RouteMap route={detail.routeMap} livePosition={livePosition} dropOff={dropOff} />
         {detail.daysOfWeek ? (
           <p className="text-sm">{`Viaje recurrente: ${daysLabel(detail.daysOfWeek)}`}</p>
         ) : detail.date ? (
@@ -390,7 +398,21 @@ export default function TripDetailPage() {
           </>
         ) : null}
       </section>
+      <LiveTrip
+        offerId={detail.offerId}
+        role={
+          detail.isOwn
+            ? "driver"
+            : detail.booking?.status === "accepted" && !withdrawn && !passengerCancelled
+              ? "passenger"
+              : "viewer"
+        }
+        onPosition={setLivePosition}
+      />
+      {detail.isOwn ? null : <DropOffSuggestion route={detail.routeMap} onSuggest={setDropOff} />}
       <section className="space-y-1 rounded-2xl border bg-card p-4 text-sm shadow-sm">
+        {detail.live ? <LiveBadge /> : null}
+        <TripPrice priceCents={detail.priceCents} paymentMethods={detail.paymentMethods} />
         <p>
           {detail.seatsFree === 1
             ? "1 asiento disponible"
@@ -451,7 +473,7 @@ export default function TripDetailPage() {
       {action}
       <EmptyState>
         <span className="block">Espera máxima: 3 min</span>
-        <span className="block">Sin tarifa: Te Jalo no cobra</span>
+        <span className="block">Te Jalo no cobra: el pago se hace con el conductor</span>
         <span className="block">Puedes cancelar cuando quieras</span>
       </EmptyState>
     </main>
