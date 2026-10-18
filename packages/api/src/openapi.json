@@ -1058,12 +1058,6 @@
             "type": "string",
             "format": "uuid"
           },
-          "driverId": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "status": {
             "type": "string",
             "enum": [
@@ -1247,7 +1241,6 @@
         },
         "required": [
           "offerId",
-          "driverId",
           "status",
           "driverName",
           "reportTargets",

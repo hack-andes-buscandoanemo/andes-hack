@@ -2785,7 +2785,6 @@ export interface components {
         OfferDetail: {
             /** Format: uuid */
             offerId: string;
-            driverId: string | null;
             /** @enum {string} */
             status: "active" | "paused" | "cancelled";
             driverName: string;

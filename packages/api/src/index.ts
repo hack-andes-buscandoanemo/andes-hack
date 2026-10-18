@@ -833,7 +833,6 @@ export const RouteMapSchema = z
 export const OfferDetailSchema = z
   .object({
     offerId: z.string().uuid(),
-    driverId: z.string().nullable(),
     // Only an active trip can be requested; paused and cancelled trips are unavailable.
     status: z.enum(["active", "paused", "cancelled"]),
     driverName: z.string(),

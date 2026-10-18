@@ -358,7 +358,6 @@ export async function getOfferDetail(
     : new Map<string, string>();
   return {
     ...result.detail,
-    driverId: result.driverId,
     driverPhotoUrl: result.driverId ? (photoUrls.get(result.driverId) ?? null) : null,
   };
 }
