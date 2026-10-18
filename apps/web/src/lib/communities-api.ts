@@ -34,6 +34,8 @@ export type MatchProposal = components["schemas"]["MatchProposal"];
 export type OfferBookingsResponse = components["schemas"]["OfferBookingsResponse"];
 export type AcceptBookingResponse = components["schemas"]["AcceptBookingResponse"];
 export type RejectBookingResponse = components["schemas"]["RejectBookingResponse"];
+export type StartTripResponse = components["schemas"]["StartTripResponse"];
+export type TripProgressResponse = components["schemas"]["TripProgressResponse"];
 export type MyChatsResponse = components["schemas"]["MyChatsResponse"];
 export type TripMessagesResponse = components["schemas"]["TripMessagesResponse"];
 export type TripMessage = TripMessagesResponse["messages"][number];
@@ -256,6 +258,28 @@ export const communitiesApi = {
   async rejectBooking(bookingId: string): Promise<RejectBookingResponse> {
     const response = await httpClient.post(
       `/bookings/${bookingId}/reject` as "/bookings/{id}/reject",
+    );
+    return response.data;
+  },
+  async startTrip(offerId: string): Promise<StartTripResponse> {
+    const response = await httpClient.post(`/offers/${offerId}/start` as "/offers/{id}/start");
+    return response.data;
+  },
+  async boardBooking(bookingId: string): Promise<TripProgressResponse> {
+    const response = await httpClient.post(
+      `/bookings/${bookingId}/board` as "/bookings/{id}/board",
+    );
+    return response.data;
+  },
+  async arriveBooking(bookingId: string): Promise<TripProgressResponse> {
+    const response = await httpClient.post(
+      `/bookings/${bookingId}/arrive` as "/bookings/{id}/arrive",
+    );
+    return response.data;
+  },
+  async noShowBooking(bookingId: string): Promise<TripProgressResponse> {
+    const response = await httpClient.post(
+      `/bookings/${bookingId}/no-show` as "/bookings/{id}/no-show",
     );
     return response.data;
   },

@@ -9,6 +9,7 @@ import { CancelTripDialog } from "@/components/cancel-trip-dialog";
 import { pairReturns, type PairedReturn } from "@/components/return-pairs";
 import ReturnTripCard from "@/components/return-trip-card";
 import ShareTrip from "@/components/share-trip";
+import TripProgress from "@/components/trip-progress";
 import TripSummaryCard from "@/components/trip-summary-card";
 import { FUEL_NOTE } from "@/components/fuel-estimate";
 import { Button } from "@/components/ui/button";
@@ -62,7 +63,7 @@ function TripCard({
   cancelSubmitting,
   onConfirmCancel,
   onDismissCancel,
-  coordinateReturn,
+  upcoming,
   returns,
 }: {
   trip: MyTrip;
@@ -73,7 +74,8 @@ function TripCard({
   cancelSubmitting: boolean;
   onConfirmCancel: (trip: MyTrip) => void;
   onDismissCancel: () => void;
-  coordinateReturn: boolean;
+  // Day-of-trip buttons and the return card only make sense for trips still ahead.
+  upcoming: boolean;
   returns: PairedReturn[];
 }) {
   const canCancel =
@@ -105,6 +107,11 @@ function TripCard({
         {trip.role === "passenger" && trip.status === "accepted" ? (
           <ShareTrip bookingId={trip.id} label="Compartir viaje" />
         ) : null}
+        {upcoming &&
+        ((trip.role === "passenger" && trip.status === "accepted") ||
+          (trip.role === "driver" && trip.status === "active")) ? (
+          <TripProgress trip={trip} />
+        ) : null}
         {canCancel ? (
           <Button
             type="button"
@@ -126,7 +133,7 @@ function TripCard({
             onDismiss={onDismissCancel}
           />
         ) : null}
-        {coordinateReturn ? <ReturnTripCard trip={trip} returns={returns} /> : null}
+        {upcoming ? <ReturnTripCard trip={trip} returns={returns} /> : null}
       </TripSummaryCard>
     </li>
   );
@@ -324,7 +331,7 @@ export default function Viajes() {
             <ul className="space-y-3">
               {trips.map((trip) => (
                 <TripCard
-                  key={trip.id}
+                  key={`${trip.id}:${trip.date ?? ""}`}
                   trip={trip}
                   busy={
                     togglingId === trip.id || (cancelSubmitting && cancellingTripId === trip.id)
@@ -335,7 +342,7 @@ export default function Viajes() {
                   cancelSubmitting={cancelSubmitting}
                   onConfirmCancel={handleCancel}
                   onDismissCancel={() => setCancellingTripId(null)}
-                  coordinateReturn={scope === "upcoming"}
+                  upcoming={scope === "upcoming"}
                   returns={returnsByTrip.get(trip.id) ?? []}
                 />
               ))}
