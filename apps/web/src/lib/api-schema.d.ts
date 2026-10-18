@@ -177,11 +177,196 @@ export interface paths {
             "application/json": components["schemas"]["MeResponse"];
           };
         };
+        /** @description La cuenta ya no existe */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
       };
     };
     put?: never;
     post?: never;
+    delete: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Cuenta eliminada y datos personales borrados */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["DeleteMeResponse"];
+          };
+        };
+        /** @description La cuenta ya no existe */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/me/profile-photo/upload": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: {
+        content: {
+          "application/json": components["schemas"]["ProfilePhotoUploadRequest"];
+        };
+      };
+      responses: {
+        /** @description URL de corta duración para subir la foto directamente a R2 */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ProfilePhotoUploadResponse"];
+          };
+        };
+      };
+    };
     delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/me/profile-photo/confirm": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: {
+        content: {
+          "application/json": {
+            key: string;
+          };
+        };
+      };
+      responses: {
+        /** @description Foto comprobada y guardada en el perfil */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              /** Format: uri */
+              photoUrl: string;
+            };
+          };
+        };
+        /** @description La imagen no cumple el formato o tamaño permitidos */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/me/profile-photo": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description URL temporal de la propia foto de perfil */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["MyProfilePhotoResponse"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Foto de perfil eliminada */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              message: string;
+            };
+          };
+        };
+      };
+    };
     options?: never;
     head?: never;
     patch?: never;
@@ -616,7 +801,7 @@ export interface paths {
             "application/json": components["schemas"]["ApiError"];
           };
         };
-        /** @description El viaje no existe o es de otra comunidad: se responde igual para no revelar ids (`offer_not_found`) */
+        /** @description El viaje no existe o no pertenece a tu comunidad (`offer_not_found`) */
         404: {
           headers: {
             [name: string]: unknown;
@@ -707,7 +892,28 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Solicitudes visibles para el conductor del viaje */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["OfferBookingsResponse"];
+          };
+        };
+      };
+    };
     put?: never;
     post: {
       parameters: {
@@ -742,7 +948,7 @@ export interface paths {
             "application/json": components["schemas"]["ApiError"];
           };
         };
-        /** @description Es el viaje propio (`own_offer`) */
+        /** @description No puedes solicitar un asiento en este viaje (`forbidden`) */
         403: {
           headers: {
             [name: string]: unknown;
@@ -751,7 +957,7 @@ export interface paths {
             "application/json": components["schemas"]["ApiError"];
           };
         };
-        /** @description El viaje no existe o es de otra comunidad (`offer_not_found`) */
+        /** @description El viaje o la comunidad no existen (`offer_not_found`) */
         404: {
           headers: {
             [name: string]: unknown;
@@ -760,7 +966,7 @@ export interface paths {
             "application/json": components["schemas"]["ApiError"];
           };
         };
-        /** @description Ya solicitado (`already_requested`), sin asientos (`no_seats`), sin búsqueda guardada (`search_required`) o el viaje ya no es compatible o ya no está activo (`no_longer_compatible`) */
+        /** @description No se puede solicitar este asiento (`booking_conflict`) */
         409: {
           headers: {
             [name: string]: unknown;
@@ -769,13 +975,87 @@ export interface paths {
             "application/json": components["schemas"]["ApiError"];
           };
         };
-        /** @description El mensaje supera 280 caracteres o el identificador no es válido (`validation_error`) */
+        /** @description Los datos enviados no son válidos (`validation_error`) */
         422: {
           headers: {
             [name: string]: unknown;
           };
           content: {
             "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/bookings/{id}/accept": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Solicitud aceptada y asiento reservado */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["AcceptBookingResponse"];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/bookings/{id}/reject": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Solicitud rechazada */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["RejectBookingResponse"];
           };
         };
       };
@@ -824,7 +1104,7 @@ export interface paths {
             "application/json": components["schemas"]["ApiError"];
           };
         };
-        /** @description La solicitud no existe o es de otra persona (`booking_not_found`) */
+        /** @description La solicitud no existe (`booking_not_found`) */
         404: {
           headers: {
             [name: string]: unknown;
@@ -833,7 +1113,7 @@ export interface paths {
             "application/json": components["schemas"]["ApiError"];
           };
         };
-        /** @description La solicitud ya fue aceptada y no se retira aquí (`not_withdrawable`) */
+        /** @description No se puede retirar esta solicitud (`booking_conflict`) */
         409: {
           headers: {
             [name: string]: unknown;
@@ -1076,6 +1356,120 @@ export interface paths {
     };
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/me/chats": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Viajes con asiento aceptado */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["MyChatsResponse"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/offers/{id}/messages": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: {
+      parameters: {
+        query?: {
+          after?: string;
+        };
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Mensajes y participantes aceptados del viaje */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["TripMessagesResponse"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: {
+        content: {
+          "application/json":
+            | {
+                /** @enum {string} */
+                kind: "text";
+                body: string;
+              }
+            | {
+                /** @enum {string} */
+                kind: "quick";
+                /** @enum {string} */
+                body:
+                  | "Ya salí"
+                  | "Estoy en el punto de encuentro"
+                  | "Llego en 5 min"
+                  | "Hoy no podré ir";
+              };
+        };
+      };
+      responses: {
+        /** @description Mensaje enviado */
+        201: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["SendTripMessageResponse"];
+          };
+        };
+      };
+    };
     delete?: never;
     options?: never;
     head?: never;
@@ -1357,6 +1751,38 @@ export interface components {
       womenOnly: boolean;
       isTeam: boolean;
     };
+    ApiError: {
+      /** @enum {boolean} */
+      success: false;
+      status: number;
+      error: string;
+      details?: {
+        code: string;
+        fields?: string[];
+      } & {
+        [key: string]: unknown;
+      };
+    };
+    DeleteMeResponse: {
+      message: string;
+      /** Format: date-time */
+      deletedAt: string;
+    };
+    ProfilePhotoUploadResponse: {
+      /** Format: uri */
+      uploadUrl: string;
+      key: string;
+      expiresIn: number;
+    };
+    ProfilePhotoUploadRequest: {
+      /** @enum {string} */
+      contentType: "image/jpeg" | "image/png" | "image/webp";
+      size: number;
+    };
+    MyProfilePhotoResponse: {
+      /** Format: uri */
+      photoUrl: string | null;
+    };
     UpdateMembershipRequest: {
       consentAccepted: boolean;
       /** @enum {string} */
@@ -1377,18 +1803,6 @@ export interface components {
     TravelPreferences: {
       identifiesAsWoman: boolean;
       womenOnly: boolean;
-    };
-    ApiError: {
-      /** @enum {boolean} */
-      success: false;
-      status: number;
-      error: string;
-      details?: {
-        code: string;
-        fields?: string[];
-      } & {
-        [key: string]: unknown;
-      };
     };
     VehiclesResponse: {
       vehicles: components["schemas"]["VehicleSummary"][];
@@ -1640,6 +2054,64 @@ export interface components {
     RequestSeatRequest: {
       message?: string;
     };
+    AcceptBookingResponse: {
+      booking: {
+        /** Format: uuid */
+        id: string;
+        /** @enum {string} */
+        status:
+          | "pending"
+          | "accepted"
+          | "rejected"
+          | "cancelled_by_passenger"
+          | "cancelled_by_driver"
+          | "completed"
+          | "no_show";
+      };
+    };
+    RejectBookingResponse: {
+      booking: {
+        /** Format: uuid */
+        id: string;
+        /** @enum {string} */
+        status:
+          | "pending"
+          | "accepted"
+          | "rejected"
+          | "cancelled_by_passenger"
+          | "cancelled_by_driver"
+          | "completed"
+          | "no_show";
+      };
+    };
+    OfferBookingsResponse: {
+      /** Format: uuid */
+      offerId: string;
+      seatsTaken: number;
+      seatsTotal: number;
+      bookings: {
+        /** Format: uuid */
+        id: string;
+        passengerName: string;
+        /** Format: uri */
+        passengerPhotoUrl: string | null;
+        /** @enum {string} */
+        status:
+          | "pending"
+          | "accepted"
+          | "rejected"
+          | "cancelled_by_passenger"
+          | "cancelled_by_driver"
+          | "completed"
+          | "no_show";
+        meetingPointName: string;
+        pickupAt: string;
+        detourMinutes: number;
+        message: string | null;
+        avoidsCar: boolean;
+        recommended: boolean;
+      }[];
+    };
     CancelBookingResponse: {
       booking: {
         /** Format: uuid */
@@ -1716,6 +2188,79 @@ export interface components {
       arrivalAt: string;
       walkMinutes: number;
       fuelEstimate: components["schemas"]["FuelEstimate"];
+    };
+    MyChatsResponse: {
+      chats: {
+        /** Format: uuid */
+        offerId: string;
+        /** @enum {string} */
+        role: "driver" | "passenger";
+        driverName: string;
+        /** Format: uri */
+        driverPhotoUrl: string | null;
+        communityName: string;
+        originZoneName: string;
+        destinationName: string;
+        departureTime: string;
+        date: string | null;
+        daysOfWeek: number[] | null;
+        meetingPointName: string | null;
+      }[];
+    };
+    TripMessagesResponse: {
+      conversation: {
+        /** Format: uuid */
+        offerId: string;
+        communityName: string;
+        origin: string;
+        destination: string;
+        departureTime: string;
+        date: string | null;
+        daysOfWeek: number[] | null;
+        /** @enum {string} */
+        role: "driver" | "passenger";
+        participants: {
+          name: string;
+          /** @enum {string} */
+          role: "driver" | "passenger";
+          /** Format: uri */
+          photoUrl: string | null;
+        }[];
+        meetingPoints: {
+          participantName: string;
+          name: string;
+        }[];
+      };
+      messages: {
+        /** Format: uuid */
+        id: string;
+        senderName: string;
+        /** Format: uri */
+        senderPhotoUrl: string | null;
+        /** @enum {string} */
+        senderRole: "driver" | "passenger";
+        /** @enum {string} */
+        kind: "text" | "quick";
+        body: string;
+        /** Format: date-time */
+        createdAt: string;
+      }[];
+    };
+    SendTripMessageResponse: {
+      message: {
+        /** Format: uuid */
+        id: string;
+        senderName: string;
+        /** Format: uri */
+        senderPhotoUrl: string | null;
+        /** @enum {string} */
+        senderRole: "driver" | "passenger";
+        /** @enum {string} */
+        kind: "text" | "quick";
+        body: string;
+        /** Format: date-time */
+        createdAt: string;
+      };
     };
     WaitlistEntryResponse: {
       message: string;

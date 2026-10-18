@@ -52,6 +52,8 @@ export const bookingStatusEnum = pgEnum("booking_status", [
   "no_show",
 ]);
 
+export const tripMessageKindEnum = pgEnum("trip_message_kind", ["text", "quick"]);
+
 // A trip happens on one date or every week on some weekdays, never both.
 // Weekdays are ISO, as in Postgres' extract(isodow): 1 = Monday … 7 = Sunday.
 const schedule = {
@@ -80,6 +82,7 @@ export const tripOffer = pgTable(
       .notNull()
       .references(() => community.id, { onDelete: "cascade" }),
     driverId: text("driver_id").references(() => user.id, { onDelete: "set null" }),
+    driverWasTeam: boolean("driver_was_team").default(false).notNull(),
     vehicleId: uuid("vehicle_id").references(() => vehicle.id, { onDelete: "set null" }),
     direction: tripDirectionEnum("direction").notNull(),
     // The zone at the member's end of the trip: departure on `outbound`, arrival on `return`.
@@ -155,6 +158,7 @@ export const seatBooking = pgTable(
       .notNull()
       .references(() => tripRequest.id, { onDelete: "restrict" }),
     passengerId: text("passenger_id").references(() => user.id, { onDelete: "set null" }),
+    passengerWasTeam: boolean("passenger_was_team").default(false).notNull(),
     meetingPointId: text("meeting_point_id")
       .notNull()
       .references(() => meetingPoint.id, { onDelete: "restrict" }),
@@ -172,10 +176,10 @@ export const seatBooking = pgTable(
   (table) => [
     index("seat_booking_offer_id_idx").on(table.offerId),
     index("seat_booking_passenger_id_idx").on(table.passengerId),
-    // One active booking per passenger and offer; after a rejection or a cancellation they can ask again.
+    // A rejection is final for this pair; a passenger may re-request after withdrawing.
     uniqueIndex("seat_booking_active_passenger_idx")
       .on(table.offerId, table.passengerId)
-      .where(sql`${table.status} IN ('pending', 'accepted')`),
+      .where(sql`${table.status} IN ('pending', 'accepted', 'rejected')`),
     // Only a closed booking can lose its passenger, so the index above always applies.
     check(
       "seat_booking_passenger_required_check",
@@ -184,6 +188,24 @@ export const seatBooking = pgTable(
   ],
 );
 
+export const tripMessage = pgTable(
+  "trip_message",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    offerId: uuid("offer_id")
+      .notNull()
+      .references(() => tripOffer.id, { onDelete: "cascade" }),
+    senderId: text("sender_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    kind: tripMessageKindEnum("kind").default("text").notNull(),
+    body: varchar("body", { length: 500 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index("trip_message_offer_created_idx").on(table.offerId, table.createdAt, table.id)],
+);
+
 export type TripOffer = typeof tripOffer.$inferSelect;
 export type TripRequest = typeof tripRequest.$inferSelect;
 export type SeatBooking = typeof seatBooking.$inferSelect;
+export type TripMessage = typeof tripMessage.$inferSelect;

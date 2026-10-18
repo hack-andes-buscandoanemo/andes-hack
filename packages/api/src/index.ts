@@ -34,6 +34,24 @@ export const HealthResponseSchema = z
   })
   .openapi("HealthResponse");
 
+// Body of every error the server answers: a readable Spanish message plus a stable `details.code`.
+export const ApiErrorSchema = z
+  .object({
+    success: z.literal(false),
+    status: z.number().int(),
+    error: z.string(),
+    details: z
+      .object({ code: z.string(), fields: z.array(z.string()).optional() })
+      .passthrough()
+      .optional(),
+  })
+  .openapi("ApiError");
+
+const apiErrorResponse = (description: string) => ({
+  description,
+  content: { "application/json": { schema: ApiErrorSchema } },
+});
+
 export const healthRoute = createRoute({
   method: "get",
   path: "/health",
@@ -205,6 +223,108 @@ export const getMeRoute = createRoute({
           schema: MeResponseSchema,
         },
       },
+    },
+    404: apiErrorResponse("La cuenta ya no existe"),
+  },
+});
+
+export const DeleteMeResponseSchema = z
+  .object({ message: z.string(), deletedAt: z.string().datetime() })
+  .openapi("DeleteMeResponse");
+
+export const deleteMeRoute = createRoute({
+  method: "delete",
+  path: "/me",
+  tags: ["Comunidades"],
+  responses: {
+    200: {
+      description: "Cuenta eliminada y datos personales borrados",
+      content: { "application/json": { schema: DeleteMeResponseSchema } },
+    },
+    404: apiErrorResponse("La cuenta ya no existe"),
+  },
+});
+
+const ProfilePhotoContentTypeSchema = z.enum(["image/jpeg", "image/png", "image/webp"]);
+
+export const profilePhotoUploadRoute = createRoute({
+  method: "post",
+  path: "/me/profile-photo/upload",
+  tags: ["Comunidades"],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z
+            .object({
+              contentType: ProfilePhotoContentTypeSchema,
+              size: z
+                .number()
+                .int()
+                .min(1)
+                .max(2 * 1024 * 1024),
+            })
+            .openapi("ProfilePhotoUploadRequest"),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "URL de corta duración para subir la foto directamente a R2",
+      content: {
+        "application/json": {
+          schema: z
+            .object({ uploadUrl: z.string().url(), key: z.string(), expiresIn: z.number().int() })
+            .openapi("ProfilePhotoUploadResponse"),
+        },
+      },
+    },
+  },
+});
+
+export const confirmProfilePhotoRoute = createRoute({
+  method: "post",
+  path: "/me/profile-photo/confirm",
+  tags: ["Comunidades"],
+  request: {
+    body: { content: { "application/json": { schema: z.object({ key: z.string().min(1) }) } } },
+  },
+  responses: {
+    200: {
+      description: "Foto comprobada y guardada en el perfil",
+      content: { "application/json": { schema: z.object({ photoUrl: z.string().url() }) } },
+    },
+    400: apiErrorResponse("La imagen no cumple el formato o tamaño permitidos"),
+  },
+});
+
+export const getMyProfilePhotoRoute = createRoute({
+  method: "get",
+  path: "/me/profile-photo",
+  tags: ["Comunidades"],
+  responses: {
+    200: {
+      description: "URL temporal de la propia foto de perfil",
+      content: {
+        "application/json": {
+          schema: z
+            .object({ photoUrl: z.string().url().nullable() })
+            .openapi("MyProfilePhotoResponse"),
+        },
+      },
+    },
+  },
+});
+
+export const deleteMyProfilePhotoRoute = createRoute({
+  method: "delete",
+  path: "/me/profile-photo",
+  tags: ["Comunidades"],
+  responses: {
+    200: {
+      description: "Foto de perfil eliminada",
+      content: { "application/json": { schema: z.object({ message: z.string() }) } },
     },
   },
 });
@@ -628,24 +748,6 @@ export const SearchTripsResponseSchema = z
   })
   .openapi("SearchTripsResponse");
 
-// Body of every error the server answers: a readable Spanish message plus a stable `details.code`.
-export const ApiErrorSchema = z
-  .object({
-    success: z.literal(false),
-    status: z.number().int(),
-    error: z.string(),
-    details: z
-      .object({ code: z.string(), fields: z.array(z.string()).optional() })
-      .passthrough()
-      .optional(),
-  })
-  .openapi("ApiError");
-
-const apiErrorResponse = (description: string) => ({
-  description,
-  content: { "application/json": { schema: ApiErrorSchema } },
-});
-
 export const updateTravelPreferencesRoute = createRoute({
   method: "put",
   path: "/communities/{id}/preferences",
@@ -690,7 +792,7 @@ const BookingStatusSchema = z.enum([
 export const OfferDetailSchema = z
   .object({
     offerId: z.string().uuid(),
-    // Only an active trip can be requested; a paused or cancelled one is shown as unavailable.
+    // Only an active trip can be requested; paused and cancelled trips are unavailable.
     status: z.enum(["active", "paused", "cancelled"]),
     driverName: z.string(),
     communityName: z.string(),
@@ -717,7 +819,7 @@ export const OfferDetailSchema = z
         walkMinutes: z.number().int(),
       })
       .nullable(),
-    // The person's own active request on this trip, if any.
+    // The person's active or rejected request on this trip, if any.
     booking: z.object({ id: z.string().uuid(), status: BookingStatusSchema }).nullable(),
     fuelEstimate: FuelEstimateSchema,
   })
@@ -734,9 +836,7 @@ export const getOfferDetailRoute = createRoute({
       content: { "application/json": { schema: OfferDetailSchema } },
     },
     401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
-    404: apiErrorResponse(
-      "El viaje no existe o es de otra comunidad: se responde igual para no revelar ids (`offer_not_found`)",
-    ),
+    404: apiErrorResponse("El viaje no existe o no pertenece a tu comunidad (`offer_not_found`)"),
     422: apiErrorResponse("El identificador no es válido (`validation_error`)"),
   },
 });
@@ -853,14 +953,203 @@ export const requestSeatRoute = createRoute({
       content: { "application/json": { schema: RequestSeatResponseSchema } },
     },
     401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
-    403: apiErrorResponse("Es el viaje propio (`own_offer`)"),
-    404: apiErrorResponse("El viaje no existe o es de otra comunidad (`offer_not_found`)"),
-    409: apiErrorResponse(
-      "Ya solicitado (`already_requested`), sin asientos (`no_seats`), sin búsqueda guardada (`search_required`) o el viaje ya no es compatible o ya no está activo (`no_longer_compatible`)",
-    ),
-    422: apiErrorResponse(
-      "El mensaje supera 280 caracteres o el identificador no es válido (`validation_error`)",
-    ),
+    403: apiErrorResponse("No puedes solicitar un asiento en este viaje (`forbidden`)"),
+    404: apiErrorResponse("El viaje o la comunidad no existen (`offer_not_found`)"),
+    409: apiErrorResponse("No se puede solicitar este asiento (`booking_conflict`)"),
+    422: apiErrorResponse("Los datos enviados no son válidos (`validation_error`)"),
+  },
+});
+
+export const acceptBookingRoute = createRoute({
+  method: "post",
+  path: "/bookings/{id}/accept",
+  tags: ["Ofertas"],
+  request: { params: JoinCommunityParamsSchema },
+  responses: {
+    200: {
+      description: "Solicitud aceptada y asiento reservado",
+      content: {
+        "application/json": {
+          schema: z
+            .object({ booking: z.object({ id: z.string().uuid(), status: BookingStatusSchema }) })
+            .openapi("AcceptBookingResponse"),
+        },
+      },
+    },
+  },
+});
+
+export const rejectBookingRoute = createRoute({
+  method: "post",
+  path: "/bookings/{id}/reject",
+  tags: ["Ofertas"],
+  request: { params: JoinCommunityParamsSchema },
+  responses: {
+    200: {
+      description: "Solicitud rechazada",
+      content: {
+        "application/json": {
+          schema: z
+            .object({ booking: z.object({ id: z.string().uuid(), status: BookingStatusSchema }) })
+            .openapi("RejectBookingResponse"),
+        },
+      },
+    },
+  },
+});
+
+export const QuickMessageSchema = z.enum([
+  "Ya salí",
+  "Estoy en el punto de encuentro",
+  "Llego en 5 min",
+  "Hoy no podré ir",
+]);
+
+export const TripMessageBodySchema = z.union([
+  z.object({ kind: z.literal("text"), body: z.string().trim().min(1).max(500) }),
+  z.object({ kind: z.literal("quick"), body: QuickMessageSchema }),
+]);
+
+export const TripMessageSchema = z.object({
+  id: z.string().uuid(),
+  senderName: z.string(),
+  senderPhotoUrl: z.string().url().nullable(),
+  senderRole: z.enum(["driver", "passenger"]),
+  kind: z.enum(["text", "quick"]),
+  body: z.string(),
+  createdAt: z.string().datetime(),
+});
+
+export const listMyChatsRoute = createRoute({
+  method: "get",
+  path: "/me/chats",
+  tags: ["Viajes"],
+  responses: {
+    200: {
+      description: "Viajes con asiento aceptado",
+      content: {
+        "application/json": {
+          schema: z
+            .object({
+              chats: z.array(
+                z.object({
+                  offerId: z.string().uuid(),
+                  role: z.enum(["driver", "passenger"]),
+                  driverName: z.string(),
+                  driverPhotoUrl: z.string().url().nullable(),
+                  communityName: z.string(),
+                  originZoneName: z.string(),
+                  destinationName: z.string(),
+                  departureTime: z.string(),
+                  date: z.string().nullable(),
+                  daysOfWeek: z.array(z.number().int()).nullable(),
+                  meetingPointName: z.string().nullable(),
+                }),
+              ),
+            })
+            .openapi("MyChatsResponse"),
+        },
+      },
+    },
+  },
+});
+
+export const tripMessagesRoute = createRoute({
+  method: "get",
+  path: "/offers/{id}/messages",
+  tags: ["Viajes"],
+  request: {
+    params: JoinCommunityParamsSchema,
+    query: z.object({ after: z.string().uuid().optional() }),
+  },
+  responses: {
+    200: {
+      description: "Mensajes y participantes aceptados del viaje",
+      content: {
+        "application/json": {
+          schema: z
+            .object({
+              conversation: z.object({
+                offerId: z.string().uuid(),
+                communityName: z.string(),
+                origin: z.string(),
+                destination: z.string(),
+                departureTime: z.string(),
+                date: z.string().nullable(),
+                daysOfWeek: z.array(z.number().int()).nullable(),
+                role: z.enum(["driver", "passenger"]),
+                participants: z.array(
+                  z.object({
+                    name: z.string(),
+                    role: z.enum(["driver", "passenger"]),
+                    photoUrl: z.string().url().nullable(),
+                  }),
+                ),
+                meetingPoints: z.array(z.object({ participantName: z.string(), name: z.string() })),
+              }),
+              messages: z.array(TripMessageSchema),
+            })
+            .openapi("TripMessagesResponse"),
+        },
+      },
+    },
+  },
+});
+
+export const sendTripMessageRoute = createRoute({
+  method: "post",
+  path: "/offers/{id}/messages",
+  tags: ["Viajes"],
+  request: {
+    params: JoinCommunityParamsSchema,
+    body: { content: { "application/json": { schema: TripMessageBodySchema } } },
+  },
+  responses: {
+    201: {
+      description: "Mensaje enviado",
+      content: {
+        "application/json": {
+          schema: z.object({ message: TripMessageSchema }).openapi("SendTripMessageResponse"),
+        },
+      },
+    },
+  },
+});
+
+export const listOfferBookingsRoute = createRoute({
+  method: "get",
+  path: "/offers/{id}/bookings",
+  tags: ["Ofertas"],
+  request: { params: JoinCommunityParamsSchema },
+  responses: {
+    200: {
+      description: "Solicitudes visibles para el conductor del viaje",
+      content: {
+        "application/json": {
+          schema: z
+            .object({
+              offerId: z.string().uuid(),
+              seatsTaken: z.number().int(),
+              seatsTotal: z.number().int(),
+              bookings: z.array(
+                z.object({
+                  id: z.string().uuid(),
+                  passengerName: z.string(),
+                  passengerPhotoUrl: z.string().url().nullable(),
+                  status: BookingStatusSchema,
+                  meetingPointName: z.string(),
+                  pickupAt: z.string(),
+                  detourMinutes: z.number().int(),
+                  message: z.string().nullable(),
+                  avoidsCar: z.boolean(),
+                  recommended: z.boolean(),
+                }),
+              ),
+            })
+            .openapi("OfferBookingsResponse"),
+        },
+      },
+    },
   },
 });
 
@@ -881,8 +1170,8 @@ export const cancelBookingRoute = createRoute({
       },
     },
     401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
-    404: apiErrorResponse("La solicitud no existe o es de otra persona (`booking_not_found`)"),
-    409: apiErrorResponse("La solicitud ya fue aceptada y no se retira aquí (`not_withdrawable`)"),
+    404: apiErrorResponse("La solicitud no existe (`booking_not_found`)"),
+    409: apiErrorResponse("No se puede retirar esta solicitud (`booking_conflict`)"),
     422: apiErrorResponse("El identificador no es válido (`validation_error`)"),
   },
 });
@@ -1272,6 +1561,11 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   joinCommunityRoute,
   verifyEmailCommunityRoute,
   getMeRoute,
+  deleteMeRoute,
+  profilePhotoUploadRoute,
+  confirmProfilePhotoRoute,
+  getMyProfilePhotoRoute,
+  deleteMyProfilePhotoRoute,
   updateMembershipRoute,
   updateTravelPreferencesRoute,
   listVehiclesRoute,
@@ -1284,10 +1578,16 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   getOfferDetailRoute,
   listMyTripsRoute,
   requestSeatRoute,
+  acceptBookingRoute,
+  rejectBookingRoute,
+  listOfferBookingsRoute,
   cancelBookingRoute,
   runMatchingRoute,
   latestMatchRunsRoute,
   listProposalsRoute,
+  listMyChatsRoute,
+  tripMessagesRoute,
+  sendTripMessageRoute,
   joinWaitlistRoute,
   waitlistSummaryRoute,
   publicStatsRoute,
