@@ -72,7 +72,13 @@ export interface Insertion {
 
 export type InsertionResult = Insertion | { feasible: false; reason: InfeasibleReason };
 
-const referenceMonday = "2026-01-05";
+// The traffic model only looks at the weekday and the hour, so a recurring trip is timed
+// on its first day within a reference week that starts on Monday 5 January 2026.
+function timingDay(request: RideRequest) {
+  if (request.date !== null) return request.date;
+  const first = Math.min(...(request.daysOfWeek ?? [1]));
+  return `2026-01-${String(4 + first).padStart(2, "0")}`;
+}
 
 function minutesOfDay(time: string) {
   return Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
@@ -108,12 +114,39 @@ function stopTimes(
   });
 }
 
+function isoWeekday(date: string) {
+  return new Date(`${date}T12:00:00Z`).getUTCDay() || 7;
+}
+
+// The passenger needs the ride on every day they asked for.
+function daysMatch(route: OfferRoute, request: RideRequest) {
+  if (route.date !== null) return route.date === request.date;
+  const driverDays = route.daysOfWeek ?? [];
+  if (request.date !== null) return driverDays.includes(isoWeekday(request.date));
+  return (request.daysOfWeek ?? []).every((day) => driverDays.includes(day));
+}
+
+// Reasons that need no travel time, checked before any route is timed.
+function ruleBreak(route: OfferRoute, request: RideRequest): InfeasibleReason | null {
+  if (route.communityId !== request.communityId) return "different_community";
+  if (!daysMatch(route, request)) return "days_mismatch";
+  // "Solo mujeres" binds both ways: the driver's offer and the passenger's preference.
+  if (route.womenOnly && !request.passengerIsWoman) return "women_only";
+  if (request.womenOnly && !route.driverIsWoman) return "women_only";
+  if (route.rejectedPassengerIds.includes(request.passengerId)) return "previously_rejected";
+  if (route.passengers.length >= route.seatsTotal) return "no_seats";
+  return null;
+}
+
 export function bestInsertion(
   route: OfferRoute,
   request: RideRequest,
   model: TravelTimeModel,
 ): InsertionResult {
-  const day = referenceMonday;
+  const reason = ruleBreak(route, request);
+  if (reason) return { feasible: false, reason };
+
+  const day = timingDay(request);
   const current = route.passengers.map((passenger) => passenger.meetingPointId);
   const currentArrival = stopTimes(route, current, day, model).at(-1)!;
   const straightArrival = stopTimes(route, [], day, model).at(-1)!;

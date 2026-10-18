@@ -159,4 +159,94 @@ describe("best insertion of a passenger in a driver's route", () => {
 
     expect(result).toEqual({ feasible: false, reason: "no_walkable_meeting_point" });
   });
+
+  it("rejects a passenger when the driver's seats are all taken", () => {
+    const full = offer({ seatsTotal: 1, passengers: [acceptedInSurquillo] });
+
+    expect(bestInsertion(full, need(), model)).toEqual({ feasible: false, reason: "no_seats" });
+  });
+
+  it("only matches members of the same community", () => {
+    const result = bestInsertion(offer({ communityId: "comunidad-beta" }), need(), model);
+
+    expect(result).toEqual({ feasible: false, reason: "different_community" });
+  });
+
+  it("rejects a recurring need on a day the driver does not go", () => {
+    const result = bestInsertion(offer(), need({ daysOfWeek: [1, 6] }), model);
+
+    expect(result).toEqual({ feasible: false, reason: "days_mismatch" });
+  });
+
+  it("rejects a one-off need on a date the driver does not go", () => {
+    // 25 October 2026 is a Sunday.
+    const result = bestInsertion(offer(), need({ daysOfWeek: null, date: "2026-10-25" }), model);
+
+    expect(result).toEqual({ feasible: false, reason: "days_mismatch" });
+  });
+
+  it("matches a one-off need with a one-off offer on the same date", () => {
+    const onMonday = { daysOfWeek: null, date: "2026-10-19" };
+
+    const result = bestInsertion(offer(onMonday), need(onMonday), model);
+
+    expect(result.feasible).toBe(true);
+  });
+
+  it("times a one-off trip with the traffic of its own date", () => {
+    // 24 October 2026 is a Saturday: weekend factor 1.3. The station is on the way
+    // (10 + 10 = 20 free-flow min, as straight): picked up at 7:13, arriving at 7:26.
+    const onSaturday = { daysOfWeek: null, date: "2026-10-24" };
+
+    const result = bestInsertion(
+      offer(onSaturday),
+      need({ ...onSaturday, windowStart: "07:15", windowEnd: "07:45" }),
+      model,
+    );
+
+    expect(result).toEqual({
+      feasible: true,
+      meetingPointId: "san-borja-estacion-san-borja-sur",
+      position: 0,
+      pickupAt: "07:13",
+      arrivalAt: "07:26",
+      detourMinutes: 0,
+      walkMinutes: 14,
+    });
+  });
+
+  it("times a recurring trip on the first of its days", () => {
+    // Saturdays and Sundays: weekend traffic, as on the one-off Saturday above.
+    const weekends = { daysOfWeek: [6, 7] };
+
+    const result = bestInsertion(
+      offer(weekends),
+      need({ ...weekends, windowStart: "07:15", windowEnd: "07:45" }),
+      model,
+    );
+
+    expect(result).toMatchObject({ pickupAt: "07:13", arrivalAt: "07:26" });
+  });
+
+  it("keeps a women-only offer away from a passenger who does not identify as a woman", () => {
+    const result = bestInsertion(
+      offer({ womenOnly: true, driverIsWoman: true }),
+      need({ passengerIsWoman: false }),
+      model,
+    );
+
+    expect(result).toEqual({ feasible: false, reason: "women_only" });
+  });
+
+  it("keeps a passenger who asked for women only away from a driver who is not a woman", () => {
+    const result = bestInsertion(offer({ driverIsWoman: false }), need({ womenOnly: true }), model);
+
+    expect(result).toEqual({ feasible: false, reason: "women_only" });
+  });
+
+  it("never offers again a seat the driver already turned down for that passenger", () => {
+    const result = bestInsertion(offer({ rejectedPassengerIds: ["pasajera-1"] }), need(), model);
+
+    expect(result).toEqual({ feasible: false, reason: "previously_rejected" });
+  });
 });
