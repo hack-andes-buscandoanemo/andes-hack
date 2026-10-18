@@ -9,6 +9,7 @@ import {
   deleteMyProfilePhotoRoute,
   getMeRoute,
   getMyProfilePhotoRoute,
+  getMyImpactRoute,
   getOfferDetailRoute,
   healthRoute,
   joinCommunityRoute,
@@ -64,6 +65,7 @@ import {
   type RateLimitCheck,
   type SessionResolver,
 } from "./middleware";
+import { measureMyImpact } from "./my-impact";
 import { listMyTrips } from "./my-trips";
 import {
   acceptSeatRequest,
@@ -308,6 +310,11 @@ export function createApp(deps: AppDeps = {}) {
   openApiApp.use("/communities/:id/match-runs/latest", requireSession(deps.getSession));
   openApiApp.use(
     "/communities/:id/proposals",
+    requireSession(deps.getSession),
+    requireOnboardedMember((c) => c.req.param("id") ?? "", checkOnboarded),
+  );
+  openApiApp.use(
+    "/communities/:id/me/impact",
     requireSession(deps.getSession),
     requireOnboardedMember((c) => c.req.param("id") ?? "", checkOnboarded),
   );
@@ -723,6 +730,14 @@ export function createApp(deps: AppDeps = {}) {
     return c.json({ message: "Foto eliminada." }, 200);
   });
 
+  openApiApp.openapi(getMyImpactRoute, async (c) => {
+    const { id: communityId } = c.req.valid("param");
+    return c.json(
+      await measureMyImpact(database, { communityId, userId: c.get("user").id, now: getNow() }),
+      200,
+    );
+  });
+
   openApiApp.openapi(updateMembershipRoute, async (c) => {
     const { id: communityId } = c.req.valid("param");
     const body = c.req.valid("json");
@@ -743,7 +758,7 @@ export function createApp(deps: AppDeps = {}) {
     }
 
     const [existing] = await database
-      .select({ id: communityMember.id })
+      .select({ id: communityMember.id, consentAt: communityMember.consentAt })
       .from(communityMember)
       .where(
         and(eq(communityMember.communityId, org.id), eq(communityMember.userId, sessionUser.id)),
@@ -756,12 +771,18 @@ export function createApp(deps: AppDeps = {}) {
       });
     }
 
+    if (!body.consentAccepted && !existing.consentAt) {
+      throw new ApiError(422, "Debes aceptar las condiciones para continuar.", {
+        code: "consent_required",
+      });
+    }
+
     const consentTime = getNow();
     const [updated] = await database
       .update(communityMember)
       .set({
-        consentVersion: "v1",
-        consentAt: consentTime,
+        // A profile edit sends no consent and keeps the one already given.
+        ...(body.consentAccepted ? { consentVersion: "v1", consentAt: consentTime } : {}),
         usualMode: body.usualMode,
         travelRole: body.travelRole,
         alias: body.alias ?? null,

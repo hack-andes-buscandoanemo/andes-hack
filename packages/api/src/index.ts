@@ -329,19 +329,28 @@ export const deleteMyProfilePhotoRoute = createRoute({
   },
 });
 
+// Onboarding sends the consent and the travel role; "Editar perfil" (US-035) sends neither and
+// keeps the consent already given.
 export const UpdateMembershipBodySchema = z
   .object({
-    consentAccepted: z.boolean().refine((value) => value === true, {
-      message: "Debes aceptar las condiciones para continuar.",
-    }),
+    consentAccepted: z
+      .boolean()
+      .refine((value) => value === true, {
+        message: "Debes aceptar las condiciones para continuar.",
+      })
+      .optional(),
     usualMode: UsualModeSchema,
-    travelRole: TravelRoleSchema,
+    travelRole: TravelRoleSchema.optional(),
     alias: z
       .string()
       .trim()
       .min(2, "El nombre visible debe tener entre 2 y 30 caracteres.")
       .max(30, "El nombre visible debe tener entre 2 y 30 caracteres.")
       .optional(),
+  })
+  .refine((body) => !body.consentAccepted || body.travelRole, {
+    message: "Elige si viajarás como conductor, pasajero o ambos.",
+    path: ["travelRole"],
   })
   .openapi("UpdateMembershipRequest");
 
@@ -368,6 +377,12 @@ export const updateMembershipRoute = createRoute({
         },
       },
     },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    403: apiErrorResponse("No es miembro de la comunidad (`community_membership_required`)"),
+    404: apiErrorResponse("La comunidad no existe (`community_not_found`)"),
+    422: apiErrorResponse(
+      "Datos no válidos (`validation_error`), o una edición del perfil sin consentimiento previo (`consent_required`)",
+    ),
   },
 });
 
@@ -916,6 +931,39 @@ export const listMyTripsRoute = createRoute({
     },
     401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
     422: apiErrorResponse("El rol o el periodo no son válidos (`validation_error`)"),
+  },
+});
+
+// The person's own impact (US-035), read from the US-030 metrics.
+export const MyImpactSchema = z
+  .object({
+    // Accepted seats as a passenger, plus own offers that carried at least one passenger.
+    sharedTrips: z.number().int(),
+    // Only as a passenger who would otherwise have driven or taken a taxi: a driver still drove.
+    carTripsAvoided: z.number().int(),
+    // An estimate (see /datos); never below zero on the profile.
+    co2Kg: z.number(),
+    // Passenger trips that would otherwise have been by public transport: no car avoided.
+    fromPublicTransport: z.number().int(),
+  })
+  .openapi("MyImpact");
+
+export const getMyImpactRoute = createRoute({
+  method: "get",
+  path: "/communities/{id}/me/impact",
+  tags: ["Viajes"],
+  request: { params: JoinCommunityParamsSchema },
+  responses: {
+    200: {
+      description:
+        "Viajes compartidos, viajes en auto evitados y CO₂ evitado (estimado) de la persona",
+      content: { "application/json": { schema: MyImpactSchema } },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    403: apiErrorResponse(
+      "No es miembro o no completó su registro (`community_membership_required`, `onboarding_required`)",
+    ),
+    422: apiErrorResponse("El identificador no es válido (`validation_error`)"),
   },
 });
 
@@ -1675,6 +1723,7 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   searchTripsRoute,
   getOfferDetailRoute,
   listMyTripsRoute,
+  getMyImpactRoute,
   requestSeatRoute,
   acceptBookingRoute,
   rejectBookingRoute,

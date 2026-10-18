@@ -409,6 +409,42 @@ export interface paths {
                         "application/json": components["schemas"]["MembershipSummary"];
                     };
                 };
+                /** @description No hay sesión iniciada (`unauthorized`) */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description No es miembro de la comunidad (`community_membership_required`) */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description La comunidad no existe (`community_not_found`) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Datos no válidos (`validation_error`), o una edición del perfil sin consentimiento previo (`consent_required`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
             };
         };
         trace?: never;
@@ -867,6 +903,70 @@ export interface paths {
                     };
                 };
                 /** @description El rol o el periodo no son válidos (`validation_error`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/communities/{id}/me/impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Viajes compartidos, viajes en auto evitados y CO₂ evitado (estimado) de la persona */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MyImpact"];
+                    };
+                };
+                /** @description No hay sesión iniciada (`unauthorized`) */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description No es miembro o no completó su registro (`community_membership_required`, `onboarding_required`) */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description El identificador no es válido (`validation_error`) */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -1972,11 +2072,11 @@ export interface components {
             photoUrl: string | null;
         };
         UpdateMembershipRequest: {
-            consentAccepted: boolean;
+            consentAccepted?: boolean;
             /** @enum {string} */
             usualMode: "drove_alone" | "drove_with_others" | "car_passenger" | "public_transport" | "taxi_app" | "other";
             /** @enum {string} */
-            travelRole: "driver" | "passenger" | "both";
+            travelRole?: "driver" | "passenger" | "both";
             alias?: string;
         };
         TravelPreferencesResponse: components["schemas"]["TravelPreferences"] & {
@@ -2192,6 +2292,12 @@ export interface components {
                 } | null;
             };
             fuelEstimate: components["schemas"]["FuelEstimate"];
+        };
+        MyImpact: {
+            sharedTrips: number;
+            carTripsAvoided: number;
+            co2Kg: number;
+            fromPublicTransport: number;
         };
         RequestSeatResponse: {
             booking: {
