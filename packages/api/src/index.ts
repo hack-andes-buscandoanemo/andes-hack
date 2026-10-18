@@ -681,6 +681,69 @@ export const getOfferDetailRoute = createRoute({
   },
 });
 
+export const MyTripsQuerySchema = z.object({
+  role: z.enum(["passenger", "driver"]).default("passenger"),
+  scope: z.enum(["upcoming", "past"]).default("upcoming"),
+});
+
+// Derived on the server from the booking and the offer, so every client shows the same state.
+export const TripStatusSchema = z.enum([
+  "pending",
+  "accepted",
+  "rejected",
+  "cancelled",
+  "completed",
+  "no_show",
+  "paused",
+  "active",
+]);
+
+export const MyTripSchema = z
+  .object({
+    // The booking for a passenger, the offer for a driver.
+    id: z.string().uuid(),
+    offerId: z.string().uuid(),
+    role: z.enum(["passenger", "driver"]),
+    status: TripStatusSchema,
+    direction: TripDirectionSchema,
+    date: z.string().nullable(),
+    daysOfWeek: z.array(z.number().int()).nullable(),
+    // Pickup time for a passenger, departure time for a driver.
+    time: z.string(),
+    originZoneName: z.string(),
+    destinationName: z.string(),
+    meetingPointName: z.string().nullable(),
+    // Alias always; the plate only once the request is accepted. Null for the driver's own view.
+    driver: z.object({ alias: z.string(), plate: z.string().nullable() }).nullable(),
+    // Driver view only: seats offered and seats still free (accepted passengers hold seats).
+    seatsTotal: z.number().int().nullable(),
+    seatsFree: z.number().int().nullable(),
+    // Driver view only: requests waiting for an answer, and the aliases of accepted passengers.
+    pendingRequests: z.number().int().nullable(),
+    acceptedPassengers: z.array(z.string()).nullable(),
+  })
+  .openapi("MyTrip");
+
+export const MyTripsResponseSchema = z
+  .object({ trips: z.array(MyTripSchema) })
+  .openapi("MyTripsResponse");
+
+export const listMyTripsRoute = createRoute({
+  method: "get",
+  path: "/me/trips",
+  tags: ["Viajes"],
+  request: { query: MyTripsQuerySchema },
+  responses: {
+    200: {
+      description:
+        "Viajes de la persona como pasajera o conductora; la placa y el alias del otro solo en viajes aceptados",
+      content: { "application/json": { schema: MyTripsResponseSchema } },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    422: apiErrorResponse("El rol o el periodo no son válidos (`validation_error`)"),
+  },
+});
+
 export const RequestSeatBodySchema = z
   .object({
     // Plain text for the driver; there is no chat before the request is accepted.
@@ -784,6 +847,154 @@ export const searchTripsRoute = createRoute({
       "La sede de la comunidad no se puede usar para buscar (`unknown_destination`)",
     ),
     422: apiErrorResponse("Los datos enviados no son válidos (`validation_error`)"),
+  },
+});
+
+// A real calendar day: "2026-02-30" has the shape but not the day.
+const isCalendarDate = (date: string) => {
+  const parsed = new Date(`${date}T12:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date;
+};
+
+// A journey: one direction on one date. Both strategies run on the same offers and needs.
+export const RunMatchingBodySchema = z
+  .object({
+    direction: TripDirectionSchema,
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Ingresa una fecha válida.")
+      .refine(isCalendarDate, "Ingresa una fecha válida."),
+  })
+  .openapi("RunMatchingRequest");
+
+export const MatchRunSummarySchema = z
+  .object({
+    id: z.string().uuid(),
+    carTripsAvoided: z.number().int(),
+    passengersMatched: z.number().int(),
+    // Every driver's together, against the trips with the passengers they had already accepted.
+    detourMinutes: z.number().int(),
+    walkMinutes: z.number().int(),
+    // Needs that got no seat.
+    unassigned: z.number().int(),
+    offers: z.number().int(),
+    requests: z.number().int(),
+    durationMs: z.number().int(),
+    createdAt: z.string(),
+  })
+  .openapi("MatchRunSummary");
+
+export const MatchSuggestionStatusSchema = z.enum(["proposed", "accepted", "rejected"]);
+
+// A recommendation: the driver still decides whether to accept the passenger.
+export const MatchSuggestionSchema = z
+  .object({
+    id: z.string().uuid(),
+    offerId: z.string().uuid(),
+    driverName: z.string(),
+    requestId: z.string().uuid(),
+    passengerName: z.string(),
+    meetingPointName: z.string(),
+    pickupAt: z.string(),
+    arrivalAt: z.string(),
+    detourMinutes: z.number().int(),
+    walkMinutes: z.number().int(),
+    avoidsCarTrip: z.boolean(),
+    status: MatchSuggestionStatusSchema,
+  })
+  .openapi("MatchSuggestion");
+
+export const MatchRunsResponseSchema = z
+  .object({
+    direction: TripDirectionSchema,
+    date: z.string(),
+    optimizer: MatchRunSummarySchema,
+    firstComeFirstServed: MatchRunSummarySchema,
+    // The optimizer's recommendations; the baseline's are kept only for the comparison.
+    suggestions: z.array(MatchSuggestionSchema),
+  })
+  .openapi("MatchRunsResponse");
+
+export const runMatchingRoute = createRoute({
+  method: "post",
+  path: "/communities/{id}/match-runs",
+  tags: ["Emparejamiento"],
+  request: {
+    params: JoinCommunityParamsSchema,
+    body: { content: { "application/json": { schema: RunMatchingBodySchema } } },
+  },
+  responses: {
+    201: {
+      description:
+        "Las dos corridas guardadas, optimizador y primero en llegar, con las asignaciones recomendadas",
+      content: { "application/json": { schema: MatchRunsResponseSchema } },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    403: apiErrorResponse(
+      "No es miembro (`community_membership_required`) o no es administrador (`admin_required`)",
+    ),
+    404: apiErrorResponse("La comunidad no existe (`community_not_found`)"),
+    409: apiErrorResponse(
+      "Ya hay un emparejamiento en curso para esta jornada (`match_run_in_progress`), no hay ofertas ni necesidades (`no_journey_inputs`) o la sede no se puede usar (`unknown_destination`)",
+    ),
+    422: apiErrorResponse("Los datos enviados no son válidos (`validation_error`)"),
+  },
+});
+
+export const latestMatchRunsRoute = createRoute({
+  method: "get",
+  path: "/communities/{id}/match-runs/latest",
+  tags: ["Emparejamiento"],
+  request: { params: JoinCommunityParamsSchema },
+  responses: {
+    200: {
+      description: "La última jornada emparejada, con ambas corridas y sus recomendaciones",
+      content: { "application/json": { schema: MatchRunsResponseSchema } },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    403: apiErrorResponse(
+      "No es miembro (`community_membership_required`) o no es administrador (`admin_required`)",
+    ),
+    404: apiErrorResponse(
+      "La comunidad no existe (`community_not_found`) o nunca se ejecutó el emparejamiento (`no_match_runs`)",
+    ),
+    422: apiErrorResponse("El identificador no es válido (`validation_error`)"),
+  },
+});
+
+// What Inicio shows a passenger the engine seated but who has not asked for the seat yet.
+export const MatchProposalSchema = z
+  .object({
+    suggestionId: z.string().uuid(),
+    offerId: z.string().uuid(),
+    driverName: z.string(),
+    direction: TripDirectionSchema,
+    date: z.string(),
+    meetingPointName: z.string(),
+    pickupAt: z.string(),
+    arrivalAt: z.string(),
+    walkMinutes: z.number().int(),
+  })
+  .openapi("MatchProposal");
+
+export const MatchProposalsResponseSchema = z
+  .object({ proposals: z.array(MatchProposalSchema) })
+  .openapi("MatchProposalsResponse");
+
+export const listProposalsRoute = createRoute({
+  method: "get",
+  path: "/communities/{id}/proposals",
+  tags: ["Emparejamiento"],
+  request: { params: JoinCommunityParamsSchema },
+  responses: {
+    200: {
+      description:
+        "Los viajes recomendados a la persona en los que todavía no solicitó asiento, el más próximo primero",
+      content: { "application/json": { schema: MatchProposalsResponseSchema } },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    403: apiErrorResponse("No es miembro de la comunidad (`community_membership_required`)"),
+    422: apiErrorResponse("El identificador no es válido (`validation_error`)"),
   },
 });
 
@@ -926,8 +1137,12 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   updateOfferStatusRoute,
   searchTripsRoute,
   getOfferDetailRoute,
+  listMyTripsRoute,
   requestSeatRoute,
   cancelBookingRoute,
+  runMatchingRoute,
+  latestMatchRunsRoute,
+  listProposalsRoute,
   joinWaitlistRoute,
   waitlistSummaryRoute,
   dataSourcesRoute,

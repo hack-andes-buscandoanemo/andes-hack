@@ -15,6 +15,7 @@ import { and, asc, eq, inArray, ne, type SQL } from "drizzle-orm";
 import type { z } from "zod";
 
 import { logEvent } from "./lib/logger";
+import { displayName, seatsFree } from "./trip-rules";
 import { ApiError } from "./utils/api-response";
 
 type Database = typeof defaultDb;
@@ -33,12 +34,13 @@ export function destinationOf(row: { destinationName: string }) {
   return place;
 }
 
-// Every active-offer input the engine needs, with accepted passengers and the rejections of this person.
+// Every active-offer input the engine needs, with accepted passengers and the rejections of
+// this person, or of everyone when no person is given (the day's matching, US-019).
 export async function loadOfferRoutes(
   database: Database,
   input: {
     where: SQL | undefined;
-    userId: string;
+    userId?: string;
     communityId: string;
     destination: { id: string };
   },
@@ -98,7 +100,7 @@ export async function loadOfferRoutes(
 
   const rejected = rows.length
     ? await database
-        .select({ offerId: seatBooking.offerId })
+        .select({ offerId: seatBooking.offerId, passengerId: seatBooking.passengerId })
         .from(seatBooking)
         .where(
           and(
@@ -106,13 +108,13 @@ export async function loadOfferRoutes(
               seatBooking.offerId,
               rows.map((row) => row.id),
             ),
-            eq(seatBooking.passengerId, userId),
+            userId === undefined ? undefined : eq(seatBooking.passengerId, userId),
             eq(seatBooking.status, "rejected"),
           ),
         )
     : [];
   const acceptedByOffer = Map.groupBy(accepted, (booking) => booking.offerId);
-  const rejectedOffers = new Set(rejected.map((booking) => booking.offerId));
+  const rejectedByOffer = Map.groupBy(rejected, (booking) => booking.offerId);
   const routes: OfferRoute[] = rows.map((row) => ({
     id: row.id,
     communityId,
@@ -126,7 +128,9 @@ export async function loadOfferRoutes(
     maxDetourMinutes: row.maxDetourMinutes,
     womenOnly: row.womenOnly,
     driverIsWoman: row.driverIsWoman,
-    rejectedPassengerIds: rejectedOffers.has(row.id) ? [userId] : [],
+    rejectedPassengerIds: (rejectedByOffer.get(row.id) ?? []).flatMap(
+      (booking) => booking.passengerId ?? [],
+    ),
     passengers: (acceptedByOffer.get(row.id) ?? []).map((booking) => ({
       meetingPointId: booking.meetingPointId,
       windowStart: booking.windowStart.slice(0, 5),
@@ -152,7 +156,7 @@ type MatchOfferInput = {
 };
 
 // The single place that turns a need into the engine's request (stored times may carry seconds).
-function toRideRequest(
+export function toRideRequest(
   need: NeedFields,
   who: { userId: string; communityId: string; womenOnly: boolean; passengerIsWoman: boolean },
 ): RideRequest {
@@ -288,13 +292,13 @@ export async function searchTrips(
       const offer = byId.get(match.offerId)!;
       return {
         offerId: match.offerId,
-        driverName: offer.driverName ?? offer.accountName,
+        driverName: displayName(offer.driverName, offer.accountName),
         originZoneName: offer.originZoneName,
         destinationName: destination.name,
         direction: offer.direction,
         departureTime: offer.departureTime,
         // Same count the engine uses for its seat check: accepted passengers.
-        seatsFree: offer.seatsTotal - (acceptedByOffer.get(offer.id)?.length ?? 0),
+        seatsFree: seatsFree(offer.seatsTotal, acceptedByOffer.get(offer.id)?.length ?? 0),
         meetingPointName: meetingPointNames.get(match.meetingPointId) ?? match.meetingPointId,
         pickupAt: match.pickupAt,
         arrivalAt: match.arrivalAt,

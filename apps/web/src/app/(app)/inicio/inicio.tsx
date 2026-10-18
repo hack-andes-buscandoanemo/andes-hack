@@ -2,10 +2,20 @@ import Link from "next/link";
 
 import EmptyState from "@/components/empty-state";
 
+import Proposals from "./proposals";
+
 const EMPTY_TRIPS = "Aún no tienes viajes. Busca uno o publica el que ya haces.";
 
 // ponytail: "Tu próximo viaje", matches (US-016) and impact (US-030) show empty states until built.
-export default function Inicio({ name, communityName }: { name: string; communityName?: string }) {
+export default function Inicio({
+  name,
+  communityId,
+  communityName,
+}: {
+  name: string;
+  communityId?: string;
+  communityName?: string;
+}) {
   return (
     <main className="flex flex-col gap-5 px-4 py-4">
       <div className="flex items-start justify-between gap-3">
@@ -37,6 +47,8 @@ export default function Inicio({ name, communityName }: { name: string; communit
           Ofrecer viaje
         </Link>
       </div>
+
+      {communityId ? <Proposals communityId={communityId} /> : null}
 
       <EmptyState tone="dark">{EMPTY_TRIPS}</EmptyState>
 

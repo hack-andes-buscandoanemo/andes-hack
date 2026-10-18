@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -26,6 +26,20 @@ describe("perfil", () => {
     expect(screen.getByText("ana@uni.pe")).toBeInTheDocument();
   });
 
+  it("offers community administration, with the matching screen, only to administrators", () => {
+    const { rerender } = render(<Perfil name="Ana" email="ana@uni.pe" role="admin" />);
+
+    const admin = screen.getByRole("region", { name: "Administrar comunidad" });
+    expect(within(admin).getByRole("link", { name: "Emparejamiento" })).toHaveAttribute(
+      "href",
+      "/comunidad/emparejamiento",
+    );
+
+    rerender(<Perfil name="Ana" email="ana@uni.pe" role="member" />);
+    expect(screen.queryByText("Administrar comunidad")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Emparejamiento" })).not.toBeInTheDocument();
+  });
+
   it("signs out and returns to the welcome screen", async () => {
     signOut.mockResolvedValue({});
     render(<Perfil name="Ana" email="ana@uni.pe" />);
@@ -34,5 +48,14 @@ describe("perfil", () => {
 
     await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/"));
     expect(signOut).toHaveBeenCalled();
+  });
+
+  it("links to the trip history", () => {
+    render(<Perfil name="Ana" email="ana@uni.pe" />);
+
+    expect(screen.getByRole("link", { name: "Historial de viajes" })).toHaveAttribute(
+      "href",
+      "/viajes?tab=historial",
+    );
   });
 });

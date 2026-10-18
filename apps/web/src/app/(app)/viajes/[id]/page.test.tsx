@@ -1,7 +1,8 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { AxiosError, type AxiosResponse } from "axios";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { serverError } from "@/test/server-error";
 
 const getOfferDetail = vi.fn();
 const requestSeat = vi.fn();
@@ -46,11 +47,6 @@ const DETAIL = {
   },
   booking: null,
 };
-
-function serverError(status: number, error: string) {
-  const response = { status, data: { success: false, status, error } } as AxiosResponse;
-  return new AxiosError("Request failed", "ERR_BAD_REQUEST", undefined, null, response);
-}
 
 beforeEach(() => {
   currentId = OFFER_ID;
