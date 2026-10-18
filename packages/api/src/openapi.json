@@ -1768,6 +1768,19 @@
                 },
                 "recommended": {
                   "type": "boolean"
+                },
+                "today": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "not_started",
+                    "in_progress",
+                    "arrived",
+                    "no_show",
+                    null
+                  ]
                 }
               },
               "required": [
@@ -1780,7 +1793,8 @@
                 "detourMinutes",
                 "message",
                 "avoidsCar",
-                "recommended"
+                "recommended",
+                "today"
               ]
             }
           }

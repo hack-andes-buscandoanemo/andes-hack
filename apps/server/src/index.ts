@@ -1235,7 +1235,7 @@ export function createApp(deps: AppDeps = {}) {
     return c.json(
       await listSeatRequests(
         database,
-        { offerId, userId: c.get("user").id },
+        { offerId, userId: c.get("user").id, now: getNow() },
         getProfilePhotoStorage,
       ),
       200,

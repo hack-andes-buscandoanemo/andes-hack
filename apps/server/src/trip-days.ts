@@ -27,6 +27,12 @@ export function progressOf(status: string, day: Day | undefined) {
   return day?.startedAt ? ("in_progress" as const) : ("not_started" as const);
 }
 
+// What the driver sees for a passenger today: where they are, or that they did not show up.
+export const dayState = (status: string, day: Day | undefined) =>
+  day?.outcome === "no_show" && status === BOOKING.accepted
+    ? ("no_show" as const)
+    : progressOf(status, day);
+
 export const isUnderway = (day: Day | undefined) => !!day?.startedAt && !day.outcome;
 
 // Every day of these seats that is still live or already closed, one query for all of them.

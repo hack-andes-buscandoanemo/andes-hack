@@ -12,7 +12,8 @@ import { and, asc, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { fuelEstimateFor, occupantsSharingFuel } from "./fuel-estimate";
 import { destinationOf, loadOfferRoutes, matchOfferForNeed, toRideRequest } from "./search";
 import { getCommunityProfilePhotos, type ProfilePhotoStorageResolver } from "./profile-photos";
-import { canSeePlate, displayName, seatsFree } from "./trip-rules";
+import { currentDay, dayState, loadDays } from "./trip-days";
+import { canSeePlate, displayName, limaClock, seatsFree } from "./trip-rules";
 import { ApiError } from "./utils/api-response";
 
 type Database = typeof defaultDb;
@@ -535,7 +536,7 @@ export async function acceptSeatRequest(
 
 export async function listSeatRequests(
   database: Database,
-  input: { offerId: string; userId: string },
+  input: { offerId: string; userId: string; now: Date },
   storageForPhotos?: ProfilePhotoStorageResolver,
 ) {
   const [offer] = await database
@@ -606,6 +607,12 @@ export async function listSeatRequests(
     offer.communityId,
     requests.map((request) => request.passengerId).filter((id): id is string => Boolean(id)),
   );
+  const { today } = limaClock(input.now);
+  const days = await loadDays(
+    database,
+    requests.map((request) => request.id),
+    today,
+  );
   return {
     offerId: offer.id,
     seatsTaken: offer.seatsTaken,
@@ -613,6 +620,8 @@ export async function listSeatRequests(
     bookings: requests.map(
       ({ accountName, fallbackMode, pickupAt, passengerId, requestId, ...booking }) => ({
         ...booking,
+        // Where the passenger is on today's trip (US-025); null while the seat is not accepted.
+        today: dayState(booking.status, currentDay(days.get(booking.id) ?? [], today)),
         passengerName: booking.passengerName ?? accountName,
         passengerPhotoUrl: passengerId ? (photoUrls.get(passengerId) ?? null) : null,
         pickupAt: pickupAt.slice(0, 5),
