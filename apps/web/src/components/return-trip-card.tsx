@@ -8,7 +8,8 @@ import { clockLabel, dateLabel, daysLabel } from "@/app/(app)/buscar/schedule";
 import { Button } from "@/components/ui/button";
 import type { MyTrip } from "@/lib/communities-api";
 
-function commonCalendar(...calendars: Pick<MyTrip, "date" | "daysOfWeek">[]) {
+// The date or weekdays two calendars share, or null when they never meet.
+export function commonCalendar(...calendars: Pick<MyTrip, "date" | "daysOfWeek">[]) {
   const date = calendars.find((calendar) => calendar.date)?.date ?? null;
   if (date) {
     const day = new Date(`${date}T12:00:00Z`).getUTCDay() || 7;
@@ -105,7 +106,6 @@ export default function ReturnTripCard({ trip, trips = [] }: { trip: MyTrip; tri
             <label className="text-sm">
               Desde
               <input
-                aria-label="Desde"
                 type="time"
                 required
                 value={start}
@@ -116,7 +116,6 @@ export default function ReturnTripCard({ trip, trips = [] }: { trip: MyTrip; tri
             <label className="text-sm">
               Hasta
               <input
-                aria-label="Hasta"
                 type="time"
                 required
                 value={end}

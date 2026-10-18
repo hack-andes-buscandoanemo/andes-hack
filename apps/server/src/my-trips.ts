@@ -2,7 +2,7 @@ import type { db as defaultDb } from "@andes-hack/db";
 import { user as userTable } from "@andes-hack/db/schema/auth";
 import { community, communityMember } from "@andes-hack/db/schema/community";
 import { zone } from "@andes-hack/db/schema/places";
-import { seatBooking, tripOffer, tripRequest } from "@andes-hack/db/schema/trips";
+import { fallbackModeEnum, seatBooking, tripOffer, tripRequest } from "@andes-hack/db/schema/trips";
 import { vehicle } from "@andes-hack/db/schema/vehicle";
 import { places } from "@andes-hack/matching";
 import { and, desc, eq, inArray, ne } from "drizzle-orm";
@@ -23,6 +23,34 @@ type TripScope = "upcoming" | "past";
 
 // Only a request still waiting or accepted can be ahead of the person.
 const isOpen = (status: string) => status === "pending" || status === "accepted";
+
+type FallbackMode = (typeof fallbackModeEnum.enumValues)[number];
+type ReturnNeed = { windowStart: string; windowEnd: string; fallbackMode: FallbackMode };
+
+// What the "¿Y el regreso?" card needs; only an accepted trip has one (US-023).
+function passengerRequestOf(
+  row: {
+    derived: string;
+    communityId: string;
+    requestOriginZoneId: string;
+    requestDate: string | null;
+    requestDays: number[] | null;
+    fallbackMode: FallbackMode;
+  },
+  need: ReturnNeed | undefined,
+) {
+  if (row.derived !== "accepted") return undefined;
+  return {
+    communityId: row.communityId,
+    originZoneId: row.requestOriginZoneId,
+    date: row.requestDate,
+    daysOfWeek: row.requestDays,
+    fallbackMode: need?.fallbackMode ?? row.fallbackMode,
+    returnWindow: need
+      ? { start: need.windowStart.slice(0, 5), end: need.windowEnd.slice(0, 5) }
+      : null,
+  };
+}
 
 async function passengerTrips(database: Database, userId: string, scope: TripScope) {
   const rows = await database
@@ -70,6 +98,7 @@ async function passengerTrips(database: Database, userId: string, scope: TripSco
       : await database
           .select({
             communityId: tripRequest.communityId,
+            originZoneId: tripRequest.originZoneId,
             windowStart: tripRequest.windowStart,
             windowEnd: tripRequest.windowEnd,
             fallbackMode: tripRequest.fallbackMode,
@@ -87,6 +116,12 @@ async function passengerTrips(database: Database, userId: string, scope: TripSco
             ),
           )
           .orderBy(desc(tripRequest.updatedAt), desc(tripRequest.id));
+  // Newest first, so the first need seen for a community and zone is the one to keep.
+  const returnNeedByPlace = new Map<string, (typeof returnNeeds)[number]>();
+  for (const need of returnNeeds) {
+    const key = `${need.communityId}:${need.originZoneId}`;
+    if (!returnNeedByPlace.has(key)) returnNeedByPlace.set(key, need);
+  }
   const clock = limaClock();
   return rows
     .map((row) => {
@@ -122,21 +157,10 @@ async function passengerTrips(database: Database, userId: string, scope: TripSco
       seatsFree: null,
       pendingRequests: null,
       acceptedPassengers: null,
-      passengerRequest: {
-        communityId: row.communityId,
-        originZoneId: row.requestOriginZoneId,
-        date: row.requestDate,
-        daysOfWeek: row.requestDays,
-        fallbackMode:
-          returnNeeds.find((need) => need.communityId === row.communityId)?.fallbackMode ??
-          row.fallbackMode,
-        returnWindow: (() => {
-          const need = returnNeeds.find((need) => need.communityId === row.communityId);
-          return need
-            ? { start: need.windowStart.slice(0, 5), end: need.windowEnd.slice(0, 5) }
-            : null;
-        })(),
-      },
+      passengerRequest: passengerRequestOf(
+        row,
+        returnNeedByPlace.get(`${row.communityId}:${row.requestOriginZoneId}`),
+      ),
     }));
 }
 

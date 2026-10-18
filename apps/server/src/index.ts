@@ -19,6 +19,7 @@ import {
   searchTripsRoute,
   updateMembershipRoute,
   updateOfferStatusRoute,
+  updateTravelPreferencesRoute,
   verifyEmailCommunityRoute,
 } from "@andes-hack/api";
 import { auth as defaultAuth, createAuth, setVerificationOtpSender } from "@andes-hack/auth";
@@ -26,7 +27,7 @@ import { db as defaultDb } from "@andes-hack/db";
 import { user as userTable } from "@andes-hack/db/schema/auth";
 import { community, communityMember } from "@andes-hack/db/schema/community";
 import { zone } from "@andes-hack/db/schema/places";
-import { tripOffer } from "@andes-hack/db/schema/trips";
+import { tripOffer, tripRequest } from "@andes-hack/db/schema/trips";
 import { vehicle } from "@andes-hack/db/schema/vehicle";
 import { env } from "@andes-hack/env/server";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -234,6 +235,7 @@ export function createApp(deps: AppDeps = {}) {
   openApiApp.use("/communities/:id/join", requireSession(deps.getSession));
   openApiApp.use("/communities/:id/verify-email", requireSession(deps.getSession));
   openApiApp.use("/communities/:id/membership", requireSession(deps.getSession));
+  openApiApp.use("/communities/:id/preferences", requireSession(deps.getSession));
   openApiApp.use(
     "/communities/:id/zones",
     requireSession(deps.getSession),
@@ -610,6 +612,57 @@ export function createApp(deps: AppDeps = {}) {
       },
       200,
     );
+  });
+
+  openApiApp.openapi(updateTravelPreferencesRoute, async (c) => {
+    const { id: communityId } = c.req.valid("param");
+    const body = c.req.valid("json");
+    const sessionUser = c.get("user");
+
+    if (body.womenOnly && !body.identifiesAsWoman) {
+      throw new ApiError(422, 'Para usar "Solo mujeres", confirma que te identificas como mujer.', {
+        code: "women_only_requires_declaration",
+      });
+    }
+
+    const [updated] = await database
+      .update(communityMember)
+      .set({
+        identifiesAsWoman: body.identifiesAsWoman,
+        womenOnly: body.womenOnly,
+        updatedAt: getNow(),
+      })
+      .where(
+        and(
+          eq(communityMember.communityId, communityId),
+          eq(communityMember.userId, sessionUser.id),
+        ),
+      )
+      .returning({
+        identifiesAsWoman: communityMember.identifiesAsWoman,
+        womenOnly: communityMember.womenOnly,
+      });
+
+    if (!updated) {
+      throw new ApiError(403, "No perteneces a esta comunidad.", {
+        code: "community_membership_required",
+      });
+    }
+
+    // Applies at once to the open needs too, so requests and the optimizer follow the profile;
+    // accepted trips are left as they are.
+    await database
+      .update(tripRequest)
+      .set({ womenOnly: updated.womenOnly })
+      .where(
+        and(
+          eq(tripRequest.communityId, communityId),
+          eq(tripRequest.passengerId, sessionUser.id),
+          eq(tripRequest.status, "open"),
+        ),
+      );
+
+    return c.json({ ...updated, message: "Preferencia guardada." }, 200);
   });
 
   openApiApp.openapi(listVehiclesRoute, async (c) => {
