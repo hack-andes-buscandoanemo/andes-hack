@@ -75,11 +75,13 @@ export async function loadPublicComparison(db: Db, communityId: string) {
 const limaToday = (now: Date) => new Date(now.getTime() - 5 * 3_600_000).toISOString().slice(0, 10);
 
 // Reads a community's rows into the shape the US-030 metrics measure. It only reshapes
-// rows: every figure is computed in @andes-hack/matching.
+// rows: every figure is computed in @andes-hack/matching. With `only`, it keeps just one
+// person's seats or offers, so the same metrics measure a profile (US-035).
 export async function loadCommunityActivity(
   db: Db,
   community: { id: string; destinationLat: number; destinationLng: number },
   now: Date,
+  only: { passengerId?: string; driverId?: string } = {},
 ): Promise<CommunityActivity> {
   const today = limaToday(now);
   const offerRows = await db
@@ -100,7 +102,12 @@ export async function loadCommunityActivity(
         eq(communityMember.userId, tripOffer.driverId),
       ),
     )
-    .where(eq(tripOffer.communityId, community.id));
+    .where(
+      and(
+        eq(tripOffer.communityId, community.id),
+        only.driverId ? eq(tripOffer.driverId, only.driverId) : undefined,
+      ),
+    );
 
   const seatRows = await db
     .select({
@@ -116,7 +123,13 @@ export async function loadCommunityActivity(
     .innerJoin(tripRequest, eq(tripRequest.id, seatBooking.requestId))
     .innerJoin(zone, eq(zone.id, tripRequest.originZoneId))
     .innerJoin(tripOffer, eq(tripOffer.id, seatBooking.offerId))
-    .where(eq(tripOffer.communityId, community.id));
+    .where(
+      and(
+        eq(tripOffer.communityId, community.id),
+        only.passengerId ? eq(seatBooking.passengerId, only.passengerId) : undefined,
+        only.driverId ? eq(tripOffer.driverId, only.driverId) : undefined,
+      ),
+    );
 
   const needRows = await db
     .select({ hadResults: tripRequest.hadResults, passengerIsTeam: communityMember.isTeam })

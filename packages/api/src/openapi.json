@@ -1449,6 +1449,29 @@
           "fuelEstimate"
         ]
       },
+      "MyImpact": {
+        "type": "object",
+        "properties": {
+          "sharedTrips": {
+            "type": "integer"
+          },
+          "carTripsAvoided": {
+            "type": "integer"
+          },
+          "co2Kg": {
+            "type": "number"
+          },
+          "fromPublicTransport": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "sharedTrips",
+          "carTripsAvoided",
+          "co2Kg",
+          "fromPublicTransport"
+        ]
+      },
       "RequestSeatResponse": {
         "type": "object",
         "properties": {
@@ -3619,6 +3642,66 @@
           },
           "422": {
             "description": "El rol o el periodo no son válidos (`validation_error`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/communities/{id}/me/impact": {
+      "get": {
+        "tags": [
+          "Viajes"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Viajes compartidos, viajes en auto evitados y CO₂ evitado (estimado) de la persona",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyImpact"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No hay sesión iniciada (`unauthorized`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro o no completó su registro (`community_membership_required`, `onboarding_required`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "El identificador no es válido (`validation_error`)",
             "content": {
               "application/json": {
                 "schema": {

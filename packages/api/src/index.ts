@@ -919,6 +919,39 @@ export const listMyTripsRoute = createRoute({
   },
 });
 
+// The person's own impact (US-035), read from the US-030 metrics.
+export const MyImpactSchema = z
+  .object({
+    // Accepted seats as a passenger, plus own offers that carried at least one passenger.
+    sharedTrips: z.number().int(),
+    // Only as a passenger who would otherwise have driven or taken a taxi: a driver still drove.
+    carTripsAvoided: z.number().int(),
+    // An estimate (see /datos); never below zero on the profile.
+    co2Kg: z.number(),
+    // Passenger trips that would otherwise have been by public transport: no car avoided.
+    fromPublicTransport: z.number().int(),
+  })
+  .openapi("MyImpact");
+
+export const getMyImpactRoute = createRoute({
+  method: "get",
+  path: "/communities/{id}/me/impact",
+  tags: ["Viajes"],
+  request: { params: JoinCommunityParamsSchema },
+  responses: {
+    200: {
+      description:
+        "Viajes compartidos, viajes en auto evitados y CO₂ evitado (estimado) de la persona",
+      content: { "application/json": { schema: MyImpactSchema } },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    403: apiErrorResponse(
+      "No es miembro o no completó su registro (`community_membership_required`, `onboarding_required`)",
+    ),
+    422: apiErrorResponse("El identificador no es válido (`validation_error`)"),
+  },
+});
+
 export const RequestSeatBodySchema = z
   .object({
     // Plain text for the driver; there is no chat before the request is accepted.
@@ -1675,6 +1708,7 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   searchTripsRoute,
   getOfferDetailRoute,
   listMyTripsRoute,
+  getMyImpactRoute,
   requestSeatRoute,
   acceptBookingRoute,
   rejectBookingRoute,

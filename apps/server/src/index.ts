@@ -9,6 +9,7 @@ import {
   deleteMyProfilePhotoRoute,
   getMeRoute,
   getMyProfilePhotoRoute,
+  getMyImpactRoute,
   getOfferDetailRoute,
   healthRoute,
   joinCommunityRoute,
@@ -64,6 +65,7 @@ import {
   type RateLimitCheck,
   type SessionResolver,
 } from "./middleware";
+import { measureMyImpact } from "./my-impact";
 import { listMyTrips } from "./my-trips";
 import {
   acceptSeatRequest,
@@ -308,6 +310,11 @@ export function createApp(deps: AppDeps = {}) {
   openApiApp.use("/communities/:id/match-runs/latest", requireSession(deps.getSession));
   openApiApp.use(
     "/communities/:id/proposals",
+    requireSession(deps.getSession),
+    requireOnboardedMember((c) => c.req.param("id") ?? "", checkOnboarded),
+  );
+  openApiApp.use(
+    "/communities/:id/me/impact",
     requireSession(deps.getSession),
     requireOnboardedMember((c) => c.req.param("id") ?? "", checkOnboarded),
   );
@@ -721,6 +728,14 @@ export function createApp(deps: AppDeps = {}) {
     }
     await database.update(userTable).set({ image: null }).where(eq(userTable.id, userId));
     return c.json({ message: "Foto eliminada." }, 200);
+  });
+
+  openApiApp.openapi(getMyImpactRoute, async (c) => {
+    const { id: communityId } = c.req.valid("param");
+    return c.json(
+      await measureMyImpact(database, { communityId, userId: c.get("user").id, now: getNow() }),
+      200,
+    );
   });
 
   openApiApp.openapi(updateMembershipRoute, async (c) => {

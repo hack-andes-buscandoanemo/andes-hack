@@ -885,6 +885,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/communities/{id}/me/impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Viajes compartidos, viajes en auto evitados y CO₂ evitado (estimado) de la persona */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MyImpact"];
+                    };
+                };
+                /** @description No hay sesión iniciada (`unauthorized`) */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description No es miembro o no completó su registro (`community_membership_required`, `onboarding_required`) */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description El identificador no es válido (`validation_error`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/offers/{id}/bookings": {
         parameters: {
             query?: never;
@@ -2192,6 +2256,12 @@ export interface components {
                 } | null;
             };
             fuelEstimate: components["schemas"]["FuelEstimate"];
+        };
+        MyImpact: {
+            sharedTrips: number;
+            carTripsAvoided: number;
+            co2Kg: number;
+            fromPublicTransport: number;
         };
         RequestSeatResponse: {
             booking: {
