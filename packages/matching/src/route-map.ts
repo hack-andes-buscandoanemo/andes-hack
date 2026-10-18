@@ -42,12 +42,12 @@ export function routeMapFor(trip: RouteMapTrip, data: RouteMapData = limaData): 
   );
   if (!zone || !destination) throw new RangeError("Lugar desconocido");
 
-  const stops = trip.stops.map((stop) => {
+  // A point missing from places.json is left off: the map should never break the screen.
+  const stops = trip.stops.flatMap((stop) => {
     const point = data.places.meetingPoints.find(
       (candidate) => candidate.id === stop.meetingPointId,
     );
-    if (!point) throw new RangeError(`Punto de encuentro desconocido: ${stop.meetingPointId}`);
-    return { ...point, mine: stop.mine };
+    return point ? [{ ...point, mine: stop.mine }] : [];
   });
 
   const outbound = trip.direction === "outbound";

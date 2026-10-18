@@ -83,7 +83,12 @@ beforeEach(() => {
   requestSeat.mockReset();
   cancelBooking.mockReset();
   cancelOffer.mockReset();
-  drawRouteMap.mockReset().mockReturnValue(() => {});
+  drawRouteMap
+    .mockReset()
+    .mockImplementation((_container: unknown, _route: unknown, events: { onLoad(): void }) => {
+      events.onLoad();
+      return () => {};
+    });
 });
 
 describe("trip detail /viajes/{id} (US-014)", () => {
@@ -143,10 +148,12 @@ describe("trip detail /viajes/{id} (US-014)", () => {
   });
 
   it("shows the route in text and still lets me request the seat when the tiles do not load (US-037)", async () => {
-    drawRouteMap.mockImplementation((_container: unknown, _route: unknown, onFail: () => void) => {
-      onFail();
-      return () => {};
-    });
+    drawRouteMap.mockImplementation(
+      (_container: unknown, _route: unknown, events: { onFail(): void }) => {
+        events.onFail();
+        return () => {};
+      },
+    );
     render(<TripDetailPage />);
 
     expect(

@@ -428,6 +428,26 @@ describe("GET /offers/{id} (US-014)", () => {
     ]);
   });
 
+  it("marks a meeting point shared with another passenger once, as the person's own (US-037)", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const lucia = await createMember(alfa.id, "u-lucia", "Lucía");
+    const rosa = await createMember(alfa.id, "u-rosa", "Rosa");
+    const offer = await seedOffer(alfa.id, driver.id);
+    await bookSeat(offer, rosa.id, "accepted");
+    await bookSeat(offer, lucia.id, "pending");
+
+    const body = (await (await requestAs(lucia, `/offers/${offer.id}`)).json()) as {
+      routeMap: { markers: { role: string; name: string; mine: boolean }[] };
+    };
+
+    expect(body.routeMap.markers.map(({ role, name, mine }) => [role, name, mine])).toEqual([
+      ["start", "La Molina", false],
+      ["meeting", "Estación San Borja Sur (Línea 1)", true],
+      ["end", "Centro Empresarial Real", false],
+    ]);
+  });
+
   it("maps the meeting points of the accepted passengers and the person's own, highlighted (US-037)", async () => {
     const alfa = await createCommunity("comunidad-alfa");
     const driver = await createMember(alfa.id, "u-mateo", "Mateo");

@@ -25,7 +25,7 @@ const model = createTravelTimeModel();
 
 // The stops the map shows (US-037): where the accepted passengers board, and where the
 // person would, from their request or else from the engine's pickup for their need, in
-// pickup order.
+// pickup order. A point several people share is one stop, the person's own if it is theirs.
 function mapStops(
   bookings: {
     passengerId: string | null;
@@ -48,7 +48,11 @@ function mapStops(
       .map((booking) => ({ ...booking, mine: false })),
     ...(mine ? [{ ...mine, mine: true }] : []),
   ].toSorted((a, b) => a.pickupAt.slice(0, 5).localeCompare(b.pickupAt.slice(0, 5)));
-  return stops.map(({ meetingPointId, mine }) => ({ meetingPointId, mine }));
+  const byPoint = new Map<string, boolean>();
+  for (const stop of stops) {
+    byPoint.set(stop.meetingPointId, (byPoint.get(stop.meetingPointId) ?? false) || stop.mine);
+  }
+  return [...byPoint].map(([meetingPointId, mine]) => ({ meetingPointId, mine }));
 }
 
 async function loadOfferDetail(database: Database, input: { offerId: string; userId: string }) {

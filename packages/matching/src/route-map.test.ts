@@ -131,6 +131,21 @@ describe("the map of a trip (US-037)", () => {
     expect(map.approximate).toBe(true);
   });
 
+  it("leaves out a meeting point it does not know instead of failing the whole map", () => {
+    const map = routeMapFor(
+      {
+        direction: "outbound",
+        originZoneId: "san-borja",
+        destinationId: "centro-empresarial-real",
+        stops: [{ meetingPointId: "parque-que-ya-no-existe", mine: false }],
+      },
+      { places, shapes },
+    );
+
+    expect(map.markers.map(({ name }) => name)).toEqual(["San Borja", "Centro Empresarial Real"]);
+    expect(map.approximate).toBe(false);
+  });
+
   it("has the street shape of every zone of Lima to the sede and back", () => {
     const drawn = places.zones.flatMap((zone) =>
       (["outbound", "return"] as const).map(

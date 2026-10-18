@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitForElementToBeRemoved } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import RouteMap from "./route-map";
@@ -40,12 +40,14 @@ const ROUTE = {
 const TEXT =
   "San Isidro → Parque El Olivar → Estación San Borja Sur (Línea 1) (tu punto de encuentro) → Municipalidad de San Borja → San Borja";
 
-// Stands in for Leaflet: draws nothing, and the tiles fail when `tilesFail` says so.
-function fakeMap({ tilesFail = false } = {}) {
-  return async () => (_container: HTMLElement, _route: unknown, onFail: () => void) => {
-    if (tilesFail) setTimeout(onFail, 0);
-    return () => {};
-  };
+// Stands in for Leaflet: draws nothing, and the tiles load, fail or never answer.
+function fakeMap({ tiles = "load" }: { tiles?: "load" | "fail" | "pending" } = {}) {
+  return async () =>
+    (_container: HTMLElement, _route: unknown, events: { onLoad(): void; onFail(): void }) => {
+      if (tiles === "load") setTimeout(events.onLoad, 0);
+      if (tiles === "fail") setTimeout(events.onFail, 0);
+      return () => {};
+    };
 }
 
 describe("the trip map (US-037)", () => {
@@ -75,8 +77,19 @@ describe("the trip map (US-037)", () => {
     expect(screen.getByRole("status", { name: "Cargando mapa" })).toBeInTheDocument();
   });
 
+  it("keeps the skeleton until the first tiles arrive, then shows the map", async () => {
+    const { rerender } = render(<RouteMap route={ROUTE} loadMap={fakeMap({ tiles: "pending" })} />);
+
+    await screen.findByRole("img", { name: TEXT });
+    expect(screen.getByRole("status", { name: "Cargando mapa" })).toBeInTheDocument();
+
+    const loading = fakeMap();
+    rerender(<RouteMap route={ROUTE} loadMap={loading} />);
+    await waitForElementToBeRemoved(() => screen.queryByRole("status", { name: "Cargando mapa" }));
+  });
+
   it("falls back to the route in text when the tiles do not load", async () => {
-    render(<RouteMap route={ROUTE} loadMap={fakeMap({ tilesFail: true })} />);
+    render(<RouteMap route={ROUTE} loadMap={fakeMap({ tiles: "fail" })} />);
 
     expect(await screen.findByText(TEXT)).toBeInTheDocument();
     expect(screen.queryByRole("img")).toBeNull();

@@ -4,10 +4,16 @@ import { useEffect, useRef, useState } from "react";
 
 import type { RouteMap as RouteMapData } from "@/lib/communities-api";
 
+// What the map reports: the first tiles arrived, or none will.
+export interface TileEvents {
+  onLoad(): void;
+  onFail(): void;
+}
+
 export type DrawRouteMap = (
   container: HTMLElement,
   route: RouteMapData,
-  onFail: () => void,
+  events: TileEvents,
 ) => () => void;
 
 // Leaflet is a separate chunk, downloaded only when a map is on screen.
@@ -37,10 +43,14 @@ export default function RouteMap({
     loadMap()
       .then((draw) => {
         if (!active || !container.current) return;
-        // Ready first: the tiles may fail while the map is still being drawn.
-        setState("ready");
-        remove = draw(container.current, route, () => {
-          if (active) setState("failed");
+        // The skeleton stays until there is a map to see.
+        remove = draw(container.current, route, {
+          onLoad: () => {
+            if (active) setState("ready");
+          },
+          onFail: () => {
+            if (active) setState("failed");
+          },
         });
       })
       .catch(() => {
