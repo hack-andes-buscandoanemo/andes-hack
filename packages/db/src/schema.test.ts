@@ -233,15 +233,18 @@ describe("active seat bookings", () => {
     );
   });
 
-  it("lets the passenger request the offer again once the driver rejected the first request", async () => {
-    const seat = await givenPassengerForOffer();
-    const earlier = await requestSeat(seat);
-    await db.update(seatBooking).set({ status: "rejected" }).where(eq(seatBooking.id, earlier.id));
+  it.each(["rejected", "cancelled_by_passenger", "cancelled_by_driver"] as const)(
+    "lets the passenger request the offer again after a %s booking",
+    async (status) => {
+      const seat = await givenPassengerForOffer();
+      const earlier = await requestSeat(seat);
+      await db.update(seatBooking).set({ status }).where(eq(seatBooking.id, earlier.id));
 
-    const retry = await requestSeat(seat);
+      const retry = await requestSeat(seat);
 
-    expect(retry.status).toBe("pending");
-  });
+      expect(retry.status).toBe("pending");
+    },
+  );
 
   it("rejects a new request from a passenger the driver already accepted", async () => {
     const seat = await givenPassengerForOffer();
@@ -306,6 +309,10 @@ describe("seat and detour limits", () => {
     );
   });
 
+  it.each([1, 6])("accepts an offer at the %i-seat limit", async (seatsTotal) => {
+    await expect(givenOffer({ seatsTotal })).resolves.toMatchObject({ offer: { seatsTotal } });
+  });
+
   it.each([0, 7])("rejects a vehicle with %i passenger seats", async (seats) => {
     const org = await givenCommunity();
     const owner = await givenMember(org.id);
@@ -315,10 +322,23 @@ describe("seat and detour limits", () => {
     );
   });
 
+  it.each([1, 6])("accepts a vehicle at the %i-seat limit", async (seats) => {
+    const org = await givenCommunity();
+    const owner = await givenMember(org.id);
+
+    await expect(givenVehicle(owner.id, { seats })).resolves.toMatchObject({ seats });
+  });
+
   it.each([3, 15])("rejects a maximum detour of %i minutes", async (maxDetourMinutes) => {
     await expect(givenOffer({ maxDetourMinutes })).rejects.toMatchObject(
       checkViolation("trip_offer_max_detour_minutes_check"),
     );
+  });
+
+  it.each([0, 10])("accepts a maximum detour of %i minutes", async (maxDetourMinutes) => {
+    await expect(givenOffer({ maxDetourMinutes })).resolves.toMatchObject({
+      offer: { maxDetourMinutes },
+    });
   });
 
   it("rejects releasing a seat on an offer with no seats taken", async () => {
@@ -373,5 +393,26 @@ describe("trip schedules", () => {
     await expect(givenNeed(org.id, point.zoneId, { daysOfWeek })).rejects.toMatchObject(
       checkViolation("trip_request_days_of_week_check"),
     );
+  });
+
+  const validSchedules = [
+    { schedule: "a single date", date: "2026-10-19", daysOfWeek: null },
+    { schedule: "Sundays only", date: null, daysOfWeek: [7] },
+    { schedule: "every day of the week", date: null, daysOfWeek: [1, 2, 3, 4, 5, 6, 7] },
+  ];
+
+  it.each(validSchedules)("accepts an offer on $schedule", async ({ date, daysOfWeek }) => {
+    await expect(givenOffer({ date, daysOfWeek })).resolves.toMatchObject({
+      offer: { date, daysOfWeek },
+    });
+  });
+
+  it.each(validSchedules)("accepts a need on $schedule", async ({ date, daysOfWeek }) => {
+    const org = await givenCommunity();
+    const point = await givenMeetingPoint();
+
+    await expect(givenNeed(org.id, point.zoneId, { date, daysOfWeek })).resolves.toMatchObject({
+      need: { date, daysOfWeek },
+    });
   });
 });
