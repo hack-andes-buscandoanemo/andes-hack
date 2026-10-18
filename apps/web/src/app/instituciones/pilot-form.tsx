@@ -70,7 +70,7 @@ export default function PilotForm() {
       }}
       className="space-y-4"
     >
-      <h2 id="pilot-heading" className="text-xl font-bold">
+      <h2 id="pilot-heading" className="text-lg font-semibold tracking-tight">
         Pide un piloto de 4 semanas
       </h2>
       <form.Field name="institution">

@@ -1,10 +1,14 @@
 "use client";
 
+import { CheckmarkBadge01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import PageHeader from "@/components/page-header";
 import ProfileAvatar from "@/components/profile-avatar";
+import { RowChevron } from "@/components/row-chevron";
 import { Button } from "@/components/ui/button";
 import type { ProfileMembership } from "@/lib/app-access";
 import { authClient } from "@/lib/auth-client";
@@ -130,91 +134,102 @@ export default function Perfil({
   }
 
   return (
-    <main className="flex flex-col gap-4 px-4 py-4">
-      <h1 className="text-3xl font-extrabold">Perfil</h1>
-      <div className="flex items-start gap-3 rounded-xl border bg-card p-4">
-        <ProfileAvatar name={displayName} photoUrl={photoUrl} className="size-14" />
-        <div className="flex min-w-0 flex-col">
-          <p className="font-bold">{displayName}</p>
-          {membership ? <p>{membership.communityName}</p> : null}
-          <p className="truncate text-muted-foreground">{email}</p>
-          {membership ? (
-            <>
-              <p className="text-sm font-medium">
-                {`Miembro verificado · ${VERIFICATION_LABELS[membership.verificationMethod]}`}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {`Perfil completo ${completeness(membership, hasVehicle)} %`}
-              </p>
-            </>
-          ) : null}
-          <p className="mt-1 text-xs text-muted-foreground">
-            Tu foto solo la ven los miembros de tu comunidad.
-          </p>
+    <main className="flex flex-col gap-5 px-4 pt-2 pb-6">
+      <PageHeader title="Perfil" />
+      <div className="flex flex-col gap-4 rounded-2xl border bg-card p-5 shadow-sm">
+        <div className="flex items-start gap-4">
+          <ProfileAvatar name={displayName} photoUrl={photoUrl} className="size-16 text-lg" />
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <p className="text-lg font-semibold tracking-tight">{displayName}</p>
+            {membership ? <p className="text-sm">{membership.communityName}</p> : null}
+            <p className="truncate text-sm text-muted-foreground">{email}</p>
+            {membership ? (
+              <>
+                <p className="mt-1.5 inline-flex items-center gap-1 text-sm font-medium text-success">
+                  <HugeiconsIcon
+                    icon={CheckmarkBadge01Icon}
+                    className="size-4 shrink-0"
+                    aria-hidden
+                  />
+                  {`Miembro verificado · ${VERIFICATION_LABELS[membership.verificationMethod]}`}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {`Perfil completo ${completeness(membership, hasVehicle)} %`}
+                </p>
+              </>
+            ) : null}
+          </div>
         </div>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <input
-          ref={photoInput}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          aria-label="Cambiar foto"
-          className="sr-only"
-          disabled={uploading || removing}
-          onChange={(event) => {
-            const [file] = event.currentTarget.files ?? [];
-            if (file) void uploadPhoto(file);
-          }}
-        />
-        <Button
-          type="button"
-          variant="outline"
-          className="min-h-12"
-          disabled={uploading || removing}
-          onClick={() => photoInput.current?.click()}
-        >
-          {uploading ? "Subiendo foto…" : "Cambiar foto"}
-        </Button>
-        {photoUrl ? (
+        <div className="flex flex-wrap items-center gap-2 border-t pt-4">
+          <input
+            ref={photoInput}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            aria-label="Cambiar foto"
+            className="sr-only"
+            disabled={uploading || removing}
+            onChange={(event) => {
+              const [file] = event.currentTarget.files ?? [];
+              if (file) void uploadPhoto(file);
+            }}
+          />
           <Button
             type="button"
             variant="outline"
-            className="min-h-12"
+            size="lg"
             disabled={uploading || removing}
-            onClick={removePhoto}
+            onClick={() => photoInput.current?.click()}
           >
-            {removing ? "Quitando foto…" : "Quitar foto"}
+            {uploading ? "Subiendo foto…" : "Cambiar foto"}
           </Button>
+          {photoUrl ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              disabled={uploading || removing}
+              onClick={removePhoto}
+            >
+              {removing ? "Quitando foto…" : "Quitar foto"}
+            </Button>
+          ) : null}
+          <p className="basis-full text-xs text-muted-foreground">
+            Tu foto solo la ven los miembros de tu comunidad.
+          </p>
+        </div>
+        {photoError ? (
+          <p role="alert" className="text-sm text-destructive">
+            {photoError}
+          </p>
         ) : null}
       </div>
-      {photoError ? <p role="alert">{photoError}</p> : null}
       <section
         aria-labelledby="security"
-        className="flex flex-col gap-2 rounded-xl border bg-card p-4"
+        className="flex flex-col gap-2 rounded-2xl border bg-card p-5 shadow-sm"
       >
-        <h2 id="security" className="font-bold">
+        <h2 id="security" className="text-base font-semibold tracking-tight">
           Seguridad
         </h2>
-        <p>Pertenencia validada</p>
+        <p className="text-sm">Pertenencia validada</p>
         {/* Declared, not verified: neither the SOAT nor the property card is checked yet. */}
-        {hasVehicle ? <p>Vehículo registrado: Declarado</p> : null}
+        {hasVehicle ? <p className="text-sm">Vehículo registrado: Declarado</p> : null}
         {/* US-028 stores no contacts: the passenger shares an accepted trip from Viajes. */}
         <Link
           href={{ pathname: "/viajes", query: { role: "pasajero" } }}
-          className="flex min-h-11 items-center justify-between rounded-lg bg-muted px-3 font-medium"
+          className="flex min-h-12 items-center justify-between rounded-xl bg-muted px-4 text-[0.9375rem] font-medium transition-colors hover:bg-secondary"
         >
           Contactos de emergencia
-          <span aria-hidden>›</span>
+          <RowChevron />
         </Link>
         <p className="text-sm text-muted-foreground">
           Comparte el enlace de un viaje aceptado con alguien de confianza.
         </p>
         <Link
           href={{ pathname: "/viajes", query: { tab: "historial" } }}
-          className="flex min-h-11 items-center justify-between rounded-lg bg-muted px-3 font-medium"
+          className="flex min-h-12 items-center justify-between rounded-xl bg-muted px-4 text-[0.9375rem] font-medium transition-colors hover:bg-secondary"
         >
           Historial de viajes
-          <span aria-hidden>›</span>
+          <RowChevron />
         </Link>
         <HelpCenter />
       </section>
@@ -227,29 +242,33 @@ export default function Perfil({
           onSaved={(saved: EditableProfile) => setMembership({ ...membership, ...saved })}
         />
       ) : null}
-      <Link className="min-h-12 rounded-xl border p-4 font-bold" href="/perfil/privacidad">
+      <Link
+        className="flex min-h-14 items-center justify-between rounded-2xl border bg-card px-5 font-semibold shadow-sm transition-colors hover:bg-muted"
+        href="/perfil/privacidad"
+      >
         Privacidad
+        <RowChevron />
       </Link>
       {role === "admin" ? (
         <section
           aria-labelledby="admin-community"
-          className="flex flex-col gap-2 rounded-xl border bg-card p-4"
+          className="flex flex-col gap-2 rounded-2xl border bg-card p-5 shadow-sm"
         >
-          <h2 id="admin-community" className="font-bold">
+          <h2 id="admin-community" className="text-base font-semibold tracking-tight">
             Administrar comunidad
           </h2>
           <Link
             href="/comunidad/emparejamiento"
-            className="flex min-h-11 items-center justify-between rounded-lg bg-muted px-3 font-medium"
+            className="flex min-h-12 items-center justify-between rounded-xl bg-muted px-4 text-[0.9375rem] font-medium transition-colors hover:bg-secondary"
           >
             Emparejamiento
-            <span aria-hidden>›</span>
+            <RowChevron />
           </Link>
         </section>
       ) : null}
       <Button
         variant="outline"
-        className="min-h-12"
+        size="lg"
         onClick={async () => {
           await authClient.signOut();
           router.push("/");

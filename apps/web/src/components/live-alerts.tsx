@@ -1,5 +1,7 @@
 "use client";
 
+import { Cancel01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 import type { Route } from "next";
 import { usePathname } from "next/navigation";
@@ -9,6 +11,7 @@ import { communitiesApi, type LiveAlert } from "@/lib/communities-api";
 import type { Coordinates } from "@/lib/geo";
 
 import { LiveBadge, TripPrice } from "./trip-price";
+import { buttonVariants } from "./ui/button";
 import { clockLabel } from "@/app/(app)/buscar/schedule";
 
 const POLL_EVERY_MS = 6_000;
@@ -82,7 +85,7 @@ export default function LiveAlerts() {
   if (visible.length === 0) return null;
 
   return (
-    <div aria-live="polite" className="sticky top-0 z-20 flex flex-col gap-2 px-4 pb-2">
+    <div aria-live="polite" className="sticky top-[4.25rem] z-10 flex flex-col gap-2 px-4 pb-2">
       {visible.map((alert) => {
         const outbound = alert.direction === "outbound";
         const route = outbound
@@ -92,21 +95,21 @@ export default function LiveAlerts() {
           <section
             key={alert.offerId}
             role="status"
-            className="space-y-1 rounded-2xl border-2 border-brand-yellow bg-card p-3 text-sm shadow-md"
+            className="space-y-2 rounded-2xl border bg-card p-5 text-sm shadow-md ring-2 ring-brand-yellow"
           >
             <div className="flex items-center justify-between gap-2">
               <LiveBadge />
               <button
                 type="button"
                 aria-label="Cerrar alerta"
-                className="px-2 text-lg leading-none text-muted-foreground"
+                className="-mr-1.5 flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 onClick={() => setDismissed((current) => new Set(current).add(alert.offerId))}
               >
-                ×
+                <HugeiconsIcon icon={Cancel01Icon} className="size-4" aria-hidden />
               </button>
             </div>
-            <p className="font-bold">{`${alert.driverName} va ${route}`}</p>
-            <p>
+            <p className="text-[0.9375rem] font-semibold">{`${alert.driverName} va ${route}`}</p>
+            <p className="text-muted-foreground tabular-nums">
               {`Sale a las ${clockLabel(alert.departureTime.slice(0, 5))}`}
               {alert.distanceKm !== null ? ` · a ${alert.distanceKm} km de ti` : ""}
               {` · ${alert.seatsFree === 1 ? "1 asiento" : `${alert.seatsFree} asientos`}`}
@@ -114,7 +117,7 @@ export default function LiveAlerts() {
             <TripPrice priceCents={alert.priceCents} paymentMethods={alert.paymentMethods} />
             <Link
               href={`/viajes/${alert.offerId}` as Route}
-              className="flex min-h-10 items-center justify-center rounded-xl bg-brand-yellow font-bold text-brand-black"
+              className={buttonVariants({ className: "w-full" })}
             >
               Ver ruta completa
             </Link>

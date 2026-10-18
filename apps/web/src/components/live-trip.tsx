@@ -148,8 +148,8 @@ export default function LiveTrip({
 
   if (role === "driver") {
     return (
-      <section className="space-y-2 rounded-2xl border bg-card p-4 text-sm shadow-sm">
-        <h2 className="font-bold">Te Jalo en vivo</h2>
+      <section className="space-y-3 rounded-2xl border bg-card p-5 text-sm shadow-sm">
+        <h2 className="text-base font-semibold tracking-tight">Te Jalo en vivo</h2>
         <p className="text-muted-foreground">
           {sharing
             ? `Compartes la posición de tu auto con los pasajeros aceptados${ago}.`
@@ -163,21 +163,16 @@ export default function LiveTrip({
         {sharing ? (
           <>
             {price.trim() ? (
-              <p className="font-semibold">{`Precio: ${soles(Math.round(Number(price.replace(",", ".")) * 100))} por asiento`}</p>
+              <p className="font-semibold tabular-nums">{`Precio: ${soles(Math.round(Number(price.replace(",", ".")) * 100))} por asiento`}</p>
             ) : null}
-            <Button
-              type="button"
-              variant="outline"
-              className="h-11 w-full rounded-xl font-bold"
-              onClick={() => void stop()}
-            >
+            <Button type="button" variant="outline" className="w-full" onClick={() => void stop()}>
               Apagar Te Jalo en vivo
             </Button>
           </>
         ) : (
           <>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="live-price" className="font-semibold">
+              <label htmlFor="live-price" className="font-medium">
                 Precio por asiento (S/, opcional)
               </label>
               <input
@@ -187,12 +182,12 @@ export default function LiveTrip({
                 maxLength={6}
                 value={price}
                 onChange={(event) => setPrice(event.target.value)}
-                className="h-10 rounded-md border bg-background px-3 text-sm"
+                className="field"
               />
             </div>
             {price.trim() ? (
               <fieldset className="flex flex-col gap-2">
-                <legend className="font-semibold">Cómo te pagan</legend>
+                <legend className="font-medium">Cómo te pagan</legend>
                 <div className="flex gap-2">
                   {paymentMethodOptions.map((option) => {
                     const on = methods.includes(option.value);
@@ -208,8 +203,8 @@ export default function LiveTrip({
                               : [...current, option.value],
                           )
                         }
-                        className={`rounded-xl border px-4 py-2 text-sm font-medium ${
-                          on ? "border-foreground bg-brand-yellow/20 font-bold" : "bg-card"
+                        className={`min-h-11 rounded-xl border px-5 text-sm font-medium shadow-xs transition-colors ${
+                          on ? "border-foreground bg-highlight font-semibold" : "bg-card"
                         }`}
                       >
                         {option.label}
@@ -219,7 +214,7 @@ export default function LiveTrip({
                 </div>
               </fieldset>
             ) : null}
-            <Button type="button" className="h-11 w-full rounded-xl font-bold" onClick={start}>
+            <Button type="button" className="w-full" onClick={start}>
               {active ? "Reanudar Te Jalo en vivo" : "Activar Te Jalo en vivo"}
             </Button>
           </>
@@ -239,7 +234,7 @@ export default function LiveTrip({
   return (
     <p
       role="status"
-      className="rounded-2xl border bg-brand-yellow/30 p-3 text-sm font-semibold shadow-sm"
+      className="rounded-2xl border bg-highlight p-3 text-sm font-semibold shadow-sm"
     >
       {role === "passenger"
         ? `El conductor está en camino${ago}.`

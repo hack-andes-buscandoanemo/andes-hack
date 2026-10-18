@@ -9,7 +9,7 @@ function Figure({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between gap-4">
       <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="text-lg font-bold">{value}</span>
+      <span className="text-lg font-semibold tabular-nums">{value}</span>
     </div>
   );
 }
@@ -28,9 +28,9 @@ export default function MyImpact({ communityId }: { communityId: string }) {
   return (
     <section
       aria-labelledby="my-impact"
-      className="flex flex-col gap-2 rounded-xl border bg-card p-4"
+      className="flex flex-col gap-2 rounded-2xl border bg-card p-5 shadow-sm"
     >
-      <h2 id="my-impact" className="font-bold">
+      <h2 id="my-impact" className="text-base font-semibold tracking-tight">
         Mi impacto
       </h2>
       {impact ? (

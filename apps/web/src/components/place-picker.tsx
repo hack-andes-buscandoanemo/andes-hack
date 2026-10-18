@@ -1,5 +1,7 @@
 "use client";
 
+import { Location01Icon, Search01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -71,13 +73,16 @@ export default function PlacePicker({
 
   if (value) {
     return (
-      <div className="flex flex-col gap-1">
-        <span className="text-sm font-bold">{label}</span>
-        <div className="flex items-center justify-between gap-2 rounded-xl bg-brand-yellow/30 p-2 text-sm">
-          <span className="font-medium">{value.label}</span>
+      <div className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium">{label}</span>
+        <div className="flex min-h-12 items-center justify-between gap-2 rounded-xl bg-highlight py-1.5 pr-1.5 pl-3.5 text-sm text-highlight-foreground">
+          <span className="flex min-w-0 items-center gap-2 font-medium">
+            <HugeiconsIcon icon={Location01Icon} className="size-4 shrink-0" aria-hidden />
+            <span className="truncate">{value.label}</span>
+          </span>
           <button
             type="button"
-            className="px-2 text-xs font-bold underline"
+            className="shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold underline underline-offset-4 hover:bg-background/40"
             aria-label={`Cambiar ${label.toLowerCase()}`}
             onClick={() => {
               onChange(null);
@@ -94,7 +99,7 @@ export default function PlacePicker({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-bold">
+      <label htmlFor={id} className="text-sm font-medium">
         {label}
       </label>
       <form
@@ -110,41 +115,51 @@ export default function PlacePicker({
           maxLength={120}
           placeholder={placeholder}
           onChange={(event) => setQuery(event.target.value)}
-          className="h-10 min-w-0 flex-1 rounded-md border bg-background px-3 text-sm"
+          className="field min-w-0 flex-1"
         />
         <Button
           type="submit"
           variant="outline"
+          className="shrink-0 px-3.5 sm:px-4"
           disabled={busy || !query.trim()}
-          className="h-10 rounded-xl font-bold"
         >
-          {busy ? "Buscando…" : "Buscar"}
+          <HugeiconsIcon icon={Search01Icon} aria-hidden />
+          <span className="sr-only sm:not-sr-only">{busy ? "Buscando…" : "Buscar"}</span>
         </Button>
       </form>
       {withLocation ? (
         <Button
           type="button"
-          variant="outline"
+          variant="ghost"
           size="sm"
-          className="h-8 w-fit rounded-lg text-xs font-bold"
+          className="-ml-2 w-fit"
           disabled={busy}
           onClick={useMyLocation}
         >
+          <HugeiconsIcon icon={Location01Icon} aria-hidden />
           Usar mi ubicación
         </Button>
       ) : null}
       {options.length > 0 ? (
-        <ul aria-label={`Resultados de ${label.toLowerCase()}`} className="flex flex-col gap-1">
+        <ul
+          aria-label={`Resultados de ${label.toLowerCase()}`}
+          className="flex flex-col divide-y overflow-hidden rounded-xl border bg-card shadow-sm"
+        >
           {options.map((option) => (
             <li key={`${option.lat},${option.lng}`}>
               <button
                 type="button"
-                className="w-full rounded-lg border px-3 py-2 text-left text-sm"
+                className="flex min-h-11 w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm transition-colors hover:bg-muted"
                 onClick={() => {
                   onChange(option);
                   setOptions([]);
                 }}
               >
+                <HugeiconsIcon
+                  icon={Location01Icon}
+                  className="size-4 shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
                 {option.label}
               </button>
             </li>
@@ -152,7 +167,7 @@ export default function PlacePicker({
         </ul>
       ) : null}
       {error ? (
-        <p role="alert" className="text-xs font-medium text-destructive">
+        <p role="alert" className="text-[0.8125rem] text-destructive">
           {error}
         </p>
       ) : null}

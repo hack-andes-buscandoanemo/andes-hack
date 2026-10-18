@@ -1,5 +1,7 @@
 "use client";
 
+import { Car01Icon, CheckmarkBadge01Icon, Search01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -7,6 +9,7 @@ import EmptyState from "@/components/empty-state";
 import { pairReturns } from "@/components/return-pairs";
 import ReturnTripCard from "@/components/return-trip-card";
 import TripSummaryCard from "@/components/trip-summary-card";
+import { buttonVariants } from "@/components/ui/button";
 import { communitiesApi, type MyTrip } from "@/lib/communities-api";
 
 import Proposals from "./proposals";
@@ -45,53 +48,56 @@ export default function Inicio({
   const returnsByTrip = useMemo(() => pairReturns(trips ?? []), [trips]);
 
   return (
-    <main className="flex flex-col gap-5 px-4 py-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-extrabold">Hola, {name} 👋</h1>
-          <p className="text-muted-foreground">¿A dónde vamos hoy?</p>
+    <main className="flex flex-col gap-8 px-4 pt-2 pb-6">
+      <div className="flex flex-col gap-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight">Hola, {name}</h1>
+            <p className="mt-1 text-[0.9375rem] text-muted-foreground">¿A dónde vamos hoy?</p>
+          </div>
+          {communityName && (
+            <p className="flex shrink-0 flex-col items-end gap-0.5 text-right text-[0.8125rem]">
+              <span className="font-semibold">{communityName}</span>
+              <span className="inline-flex items-center gap-1 font-medium text-success">
+                <HugeiconsIcon icon={CheckmarkBadge01Icon} className="size-4" aria-hidden />
+                Miembro verificado
+              </span>
+            </p>
+          )}
         </div>
-        {communityName && (
-          <p className="flex flex-col rounded-xl bg-muted px-3 py-2 text-sm">
-            <span className="font-bold">{communityName}</span>
-            <span className="font-medium text-brand-black">
-              <span aria-hidden>✓ </span>Miembro verificado
-            </span>
-          </p>
-        )}
-      </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Link
-          href="/buscar"
-          className="flex min-h-12 items-center justify-center rounded-full bg-brand-yellow px-4 font-bold text-brand-black"
-        >
-          Buscar viaje
-        </Link>
-        <Link
-          href="/ofrecer"
-          className="flex min-h-12 items-center justify-center rounded-full bg-brand-black px-4 font-bold text-white"
-        >
-          Ofrecer viaje
-        </Link>
+        <div className="grid grid-cols-2 gap-3">
+          <Link href="/buscar" className={buttonVariants({ size: "lg" })}>
+            <HugeiconsIcon icon={Search01Icon} className="size-5" aria-hidden />
+            Buscar viaje
+          </Link>
+          <Link href="/ofrecer" className={buttonVariants({ size: "lg", variant: "inverse" })}>
+            <HugeiconsIcon icon={Car01Icon} className="size-5" aria-hidden />
+            Ofrecer viaje
+          </Link>
+        </div>
       </div>
 
       {communityId ? <Proposals communityId={communityId} /> : null}
 
       {failed ? (
-        <p role="alert">
+        <p role="alert" className="text-sm text-destructive">
           No pudimos cargar tus viajes.{" "}
-          <Link href="/viajes" className="underline">
+          <Link href="/viajes" className="font-medium underline">
             Ver viajes
           </Link>
         </p>
       ) : trips === null ? (
-        <p role="status">Cargando viajes…</p>
+        <div role="status" className="space-y-3">
+          <span className="sr-only">Cargando viajes…</span>
+          <div className="h-5 w-40 animate-pulse rounded-md bg-muted" />
+          <div className="h-36 animate-pulse rounded-2xl bg-muted" />
+        </div>
       ) : trips.length === 0 ? (
         <EmptyState tone="dark">{EMPTY_TRIPS}</EmptyState>
       ) : (
         <section aria-label="Tus próximos viajes" className="space-y-3">
-          <h2 className="text-lg font-bold">Tus próximos viajes</h2>
+          <h2 className="text-lg font-semibold tracking-tight">Tus próximos viajes</h2>
           {trips.map((trip) => (
             <TripSummaryCard key={trip.id} trip={trip}>
               <ReturnTripCard trip={trip} returns={returnsByTrip.get(trip.id) ?? []} />
@@ -100,23 +106,23 @@ export default function Inicio({
         </section>
       )}
 
-      <section aria-labelledby="matches" className="flex flex-col gap-2">
-        <div className="flex items-baseline justify-between">
-          <h2 id="matches" className="text-lg font-bold">
+      <section aria-labelledby="matches" className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <h2 id="matches" className="text-lg font-semibold tracking-tight">
             Coincidencias de hoy
           </h2>
-          <Link href="/buscar" className="flex min-h-11 items-center font-medium underline">
+          <Link
+            href="/buscar"
+            className="inline-flex min-h-11 items-center gap-1 text-sm font-semibold underline-offset-4 hover:underline"
+          >
             Ver todas
           </Link>
         </div>
         <EmptyState>Aún no hay coincidencias para hoy.</EmptyState>
       </section>
 
-      <section
-        aria-labelledby="impact"
-        className="flex flex-col gap-2 rounded-2xl bg-brand-yellow/15 p-3"
-      >
-        <h2 id="impact" className="text-lg font-bold">
+      <section aria-labelledby="impact" className="flex flex-col gap-3">
+        <h2 id="impact" className="text-lg font-semibold tracking-tight">
           Tu impacto
         </h2>
         <EmptyState>Tu impacto aparecerá cuando completes tu primer viaje compartido.</EmptyState>

@@ -104,7 +104,7 @@ describe("inicio", () => {
   it("greets the member and asks where they are going", () => {
     render(<Inicio name="Ana" />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "Hola, Ana 👋" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Hola, Ana" })).toBeInTheDocument();
     expect(screen.getByText("¿A dónde vamos hoy?")).toBeInTheDocument();
   });
 

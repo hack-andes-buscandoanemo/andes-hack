@@ -47,16 +47,16 @@ export default function SharedTripPage() {
   return (
     <main className="mx-auto w-full max-w-md space-y-4 px-4 py-6">
       {problem ? (
-        <p role="alert" className="rounded-2xl border bg-card p-4 text-sm font-medium">
+        <p role="alert" className="rounded-2xl border bg-card p-5 text-sm font-medium">
           {problem}
         </p>
       ) : trip ? (
         <>
-          <h1 className="text-2xl font-extrabold">{`${trip.passengerAlias} comparte su viaje contigo`}</h1>
-          <p className="w-fit rounded-full bg-brand-yellow px-3 py-1 text-sm font-bold text-brand-black">
+          <h1 className="text-2xl font-bold">{`${trip.passengerAlias} comparte su viaje contigo`}</h1>
+          <p className="w-fit rounded-full bg-brand-yellow px-3 py-1 text-sm font-semibold text-brand-black">
             {STATUS_LABEL[trip.status]}
           </p>
-          <section className="space-y-1 rounded-2xl border bg-card p-4 text-sm shadow-sm">
+          <section className="space-y-1 rounded-2xl border bg-card p-5 text-sm shadow-sm">
             <p>{`Conductor: ${trip.driverAlias}`}</p>
             <p>{`Vehículo: ${trip.vehicle.make} ${trip.vehicle.model} ${trip.vehicle.color.toLowerCase()}`}</p>
             <p>{`Placa: ${trip.vehicle.plate}`}</p>

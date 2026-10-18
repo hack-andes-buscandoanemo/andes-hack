@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type z from "zod";
 
+import StandaloneHeader from "@/components/standalone-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -103,13 +104,14 @@ export default function OnboardingPage() {
   if (!membership) {
     return (
       <main className="mx-auto flex w-full max-w-md flex-col items-center gap-4 px-4 py-10 text-center">
-        <h1 className="text-3xl font-extrabold">Antes de empezar</h1>
+        <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight">Antes de empezar</h1>
       </main>
     );
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-10">
+    <main className="mx-auto flex w-full max-w-md flex-col gap-6 px-4 pt-5 pb-10">
+      <StandaloneHeader />
       <form
         noValidate
         onSubmit={(e) => {
@@ -119,7 +121,9 @@ export default function OnboardingPage() {
         className="flex flex-col gap-6"
       >
         <section className="flex flex-col gap-3">
-          <h1 className="text-3xl font-extrabold">Antes de empezar</h1>
+          <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight">
+            Antes de empezar
+          </h1>
           <p className="text-sm leading-relaxed text-muted-foreground">
             Te Jalo es una herramienta comunitaria para coordinar viajes compartidos al mismo
             destino entre personas de tu entidad. No somos una empresa de transporte ni
@@ -156,7 +160,7 @@ export default function OnboardingPage() {
         </section>
 
         <section className="flex flex-col gap-3">
-          <h2 className="text-xl font-bold">¿Cómo viajaste la última vez?</h2>
+          <h2 className="text-lg font-semibold tracking-tight">¿Cómo viajaste la última vez?</h2>
           <p className="text-sm text-muted-foreground">
             {`El último día que fuiste a ${membership.destinationName}, ¿cómo fuiste?`}
           </p>
@@ -175,8 +179,8 @@ export default function OnboardingPage() {
                         field.handleChange(option.value);
                         setUsualModeError(null);
                       }}
-                      className={`rounded-xl border p-3 text-left text-sm font-medium transition ${
-                        selected ? "border-foreground bg-brand-yellow/20 font-bold" : "bg-card"
+                      className={`min-h-14 rounded-xl border px-4 py-3 text-left text-sm font-medium shadow-xs transition-colors ${
+                        selected ? "border-foreground bg-highlight font-semibold" : "bg-card"
                       }`}
                     >
                       {option.label}
@@ -194,7 +198,7 @@ export default function OnboardingPage() {
         </section>
 
         <section className="flex flex-col gap-3">
-          <h2 className="text-xl font-bold">¿Cómo quieres participar?</h2>
+          <h2 className="text-lg font-semibold tracking-tight">¿Cómo quieres participar?</h2>
 
           <form.Field name="travelRole">
             {(field) => (
@@ -207,8 +211,8 @@ export default function OnboardingPage() {
                       type="button"
                       aria-pressed={selected}
                       onClick={() => field.handleChange(option.value)}
-                      className={`rounded-xl border p-3 text-left text-sm font-medium transition ${
-                        selected ? "border-foreground bg-brand-yellow/20 font-bold" : "bg-card"
+                      className={`min-h-14 rounded-xl border px-4 py-3 text-left text-sm font-medium shadow-xs transition-colors ${
+                        selected ? "border-foreground bg-highlight font-semibold" : "bg-card"
                       }`}
                     >
                       {option.label}

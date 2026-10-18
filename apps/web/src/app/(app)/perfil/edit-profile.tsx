@@ -41,9 +41,9 @@ export default function EditProfile({
   return (
     <section
       aria-labelledby="edit-profile"
-      className="flex flex-col gap-3 rounded-xl border bg-card p-4"
+      className="flex flex-col gap-3 rounded-2xl border bg-card p-5 shadow-sm"
     >
-      <h2 id="edit-profile" className="font-bold">
+      <h2 id="edit-profile" className="text-base font-semibold tracking-tight">
         Editar perfil
       </h2>
       <form onSubmit={(event) => void save(event)} className="flex flex-col gap-3">
@@ -62,7 +62,7 @@ export default function EditProfile({
             id="profile-usual-mode"
             value={usualMode}
             onChange={(event) => setUsualMode(event.target.value as UsualMode)}
-            className="min-h-11 rounded-md border bg-background px-3"
+            className="field"
           >
             {USUAL_MODE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -71,7 +71,7 @@ export default function EditProfile({
             ))}
           </select>
         </div>
-        <Button type="submit" className="min-h-12">
+        <Button type="submit" size="lg">
           Guardar cambios
         </Button>
         {message ? <p role="status">{message}</p> : null}

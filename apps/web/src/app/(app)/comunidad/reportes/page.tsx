@@ -12,10 +12,12 @@ export default async function CommunityReportsPage() {
   if (access.role !== "admin" || !access.communityId) redirect("/inicio");
 
   return (
-    <main className="mx-auto w-full max-w-md space-y-4 px-4 py-6">
-      <h1 className="text-2xl font-extrabold">Administrar comunidad</h1>
+    <main className="space-y-4 px-4 pt-2 pb-6">
+      <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight">
+        Administrar comunidad
+      </h1>
       <section aria-labelledby="community-reports-heading" className="space-y-4">
-        <h2 id="community-reports-heading" className="text-lg font-bold">
+        <h2 id="community-reports-heading" className="text-lg font-semibold tracking-tight">
           Reportes
         </h2>
         <CommunityReports communityId={access.communityId} />

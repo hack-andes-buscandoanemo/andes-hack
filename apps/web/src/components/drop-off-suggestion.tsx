@@ -53,8 +53,8 @@ export default function DropOffSuggestion({
   }
 
   return (
-    <section className="space-y-2 rounded-2xl border bg-card p-4 text-sm shadow-sm">
-      <h2 className="font-bold">¿Tu destino final es otro?</h2>
+    <section className="space-y-2 rounded-2xl border bg-card p-5 text-sm shadow-sm">
+      <h2 className="text-base font-semibold tracking-tight">¿Tu destino final es otro?</h2>
       <p className="text-muted-foreground">
         Dinos a dónde vas y te mostramos en qué calle bajarte para quedar lo más cerca posible.
       </p>
@@ -74,7 +74,7 @@ export default function DropOffSuggestion({
           maxLength={120}
           placeholder="Ej. Av. Javier Prado, San Isidro"
           onChange={(event) => setQuery(event.target.value)}
-          className="h-10 min-w-0 flex-1 rounded-md border bg-background px-3 text-sm"
+          className="field min-w-0 flex-1"
         />
         <Button
           type="submit"
@@ -90,7 +90,7 @@ export default function DropOffSuggestion({
         </p>
       ) : null}
       {result ? (
-        <div className="rounded-xl bg-brand-yellow/30 p-2" role="status">
+        <div className="rounded-xl bg-highlight p-2" role="status">
           <p className="text-xs font-bold">Punto sugerido para bajarte</p>
           <p>{result.street}</p>
           <p>

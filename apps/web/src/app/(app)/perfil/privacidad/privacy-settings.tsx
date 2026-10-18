@@ -33,10 +33,10 @@ export default function PrivacySettings() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 py-6">
-      <h1 className="text-3xl font-extrabold">Privacidad</h1>
+    <main className="flex flex-col gap-5 px-4 pt-2 pb-6">
+      <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight">Privacidad</h1>
       {deletedAt ? (
-        <section className="space-y-2 rounded-xl border bg-card p-4">
+        <section className="space-y-2 rounded-2xl border bg-card p-5 shadow-sm">
           <p role="status" className="font-bold">
             Tus datos fueron eliminados.
           </p>
@@ -44,8 +44,8 @@ export default function PrivacySettings() {
         </section>
       ) : (
         <>
-          <section className="space-y-3 rounded-xl border bg-card p-4">
-            <h2 className="text-xl font-bold">Qué guardamos y por qué</h2>
+          <section className="space-y-3 rounded-2xl border bg-card p-5 shadow-sm">
+            <h2 className="text-lg font-semibold tracking-tight">Qué guardamos y por qué</h2>
             <p>Tu zona se guarda por distrito, nunca tu dirección.</p>
             <p>Los puntos de encuentro son lugares públicos.</p>
             <p>Tu institución solo ve estadísticas de grupos de 10 personas o más.</p>
@@ -60,9 +60,9 @@ export default function PrivacySettings() {
               role="dialog"
               aria-modal="true"
               aria-labelledby="delete-title"
-              className="space-y-3 rounded-xl border p-4"
+              className="space-y-3 rounded-2xl border bg-card p-5 shadow-sm"
             >
-              <h2 id="delete-title" className="text-xl font-bold">
+              <h2 id="delete-title" className="text-lg font-semibold tracking-tight">
                 Eliminar mis datos
               </h2>
               <p>Esta acción no se puede deshacer.</p>

@@ -1,5 +1,8 @@
 "use client";
 
+import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import ProfileAvatar from "@/components/profile-avatar";
@@ -82,8 +85,18 @@ export default function TripChat({ offerId }: { offerId: string }) {
     }
   }
 
-  if (loading) return <p role="status">Cargando chat…</p>;
-  if (loadError || !chat) return <p role="alert">{loadError || "No pudimos cargar el chat."}</p>;
+  if (loading)
+    return (
+      <p role="status" className="px-4 pt-2 text-sm text-muted-foreground">
+        Cargando chat…
+      </p>
+    );
+  if (loadError || !chat)
+    return (
+      <p role="alert" className="px-4 pt-2 text-sm text-destructive">
+        {loadError || "No pudimos cargar el chat."}
+      </p>
+    );
 
   const days = chat.daysOfWeek?.map((day) => weekdays[day - 1]).join(", ");
   const schedule = chat.date
@@ -91,19 +104,39 @@ export default function TripChat({ offerId }: { offerId: string }) {
     : `${days} · ${clockLabel(chat.departureTime.slice(0, 5))}`;
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-col gap-4 px-4 py-6">
-      <header className="space-y-1">
-        <p className="text-sm text-muted-foreground">Chat del viaje</p>
-        <h1 className="text-2xl font-extrabold">{`${chat.origin} → ${chat.destination}`}</h1>
-        <p>{schedule}</p>
-        {chat.date ? null : <p>Grupo recurrente</p>}
-        <p>Salida confirmada</p>
+    <main className="flex flex-col gap-4 px-4 pt-2 pb-6">
+      <header className="space-y-3">
+        <Link
+          href="/chat"
+          className="-ml-1 inline-flex min-h-9 items-center gap-1 rounded-lg px-1 text-sm font-medium text-muted-foreground hover:text-foreground"
+        >
+          <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4" aria-hidden />
+          Chat del viaje
+        </Link>
+        <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight">{`${chat.origin} → ${chat.destination}`}</h1>
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <p className="text-muted-foreground tabular-nums">{schedule}</p>
+          {chat.date ? null : (
+            <p className="rounded-full bg-secondary px-2.5 py-1 text-xs font-medium">
+              Grupo recurrente
+            </p>
+          )}
+          <p className="rounded-full bg-success/15 px-2.5 py-1 text-xs font-semibold text-success">
+            Salida confirmada
+          </p>
+        </div>
       </header>
-      <section aria-label="Participantes" className="rounded-2xl border p-4">
-        <h2 className="font-bold">{`${chat.participants.length} participantes`}</h2>
-        <ul>
+      <section
+        aria-label="Participantes"
+        className="space-y-3 rounded-2xl border bg-card p-5 shadow-sm"
+      >
+        <h2 className="text-base font-semibold tracking-tight">{`${chat.participants.length} participantes`}</h2>
+        <ul className="space-y-2">
           {chat.participants.map((participant) => (
-            <li key={`${participant.role}-${participant.name}`} className="flex items-center gap-2">
+            <li
+              key={`${participant.role}-${participant.name}`}
+              className="flex items-center gap-3 text-sm"
+            >
               <ProfileAvatar
                 name={participant.name}
                 photoUrl={participant.photoUrl}
@@ -117,30 +150,46 @@ export default function TripChat({ offerId }: { offerId: string }) {
         </ul>
       </section>
       {chat.meetingPoints.map((point) => (
-        <section key={point.participantName} className="rounded-2xl border p-4">
-          <h2 className="font-bold">{`Punto de encuentro acordado: ${point.name}`}</h2>
-          <p>{`Ver punto de encuentro: ${point.participantName}`}</p>
+        <section key={point.participantName} className="rounded-2xl border bg-card p-5 shadow-sm">
+          <h2 className="text-base font-semibold tracking-tight">{`Punto de encuentro acordado: ${point.name}`}</h2>
+          <p className="text-sm text-muted-foreground">{`Ver punto de encuentro: ${point.participantName}`}</p>
         </section>
       ))}
-      <section aria-label="Mensajes" className="space-y-3 rounded-2xl border p-4">
+      <section aria-label="Mensajes" className="space-y-3 rounded-2xl border bg-card p-5 shadow-sm">
         {messages.length === 0 ? (
-          <p>Aún no hay mensajes. Saluda a tu compañero de viaje.</p>
+          <p className="text-sm text-muted-foreground">
+            Aún no hay mensajes. Saluda a tu compañero de viaje.
+          </p>
         ) : (
-          <ol className="space-y-3">
+          <ol className="space-y-4">
             {messages.map((message) => (
-              <li key={message.id} className="space-y-2 rounded-xl bg-muted p-3">
-                <div className="flex items-start gap-2">
+              <li
+                key={message.id}
+                className={`flex flex-col gap-2 ${message.isOwn ? "items-end" : "items-start"}`}
+              >
+                <div
+                  className={`flex max-w-[85%] items-end gap-2 ${message.isOwn ? "flex-row-reverse" : ""}`}
+                >
                   <ProfileAvatar
                     name={message.senderName}
                     photoUrl={message.senderPhotoUrl}
                     className="size-8"
                   />
-                  <div>
-                    <p className="font-bold">
+                  <div
+                    className={`space-y-0.5 rounded-2xl px-3.5 py-2.5 text-sm ${
+                      message.isOwn
+                        ? "rounded-br-md bg-brand-yellow text-brand-black"
+                        : "rounded-bl-md bg-muted"
+                    }`}
+                  >
+                    <p className="text-xs font-semibold">
                       {message.senderName} {message.senderRole === "driver" ? "· Conductor" : ""}
                     </p>
-                    <p>{message.body}</p>
-                    <time dateTime={message.createdAt} className="text-xs text-muted-foreground">
+                    <p className="text-[0.9375rem]">{message.body}</p>
+                    <time
+                      dateTime={message.createdAt}
+                      className="block text-[0.6875rem] opacity-70"
+                    >
                       {new Date(message.createdAt).toLocaleTimeString("es-PE", {
                         hour: "2-digit",
                         minute: "2-digit",
@@ -159,7 +208,9 @@ export default function TripChat({ offerId }: { offerId: string }) {
                   ) : (
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="ghost"
+                      size="xs"
+                      className="ml-10 text-muted-foreground"
                       onClick={() => setReportingMessageId(message.id)}
                     >
                       Reportar mensaje
@@ -176,6 +227,8 @@ export default function TripChat({ offerId }: { offerId: string }) {
             key={quickMessage}
             type="button"
             variant="outline"
+            size="sm"
+            className="rounded-full"
             disabled={sending}
             onClick={() => void send({ kind: "quick", body: quickMessage })}
           >
@@ -190,13 +243,13 @@ export default function TripChat({ offerId }: { offerId: string }) {
           void send({ kind: "text", body: draft });
         }}
       >
-        <label className="flex flex-col gap-1 font-bold">
+        <label className="flex flex-col gap-1.5 text-sm font-medium">
           Escribe un mensaje
           <textarea
             maxLength={500}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
-            className="min-h-20 rounded-xl border bg-background p-3 font-normal"
+            className="field min-h-20 font-normal"
           />
         </label>
         <Button type="submit" disabled={sending || !draft.trim()}>
@@ -204,7 +257,7 @@ export default function TripChat({ offerId }: { offerId: string }) {
         </Button>
       </form>
       {sendError ? (
-        <div role="alert" className="flex items-center gap-2">
+        <div role="alert" className="flex items-center gap-3 text-sm text-destructive">
           <p>No se pudo enviar.</p>
           <Button
             type="button"
