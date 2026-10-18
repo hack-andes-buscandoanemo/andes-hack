@@ -257,6 +257,9 @@ describe("GET /offers/{id} (US-014)", () => {
           },
         ],
       },
+      priceCents: null,
+      paymentMethods: [],
+      live: false,
       reportTargets: [],
     });
   });
