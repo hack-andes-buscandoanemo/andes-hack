@@ -111,6 +111,54 @@ describe("impact of a community's shared trips", () => {
     expect(metrics.carTripsAvoided.verified.trips).toBe(1);
   });
 
+  it("estimates the km avoided as each avoided trip's distance minus every passenger's detour", () => {
+    const metrics = measureImpact({
+      offers: [
+        offer([
+          seat({ distanceKm: 25, detourKm: 2 }),
+          seat({ distanceKm: 15, detourKm: 0 }),
+          // Picking up a bus rider takes no car off the road, but the detour is still driven.
+          seat({ fallbackMode: "public_transport", distanceKm: 30, detourKm: 3 }),
+        ]),
+      ],
+      openNeeds: [],
+    });
+
+    // 25 + 15 km not driven, minus 2 + 0 + 3 km of detours.
+    expect(metrics.carTripsAvoided.potential.km).toBeCloseTo(35);
+  });
+
+  it("estimates the CO₂ of 35 km avoided as one gallon of gasoline, 8.887 kg (EPA)", () => {
+    const metrics = measureImpact({
+      offers: [offer([seat({ distanceKm: 35, detourKm: 0 })])],
+      openNeeds: [],
+    });
+
+    expect(metrics.carTripsAvoided.potential.co2Kg).toBeCloseTo(8.887, 3);
+  });
+
+  it("verifies the km and CO₂ avoided only on completed trips", () => {
+    const metrics = measureImpact({
+      offers: [
+        offer([
+          seat({ status: "completed", datePassed: true, distanceKm: 25, detourKm: 2 }),
+          seat({
+            status: "completed",
+            datePassed: true,
+            fallbackMode: "public_transport",
+            detourKm: 3,
+          }),
+          seat({ status: "accepted", distanceKm: 15, detourKm: 0 }),
+        ]),
+      ],
+      openNeeds: [],
+    });
+
+    // 25 km not driven, minus 2 + 3 km of detours: 20 km, or 4/7 of a gallon.
+    expect(metrics.carTripsAvoided.verified.km).toBeCloseTo(20);
+    expect(metrics.carTripsAvoided.verified.co2Kg).toBeCloseTo(5.078, 3);
+  });
+
   it("leaves out every trip with a team account on either side", () => {
     const metrics = measureImpact({
       offers: [

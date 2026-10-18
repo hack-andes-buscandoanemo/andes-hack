@@ -1,3 +1,5 @@
+import { sources } from "./sources";
+
 // Impact of a community's shared trips, counting car trips apart from people: most
 // passengers in Lima come from public transport and take no car off the road. The panel
 // (US-031), the profile (US-035) and the optimizer (US-017) read every figure from here.
@@ -88,24 +90,32 @@ const acceptedStatuses: readonly BookingStatus[] = ["accepted", "completed", "no
 const acceptedSeats = (offer: OfferActivity) =>
   offer.seats.filter((seat) => acceptedStatuses.includes(seat.status) && !seat.passengerIsTeam);
 
+function carTripsAvoided(seats: readonly SeatActivity[]): CarTripsAvoided {
+  const avoided = seats.filter(avoidsCarTrip);
+  // Every detour is driven, even one for a passenger who takes no car off the road.
+  const km =
+    avoided.reduce((sum, seat) => sum + seat.distanceKm, 0) -
+    seats.reduce((sum, seat) => sum + seat.detourKm, 0);
+  // The gasoline a car would burn over those km.
+  const co2Kg = (km / sources.fuelEconomy.value) * sources.gasolineCo2.value;
+  return { trips: avoided.length, km, co2Kg };
+}
+
 export function measureImpact(activity: CommunityActivity): ImpactMetrics {
   const offers = activity.offers.filter((offer) => !offer.driverIsTeam);
   const seats = offers.flatMap(acceptedSeats);
-  const avoided = seats.filter(avoidsCarTrip).length;
-  const verified = seats.filter(
-    (seat) => seat.status === "completed" && avoidsCarTrip(seat),
-  ).length;
+  const potential = carTripsAvoided(seats);
   const induced = offers.filter(
     (offer) => acceptedSeats(offer).length > 0 && !madeTripByCar(offer.driverUsualMode),
   ).length;
   return {
     peopleTransported: seats.length,
     carTripsAvoided: {
-      potential: { trips: avoided, km: 0, co2Kg: 0 },
-      verified: { trips: verified, km: 0, co2Kg: 0 },
+      potential,
+      verified: carTripsAvoided(seats.filter((seat) => seat.status === "completed")),
     },
     carTripsInduced: induced,
-    netCarTripsAvoided: avoided - induced,
+    netCarTripsAvoided: potential.trips - induced,
     fromPublicTransport: seats.filter((seat) => seat.fallbackMode === "public_transport").length,
   };
 }
