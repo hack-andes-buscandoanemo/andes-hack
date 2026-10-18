@@ -1,0 +1,417 @@
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.hoisted(() => {
+  Object.assign(process.env, {
+    DATABASE_URL: "postgres://test:test@localhost:5432/test",
+    BETTER_AUTH_SECRET: "vitest-secret-with-at-least-thirty-two-characters",
+    BETTER_AUTH_URL: "http://localhost:3000",
+    UPSTASH_REDIS_REST_URL: "https://example.com",
+    UPSTASH_REDIS_REST_TOKEN: "vitest-token",
+    CORS_ORIGIN: "http://localhost:3001",
+    NODE_ENV: "test",
+  });
+});
+
+import { user } from "@andes-hack/db/schema/auth";
+import { community, communityMember } from "@andes-hack/db/schema/community";
+import { meetingPoint, zone } from "@andes-hack/db/schema/places";
+import { seatBooking, tripOffer, tripRequest } from "@andes-hack/db/schema/trips";
+import { waitlistEntry } from "@andes-hack/db/schema/waitlist";
+import { createTestDb } from "@andes-hack/db/test-db";
+
+import { createApp } from "./index";
+import { createPublicStatsRoutes, type PublicStatsDeps } from "./public-stats";
+
+let testDb: Awaited<ReturnType<typeof createTestDb>>["db"];
+let closeDb: () => Promise<void>;
+
+beforeAll(async () => {
+  const instance = await createTestDb();
+  testDb = instance.db;
+  closeDb = instance.close;
+});
+
+afterAll(async () => {
+  await closeDb();
+});
+
+beforeEach(async () => {
+  await testDb.delete(waitlistEntry);
+  await testDb.delete(seatBooking);
+  await testDb.delete(tripRequest);
+  await testDb.delete(tripOffer);
+  await testDb.delete(meetingPoint);
+  await testDb.delete(communityMember);
+  await testDb.delete(community);
+  await testDb.delete(zone);
+  await testDb.delete(user);
+});
+
+const NOW = new Date("2026-10-19T15:04:05.000Z");
+
+async function seedCommunity(slug = "alfa", isDemo = false) {
+  const [org] = await testDb
+    .insert(community)
+    .values({
+      slug,
+      name: "Comunidad Alfa",
+      kind: "company",
+      destinationName: "Centro Empresarial Real",
+      destinationLat: -12.0975459,
+      destinationLng: -77.0375707,
+      isDemo,
+    })
+    .returning();
+  await testDb
+    .insert(zone)
+    .values([
+      { id: "la-molina", name: "La Molina", district: "La Molina", lat: -12.0853, lng: -76.9682 },
+    ])
+    .onConflictDoNothing();
+  await testDb
+    .insert(meetingPoint)
+    .values({
+      id: "la-molina-parque",
+      zoneId: "la-molina",
+      name: "Parque de La Molina",
+      kind: "park",
+      lat: -12.0853,
+      lng: -76.9682,
+      source: "test",
+    })
+    .onConflictDoNothing();
+  return org!;
+}
+
+async function addMember(
+  communityId: string,
+  id: string,
+  options: {
+    isTeam?: boolean;
+    travelRole?: "driver" | "passenger" | "both";
+    usualMode?: "drove_alone" | "public_transport" | "taxi_app";
+  } = {},
+) {
+  await testDb.insert(user).values({ id, name: `Persona ${id}`, email: `${id}@alfa.pe` });
+  await testDb.insert(communityMember).values({
+    communityId,
+    userId: id,
+    verificationMethod: "join_code",
+    isTeam: options.isTeam ?? false,
+    travelRole: options.travelRole ?? "passenger",
+    usualMode: options.usualMode ?? "drove_alone",
+  });
+}
+
+async function addOffer(
+  communityId: string,
+  driverId: string,
+  options: { date?: string; status?: "active" | "paused" | "cancelled" } = {},
+) {
+  const [offer] = await testDb
+    .insert(tripOffer)
+    .values({
+      communityId,
+      driverId,
+      direction: "outbound",
+      originZoneId: "la-molina",
+      departureTime: "07:00",
+      date: options.date ?? "2099-03-02",
+      seatsTotal: 3,
+      maxDetourMinutes: 10,
+      status: options.status ?? "active",
+    })
+    .returning();
+  return offer!;
+}
+
+async function addBooking(
+  offer: { id: string; communityId: string },
+  passengerId: string,
+  options: {
+    status?: "pending" | "accepted" | "rejected" | "completed" | "no_show";
+    fallbackMode?: "drive_alone" | "taxi_app" | "public_transport" | "picked_up" | "other";
+  } = {},
+) {
+  const [need] = await testDb
+    .insert(tripRequest)
+    .values({
+      communityId: offer.communityId,
+      passengerId,
+      direction: "outbound",
+      originZoneId: "la-molina",
+      windowStart: "06:30",
+      windowEnd: "07:30",
+      date: "2099-03-02",
+      maxWalkMinutes: 15,
+      fallbackMode: options.fallbackMode ?? "taxi_app",
+      status: "matched",
+    })
+    .returning();
+  await testDb.insert(seatBooking).values({
+    offerId: offer.id,
+    requestId: need!.id,
+    passengerId,
+    meetingPointId: "la-molina-parque",
+    pickupAt: "06:55",
+    detourMinutes: 6,
+    walkMinutes: 4,
+    status: options.status ?? "accepted",
+  });
+}
+
+async function addOpenNeed(
+  communityId: string,
+  passengerId: string,
+  hadResults: boolean,
+  originZoneId = "la-molina",
+) {
+  await testDb.insert(tripRequest).values({
+    communityId,
+    passengerId,
+    direction: "outbound",
+    originZoneId,
+    windowStart: "06:30",
+    windowEnd: "07:30",
+    date: "2099-03-02",
+    maxWalkMinutes: 15,
+    fallbackMode: "taxi_app",
+    status: "open",
+    hadResults,
+  });
+}
+
+const allowEverything: NonNullable<PublicStatsDeps["limit"]> = async () => ({
+  success: true,
+  reset: 0,
+});
+
+// Stands in for Upstash Redis: entries expire by the injected clock, never by real time.
+function fakeCache(clock: { now: Date }): NonNullable<PublicStatsDeps["cache"]> {
+  const entries = new Map<string, { value: unknown; expiresAt: number }>();
+  return {
+    async get(key) {
+      const entry = entries.get(key);
+      return entry && entry.expiresAt > clock.now.getTime() ? entry.value : null;
+    },
+    async set(key, value, ttlSeconds) {
+      entries.set(key, { value, expiresAt: clock.now.getTime() + ttlSeconds * 1000 });
+    },
+  };
+}
+
+function statsApp(deps: PublicStatsDeps = {}) {
+  return createPublicStatsRoutes({
+    db: testDb,
+    now: () => NOW,
+    limit: allowEverything,
+    cache: fakeCache({ now: NOW }),
+    ...deps,
+  });
+}
+
+describe("GET /public/communities/{slug}/stats", () => {
+  it("counts enrolled people without the team's accounts", async () => {
+    const org = await seedCommunity();
+    await addMember(org.id, "ana");
+    await addMember(org.id, "beto");
+    await addMember(org.id, "equipo", { isTeam: true });
+
+    const response = await statsApp().request("/public/communities/alfa/stats");
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { activity: { enrolled: number } };
+    expect(body.activity.enrolled).toBe(2);
+  });
+
+  it("answers 404 for a community that does not exist", async () => {
+    const response = await statsApp().request("/public/communities/nadie/stats");
+
+    expect(response.status).toBe(404);
+    expect(await response.json()).toMatchObject({ details: { code: "community_not_found" } });
+  });
+
+  it("answers 429 with Retry-After once an IP spends its window", async () => {
+    await seedCommunity();
+    const seen: string[] = [];
+    const spent: NonNullable<PublicStatsDeps["limit"]> = async (identifier) => {
+      seen.push(identifier);
+      return { success: false, reset: NOW.getTime() + 20_000 };
+    };
+    const app = statsApp({ limit: spent, now: () => NOW });
+
+    const response = await app.request("/public/communities/alfa/stats", {
+      headers: { "cf-connecting-ip": "203.0.113.7" },
+    });
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get("Retry-After")).toBe("20");
+    expect(seen).toEqual(["public-stats:203.0.113.7"]);
+  });
+
+  it("serves the second call within 30 seconds from the cache and recomputes after", async () => {
+    const org = await seedCommunity();
+    await addMember(org.id, "ana");
+    const clock = { now: NOW };
+    const app = statsApp({ cache: fakeCache(clock), now: () => clock.now });
+    const enrolled = async () =>
+      (
+        (await (await app.request("/public/communities/alfa/stats")).json()) as {
+          activity: { enrolled: number };
+        }
+      ).activity.enrolled;
+
+    expect(await enrolled()).toBe(1);
+    await addMember(org.id, "beto");
+    clock.now = new Date(NOW.getTime() + 29_000);
+    expect(await enrolled()).toBe(1);
+    clock.now = new Date(NOW.getTime() + 31_000);
+    expect(await enrolled()).toBe(2);
+  });
+
+  it("reports car trips apart from people, from the US-030 metrics and without the team", async () => {
+    const org = await seedCommunity();
+    await addMember(org.id, "carlos", { travelRole: "driver", usualMode: "drove_alone" });
+    await addMember(org.id, "ana");
+    await addMember(org.id, "beto");
+    await addMember(org.id, "equipo", { isTeam: true });
+    const offer = await addOffer(org.id, "carlos");
+    await addBooking(offer, "ana", { fallbackMode: "taxi_app" });
+    await addBooking(offer, "beto", { fallbackMode: "public_transport" });
+    await addBooking(offer, "equipo", { fallbackMode: "drive_alone" });
+
+    const response = await statsApp().request("/public/communities/alfa/stats");
+
+    const body = (await response.json()) as Record<string, any>;
+    expect(body.people).toEqual({ transported: 2, fromPublicTransport: 1 });
+    expect(body.vehicleImpact.potential.trips).toBe(1);
+    expect(body.vehicleImpact.potential.km).toBeCloseTo(1.39, 1);
+    expect(body.vehicleImpact.potential.co2Kg).toBeCloseTo(0.35, 2);
+    expect(body.vehicleImpact.verified.trips).toBe(0);
+    expect(body.vehicleImpact.induced).toBe(0);
+    expect(body.vehicleImpact.net).toBe(1);
+  });
+
+  it("counts a completed trip as verified and a driver who did not come by car as induced", async () => {
+    const org = await seedCommunity();
+    await addMember(org.id, "carlos", { travelRole: "driver", usualMode: "public_transport" });
+    await addMember(org.id, "ana");
+    const offer = await addOffer(org.id, "carlos", { date: "2020-03-02" });
+    await addBooking(offer, "ana", { status: "completed", fallbackMode: "taxi_app" });
+
+    const response = await statsApp().request("/public/communities/alfa/stats");
+
+    const body = (await response.json()) as Record<string, any>;
+    expect(body.vehicleImpact.verified.trips).toBe(1);
+    expect(body.vehicleImpact.verified.km).toBeCloseTo(5.64, 1);
+    expect(body.vehicleImpact.induced).toBe(1);
+    expect(body.vehicleImpact.net).toBe(0);
+  });
+
+  it("fills the activity cards from real rows, leaving the team out of every one", async () => {
+    const org = await seedCommunity();
+    await addMember(org.id, "carlos", { travelRole: "both" });
+    await addMember(org.id, "dani", { travelRole: "driver" });
+    await addMember(org.id, "equipo", { travelRole: "driver", isTeam: true });
+    await addMember(org.id, "ana");
+    await addMember(org.id, "beto");
+    const active = await addOffer(org.id, "carlos");
+    await addOffer(org.id, "dani", { status: "paused" });
+    await addOffer(org.id, "equipo");
+    await addBooking(active, "ana", { status: "accepted" });
+    await addBooking(active, "beto", { status: "completed" });
+    await addOpenNeed(org.id, "ana", true);
+    await addOpenNeed(org.id, "beto", false);
+    await addOpenNeed(org.id, "equipo", true);
+
+    const response = await statsApp().request("/public/communities/alfa/stats");
+
+    const body = (await response.json()) as Record<string, any>;
+    expect(body.activity).toEqual({
+      enrolled: 4,
+      drivers: 2,
+      activeOffers: 1,
+      openNeeds: 2,
+      coverage: 0.5,
+      acceptedRequests: 2,
+      completedTrips: 1,
+    });
+    // Aggregates only: no names or emails of the people behind the numbers.
+    expect(JSON.stringify(body)).not.toMatch(/alfa\.pe|Persona/);
+  });
+
+  it("names the community, flags synthetic data and stamps the server time", async () => {
+    await seedCommunity("alfa", false);
+    await seedCommunity("sintetica", true);
+
+    const alfa = await (await statsApp().request("/public/communities/alfa/stats")).json();
+    const synthetic = await (
+      await statsApp().request("/public/communities/sintetica/stats")
+    ).json();
+
+    expect(alfa).toMatchObject({
+      community: { name: "Comunidad Alfa", isDemo: false },
+      updatedAt: "2026-10-19T15:04:05.000Z",
+    });
+    expect(synthetic).toMatchObject({ community: { isDemo: true } });
+  });
+
+  it("shows a district as less than 10 until ten different people travel from it", async () => {
+    const org = await seedCommunity();
+    await testDb.insert(zone).values({
+      id: "san-borja",
+      name: "San Borja",
+      district: "San Borja",
+      lat: -12.0897,
+      lng: -77.0031,
+    });
+    for (let i = 0; i < 10; i += 1) {
+      await addMember(org.id, `molina-${i}`);
+      await addOpenNeed(org.id, `molina-${i}`, true, "la-molina");
+    }
+    for (let i = 0; i < 4; i += 1) {
+      await addMember(org.id, `borja-${i}`);
+      await addOpenNeed(org.id, `borja-${i}`, true, "san-borja");
+    }
+
+    const response = await statsApp().request("/public/communities/alfa/stats");
+
+    const body = (await response.json()) as { districts: unknown };
+    expect(body.districts).toEqual([
+      { district: "La Molina", people: 10 },
+      { district: "San Borja", people: null },
+    ]);
+    expect(JSON.stringify(body)).not.toContain('"people":4');
+  });
+
+  it("includes the waitlist totals", async () => {
+    await seedCommunity();
+    await testDb.insert(waitlistEntry).values([
+      { kind: "institution", institution: "Empresa Beta", email: "a@beta.pe", consent: true },
+      { kind: "institution", institution: "Empresa Gamma", email: "b@gamma.pe", consent: true },
+      { kind: "individual", institution: "Empresa Beta", email: "c@beta.pe", consent: true },
+    ]);
+
+    const body = (await (await statsApp().request("/public/communities/alfa/stats")).json()) as {
+      waitlist: unknown;
+    };
+
+    expect(body.waitlist).toEqual({ institutions: 2, individuals: 1 });
+  });
+
+  it("is open to anyone through the whole app, without a session", async () => {
+    const org = await seedCommunity();
+    await addMember(org.id, "ana");
+    const app = createApp({
+      db: testDb as never,
+      getSession: async () => null,
+      statsRateLimit: allowEverything,
+      statsCache: fakeCache({ now: NOW }),
+    });
+
+    const response = await app.request("/public/communities/alfa/stats");
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ activity: { enrolled: 1 } });
+  });
+});

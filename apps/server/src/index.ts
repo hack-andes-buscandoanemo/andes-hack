@@ -42,6 +42,7 @@ import {
 } from "./middleware";
 import { listMyTrips } from "./my-trips";
 import { getOfferDetail, requestSeat, withdrawRequest } from "./offer-detail";
+import { createPublicStatsRoutes, type StatsCache } from "./public-stats";
 import { searchTrips } from "./search";
 import { ApiError } from "./utils/api-response";
 import { errorHandler, validationHook } from "./utils/error-handler";
@@ -63,6 +64,8 @@ export type AppDeps = {
   otpRateLimit?: RateLimitCheck;
   sendEmail?: (options: SendEmailOptions) => Promise<unknown>;
   now?: () => Date;
+  statsRateLimit?: RateLimitCheck;
+  statsCache?: StatsCache;
 };
 
 async function sha256Hex(value: string): Promise<string> {
@@ -255,6 +258,7 @@ export function createApp(deps: AppDeps = {}) {
     const rows = await database
       .select({
         id: community.id,
+        slug: community.slug,
         name: community.name,
         kind: community.kind,
         isDemo: community.isDemo,
@@ -267,6 +271,7 @@ export function createApp(deps: AppDeps = {}) {
       {
         communities: rows.map((row) => ({
           id: row.id,
+          slug: row.slug,
           name: row.name,
           kind: row.kind,
           isDemo: row.isDemo,
@@ -950,6 +955,15 @@ export function createApp(deps: AppDeps = {}) {
   });
 
   openApiApp.route("/", createWaitlistRoutes({ db: deps.db }));
+  openApiApp.route(
+    "/",
+    createPublicStatsRoutes({
+      db: deps.db,
+      now: deps.now,
+      limit: deps.statsRateLimit,
+      cache: deps.statsCache,
+    }),
+  );
 
   openApiApp.doc31("/openapi.json", OPENAPI_DOCUMENT_CONFIG);
   openApiApp.get("/docs", apiReference({ spec: { url: "/openapi.json" } }));

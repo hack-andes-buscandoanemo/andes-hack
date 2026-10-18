@@ -68,6 +68,7 @@ describe("GET /communities (US-009)", () => {
       communities: [
         {
           id: alfa!.id,
+          slug: "comunidad-alfa",
           name: "Comunidad Alfa",
           kind: "company",
           isDemo: true,
@@ -296,6 +297,7 @@ describe("Institutional email OTP verification (US-010)", () => {
     };
     expect(listBody.communities[0]).toEqual({
       id: uni!.id,
+      slug: "uni-nacional",
       name: "Universidad Nacional",
       kind: "university",
       isDemo: false,

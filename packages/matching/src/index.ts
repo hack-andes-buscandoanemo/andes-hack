@@ -1,3 +1,4 @@
+export * from "./geo";
 export * from "./insertion";
 export * from "./metrics";
 export * from "./optimizer";

@@ -892,6 +892,61 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/public/communities/{slug}/stats": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          slug: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Cifras de impacto de la comunidad, sin cuentas del equipo ni datos personales */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["PublicStats"];
+          };
+        };
+        /** @description Comunidad no encontrada */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Demasiadas consultas desde la misma IP */
+        429: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -906,6 +961,7 @@ export interface components {
     CommunitySummary: {
       /** Format: uuid */
       id: string;
+      slug: string;
       name: string;
       /** @enum {string} */
       kind: "company" | "university" | "public_entity" | "event";
@@ -1267,6 +1323,49 @@ export interface components {
     WaitlistSummary: {
       institutions: number;
       individuals: number;
+    };
+    PublicStats: {
+      community: {
+        name: string;
+        isDemo: boolean;
+      };
+      /** Format: date-time */
+      updatedAt: string;
+      activity: {
+        enrolled: number;
+        drivers: number;
+        activeOffers: number;
+        openNeeds: number;
+        coverage: number | null;
+        acceptedRequests: number;
+        completedTrips: number;
+      };
+      waitlist: {
+        institutions: number;
+        individuals: number;
+      };
+      districts: {
+        district: string;
+        people: number | null;
+      }[];
+      people: {
+        transported: number;
+        fromPublicTransport: number;
+      };
+      vehicleImpact: {
+        potential: {
+          trips: number;
+          km: number;
+          co2Kg: number;
+        };
+        verified: {
+          trips: number;
+          km: number;
+          co2Kg: number;
+        };
+        induced: number;
+        net: number;
+      };
     };
   };
   responses: never;

@@ -14,6 +14,18 @@ export interface WaitlistDeps {
   limit?: (identifier: string) => Promise<{ success: boolean; reset: number }>;
 }
 
+// How many institutions and individuals are waiting; the panel (US-031) shows the same totals.
+export async function waitlistTotals(db: NonNullable<WaitlistDeps["db"]>) {
+  const totals = await db
+    .select({ kind: waitlistEntry.kind, total: count() })
+    .from(waitlistEntry)
+    .groupBy(waitlistEntry.kind);
+  // A list nobody has joined yet has no row of its own.
+  const totalOf = (kind: "institution" | "individual") =>
+    totals.find((row) => row.kind === kind)?.total ?? 0;
+  return { institutions: totalOf("institution"), individuals: totalOf("individual") };
+}
+
 const thanks = "¡Gracias! Te escribiremos para coordinar.";
 
 // The public waitlist (US-033), as its own app so it can be tested with a database and a
@@ -54,18 +66,7 @@ export function createWaitlistRoutes(deps: WaitlistDeps = {}) {
   });
 
   app.openapi(waitlistSummaryRoute, async (c) => {
-    const db = await getDb();
-    const totals = await db
-      .select({ kind: waitlistEntry.kind, total: count() })
-      .from(waitlistEntry)
-      .groupBy(waitlistEntry.kind);
-    // A list nobody has joined yet has no row of its own.
-    const totalOf = (kind: "institution" | "individual") =>
-      totals.find((row) => row.kind === kind)?.total ?? 0;
-    return c.json(
-      { institutions: totalOf("institution"), individuals: totalOf("individual") },
-      200,
-    );
+    return c.json(await waitlistTotals(await getDb()), 200);
   });
 
   return app;

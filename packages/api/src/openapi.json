@@ -77,6 +77,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "slug": {
+            "type": "string"
+          },
           "name": {
             "type": "string"
           },
@@ -104,6 +107,7 @@
         },
         "required": [
           "id",
+          "slug",
           "name",
           "kind",
           "isDemo",
@@ -1441,6 +1445,183 @@
           "institutions",
           "individuals"
         ]
+      },
+      "PublicStats": {
+        "type": "object",
+        "properties": {
+          "community": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "isDemo": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "name",
+              "isDemo"
+            ]
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "activity": {
+            "type": "object",
+            "properties": {
+              "enrolled": {
+                "type": "integer"
+              },
+              "drivers": {
+                "type": "integer"
+              },
+              "activeOffers": {
+                "type": "integer"
+              },
+              "openNeeds": {
+                "type": "integer"
+              },
+              "coverage": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "acceptedRequests": {
+                "type": "integer"
+              },
+              "completedTrips": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "enrolled",
+              "drivers",
+              "activeOffers",
+              "openNeeds",
+              "coverage",
+              "acceptedRequests",
+              "completedTrips"
+            ]
+          },
+          "waitlist": {
+            "type": "object",
+            "properties": {
+              "institutions": {
+                "type": "integer"
+              },
+              "individuals": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "institutions",
+              "individuals"
+            ]
+          },
+          "districts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "district": {
+                  "type": "string"
+                },
+                "people": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "district",
+                "people"
+              ]
+            }
+          },
+          "people": {
+            "type": "object",
+            "properties": {
+              "transported": {
+                "type": "integer"
+              },
+              "fromPublicTransport": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "transported",
+              "fromPublicTransport"
+            ]
+          },
+          "vehicleImpact": {
+            "type": "object",
+            "properties": {
+              "potential": {
+                "type": "object",
+                "properties": {
+                  "trips": {
+                    "type": "integer"
+                  },
+                  "km": {
+                    "type": "number"
+                  },
+                  "co2Kg": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "trips",
+                  "km",
+                  "co2Kg"
+                ]
+              },
+              "verified": {
+                "type": "object",
+                "properties": {
+                  "trips": {
+                    "type": "integer"
+                  },
+                  "km": {
+                    "type": "number"
+                  },
+                  "co2Kg": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "trips",
+                  "km",
+                  "co2Kg"
+                ]
+              },
+              "induced": {
+                "type": "integer"
+              },
+              "net": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "potential",
+              "verified",
+              "induced",
+              "net"
+            ]
+          }
+        },
+        "required": [
+          "community",
+          "updatedAt",
+          "activity",
+          "waitlist",
+          "districts",
+          "people",
+          "vehicleImpact"
+        ]
       }
     },
     "parameters": {}
@@ -2237,6 +2418,55 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WaitlistSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/communities/{slug}/stats": {
+      "get": {
+        "tags": [
+          "Público"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "slug",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cifras de impacto de la comunidad, sin cuentas del equipo ni datos personales",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicStats"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Comunidad no encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Demasiadas consultas desde la misma IP",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
