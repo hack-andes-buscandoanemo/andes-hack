@@ -43,7 +43,10 @@ export async function searchTrips(
     .from(community)
     .where(eq(community.id, communityId))
     .limit(1);
-  const destination = destinationOf(destinationRow!);
+  if (!destinationRow) {
+    throw new ApiError(404, "No encontramos esta comunidad.", { code: "community_not_found" });
+  }
+  const destination = destinationOf(destinationRow);
 
   const [passenger] = await database
     .select({ identifiesAsWoman: communityMember.identifiesAsWoman })
@@ -51,7 +54,13 @@ export async function searchTrips(
     .where(and(eq(communityMember.communityId, communityId), eq(communityMember.userId, userId)))
     .limit(1);
 
-  if (body.womenOnly && !passenger!.identifiesAsWoman) {
+  if (!passenger) {
+    throw new ApiError(403, "Únete a esta comunidad para buscar viajes.", {
+      code: "not_a_member",
+    });
+  }
+
+  if (body.womenOnly && !passenger.identifiesAsWoman) {
     throw new ApiError(
       403,
       "Esta preferencia solo está disponible para quienes la activaron en su perfil.",
@@ -163,8 +172,10 @@ export async function searchTrips(
     daysOfWeek: body.daysOfWeek ?? null,
     maxWalkMinutes: body.maxWalkMinutes,
     womenOnly: body.womenOnly,
-    passengerIsWoman: passenger!.identifiesAsWoman,
+    passengerIsWoman: passenger.identifiesAsWoman,
   };
+  const acceptedByOffer = Map.groupBy(accepted, (booking) => booking.offerId);
+  const rejectedOffers = new Set(rejected.map((booking) => booking.offerId));
   const routes: OfferRoute[] = rows.map((row) => ({
     id: row.id,
     communityId,
@@ -178,14 +189,12 @@ export async function searchTrips(
     maxDetourMinutes: row.maxDetourMinutes,
     womenOnly: row.womenOnly,
     driverIsWoman: row.driverIsWoman,
-    rejectedPassengerIds: rejected.some((booking) => booking.offerId === row.id) ? [userId] : [],
-    passengers: accepted
-      .filter((booking) => booking.offerId === row.id)
-      .map((booking) => ({
-        meetingPointId: booking.meetingPointId,
-        windowStart: booking.windowStart.slice(0, 5),
-        windowEnd: booking.windowEnd.slice(0, 5),
-      })),
+    rejectedPassengerIds: rejectedOffers.has(row.id) ? [userId] : [],
+    passengers: (acceptedByOffer.get(row.id) ?? []).map((booking) => ({
+      meetingPointId: booking.meetingPointId,
+      windowStart: booking.windowStart.slice(0, 5),
+      windowEnd: booking.windowEnd.slice(0, 5),
+    })),
   }));
 
   const ranking = rankOffersForRequest(request, routes, model);
@@ -219,8 +228,8 @@ export async function searchTrips(
         destinationName: destination.name,
         direction: offer.direction,
         departureTime: offer.departureTime,
-        seatsFree:
-          offer.seatsTotal - accepted.filter((booking) => booking.offerId === offer.id).length,
+        // Same count the engine uses for its seat check: accepted passengers.
+        seatsFree: offer.seatsTotal - (acceptedByOffer.get(offer.id)?.length ?? 0),
         meetingPointName: meetingPointNames.get(match.meetingPointId) ?? match.meetingPointId,
         pickupAt: match.pickupAt,
         arrivalAt: match.arrivalAt,
