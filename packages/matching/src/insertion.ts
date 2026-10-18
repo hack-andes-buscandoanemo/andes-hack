@@ -98,16 +98,19 @@ function limaInstant(day: string, minutes: number) {
   return new Date(Date.parse(`${day}T00:00:00-05:00`) + minutes * 60_000);
 }
 
-// Clock time, in minutes of the day, at each stop and then at the destination.
+// Clock time, in minutes of the day, at each stop and then at the end of the trip. The
+// outbound trip goes from the driver's zone to the destination; the return, back.
 function stopTimes(
   route: OfferRoute,
   stopIds: readonly string[],
   day: string,
   model: TravelTimeModel,
 ) {
+  const outbound = route.direction === "outbound";
   let clock = minutesOfDay(route.departureTime);
-  let at = route.originZoneId;
-  return [...stopIds, route.destinationId].map((stop) => {
+  let at = outbound ? route.originZoneId : route.destinationId;
+  const end = outbound ? route.destinationId : route.originZoneId;
+  return [...stopIds, end].map((stop) => {
     clock += model.minutes(at, stop, limaInstant(day, clock)).minutes;
     at = stop;
     return clock;
@@ -147,9 +150,11 @@ export function bestInsertion(
   if (reason) return { feasible: false, reason };
 
   const day = timingDay(request);
+  const outbound = route.direction === "outbound";
+  const departure = minutesOfDay(route.departureTime);
   const current = route.passengers.map((passenger) => passenger.meetingPointId);
-  const currentArrival = stopTimes(route, current, day, model).at(-1)!;
-  const straightArrival = stopTimes(route, [], day, model).at(-1)!;
+  const currentEnd = stopTimes(route, current, day, model).at(-1)!;
+  const straightEnd = stopTimes(route, [], day, model).at(-1)!;
 
   let best: { addedMinutes: number; insertion: Insertion } | undefined;
   let windowMet = false;
@@ -158,13 +163,16 @@ export function bestInsertion(
   for (const { meetingPointId, walkMinutes } of candidates) {
     for (let position = 0; position <= current.length; position++) {
       const times = stopTimes(route, current.toSpliced(position, 0, meetingPointId), day, model);
-      const arrival = times.at(-1)!;
-      const addedMinutes = arrival - currentArrival;
-      if (![request, ...route.passengers].every((passenger) => within(arrival, passenger)))
+      const end = times.at(-1)!;
+      const stop = times[position]!;
+      const addedMinutes = end - currentEnd;
+      // Windows are about the destination: arriving there, or leaving it on the way back.
+      const atDestination = outbound ? end : departure;
+      if (![request, ...route.passengers].every((passenger) => within(atDestination, passenger)))
         continue;
       windowMet = true;
       // The maximum bounds the driver's whole detour, every passenger's together.
-      if (arrival - straightArrival > route.maxDetourMinutes) continue;
+      if (end - straightEnd > route.maxDetourMinutes) continue;
       if (best && addedMinutes >= best.addedMinutes) continue;
       best = {
         addedMinutes,
@@ -172,8 +180,9 @@ export function bestInsertion(
           feasible: true,
           meetingPointId,
           position,
-          pickupAt: timeOfDay(times[position]!),
-          arrivalAt: timeOfDay(arrival),
+          // On the way back passengers board at the destination and get off at their stop.
+          pickupAt: timeOfDay(outbound ? stop : departure),
+          arrivalAt: timeOfDay(outbound ? end : stop),
           detourMinutes: Math.round(addedMinutes),
           walkMinutes: Math.round(walkMinutes),
         },

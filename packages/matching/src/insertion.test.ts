@@ -33,6 +33,12 @@ const freeFlow: Record<string, number> = {
   "san-borja-estacion-san-borja-sur>surquillo-municipalidad": 3,
   "surquillo-municipalidad>san-borja-estacion-san-borja-sur": 4,
   "san-borja-estacion-san-borja-sur>centro-empresarial-real": 10,
+  // The way back.
+  "centro-empresarial-real>la-molina": 20,
+  "centro-empresarial-real>san-borja-municipalidad": 15,
+  "san-borja-municipalidad>la-molina": 7,
+  "centro-empresarial-real>san-borja-estacion-san-borja-sur": 9,
+  "san-borja-estacion-san-borja-sur>la-molina": 11,
 };
 
 const ids = places.map((place) => place.id);
@@ -248,5 +254,28 @@ describe("best insertion of a passenger in a driver's route", () => {
     const result = bestInsertion(offer({ rejectedPassengerIds: ["pasajera-1"] }), need(), model);
 
     expect(result).toEqual({ feasible: false, reason: "previously_rejected" });
+  });
+
+  it("on the way back, boards the passenger at the destination and drops her off on the route", () => {
+    // Leaving at 18:00, inside her 17:45-18:15 window. The station is on the way home
+    // (9 + 11 = 20 free-flow min, as straight); at 18:00 the factor is 2.31, so she is
+    // dropped off at 18:00 + 9 × 2.31 = 18:20.8.
+    const back = { direction: "return" as const };
+
+    const result = bestInsertion(
+      offer({ ...back, departureTime: "18:00" }),
+      need({ ...back, windowStart: "17:45", windowEnd: "18:15" }),
+      model,
+    );
+
+    expect(result).toEqual({
+      feasible: true,
+      meetingPointId: "san-borja-estacion-san-borja-sur",
+      position: 0,
+      pickupAt: "18:00",
+      arrivalAt: "18:21",
+      detourMinutes: 0,
+      walkMinutes: 14,
+    });
   });
 });
