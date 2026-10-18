@@ -631,6 +631,8 @@ const BookingStatusSchema = z.enum([
 export const OfferDetailSchema = z
   .object({
     offerId: z.string().uuid(),
+    // Only an active trip can be requested; a paused or cancelled one is shown as unavailable.
+    status: z.enum(["active", "paused", "cancelled"]),
     driverName: z.string(),
     communityName: z.string(),
     originZoneName: z.string(),
@@ -671,6 +673,11 @@ export const getOfferDetailRoute = createRoute({
       description: "Detalle del viaje para miembros de su comunidad, sin placa hasta la aceptación",
       content: { "application/json": { schema: OfferDetailSchema } },
     },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    404: apiErrorResponse(
+      "El viaje no existe o es de otra comunidad: se responde igual para no revelar ids (`offer_not_found`)",
+    ),
+    422: apiErrorResponse("El identificador no es válido (`validation_error`)"),
   },
 });
 
@@ -710,6 +717,15 @@ export const requestSeatRoute = createRoute({
         "Solicitud pendiente con el punto de encuentro y la recogida calculados por el servidor",
       content: { "application/json": { schema: RequestSeatResponseSchema } },
     },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    403: apiErrorResponse("Es el viaje propio (`own_offer`)"),
+    404: apiErrorResponse("El viaje no existe o es de otra comunidad (`offer_not_found`)"),
+    409: apiErrorResponse(
+      "Ya solicitado (`already_requested`), sin asientos (`no_seats`), sin búsqueda guardada (`search_required`) o el viaje ya no es compatible o ya no está activo (`no_longer_compatible`)",
+    ),
+    422: apiErrorResponse(
+      "El mensaje supera 280 caracteres o el identificador no es válido (`validation_error`)",
+    ),
   },
 });
 
@@ -729,6 +745,10 @@ export const cancelBookingRoute = createRoute({
         },
       },
     },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    404: apiErrorResponse("La solicitud no existe o es de otra persona (`booking_not_found`)"),
+    409: apiErrorResponse("La solicitud ya fue aceptada y no se retira aquí (`not_withdrawable`)"),
+    422: apiErrorResponse("El identificador no es válido (`validation_error`)"),
   },
 });
 
@@ -865,6 +885,7 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   searchTripsRoute,
   getOfferDetailRoute,
   requestSeatRoute,
+  cancelBookingRoute,
   joinWaitlistRoute,
   waitlistSummaryRoute,
 ];

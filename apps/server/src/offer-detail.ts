@@ -5,7 +5,7 @@ import { zone } from "@andes-hack/db/schema/places";
 import { seatBooking, tripOffer, tripRequest } from "@andes-hack/db/schema/trips";
 import { vehicle } from "@andes-hack/db/schema/vehicle";
 import { places } from "@andes-hack/matching";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 
 import { destinationOf, matchOfferForNeed } from "./search";
 import { ApiError } from "./utils/api-response";
@@ -21,6 +21,7 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
       communityName: community.name,
       destinationName: community.destinationName,
       originZoneName: zone.name,
+      status: tripOffer.status,
       direction: tripOffer.direction,
       departureTime: tripOffer.departureTime,
       date: tripOffer.date,
@@ -61,10 +62,9 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
       ),
     )
     .limit(1);
+  // Other communities get the same answer as an unknown id, so ids cannot be probed.
   if (!membership) {
-    throw new ApiError(403, "No perteneces a esta comunidad.", {
-      code: "community_membership_required",
-    });
+    throw new ApiError(404, "No encontramos este viaje.", { code: "offer_not_found" });
   }
 
   const bookings = await database
@@ -93,6 +93,7 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
         eq(tripRequest.status, "open"),
       ),
     )
+    .orderBy(desc(tripRequest.createdAt))
     .limit(1);
   const match = need
     ? await matchOfferForNeed(database, {
@@ -107,6 +108,7 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
 
   const detail = {
     offerId: row.id,
+    status: row.status,
     driverName: row.driverAlias ?? row.accountName,
     communityName: row.communityName,
     originZoneName: row.originZoneName,
@@ -122,7 +124,11 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
         ? {
             make: row.make,
             model: row.model,
-            plate: isOwn || mine?.status === "accepted" ? row.plate : null,
+            // Never revealed once the trip is cancelled.
+            plate:
+              row.status !== "cancelled" && (isOwn || mine?.status === "accepted")
+                ? row.plate
+                : null,
           }
         : null,
     note: row.note,
@@ -156,12 +162,19 @@ export async function requestSeat(
   const alreadyRequested = new ApiError(409, "Ya solicitaste un asiento en este viaje.", {
     code: "already_requested",
   });
+  const noLongerCompatible = new ApiError(
+    409,
+    "Este viaje cambió y ya no es compatible con tu búsqueda.",
+    { code: "no_longer_compatible" },
+  );
   if (detail.isOwn) {
     throw new ApiError(403, "No puedes solicitar un asiento en tu propio viaje.", {
       code: "own_offer",
     });
   }
   if (detail.booking) throw alreadyRequested;
+  // A paused or cancelled trip can no longer be requested, whatever the person searched.
+  if (detail.status !== "active") throw noLongerCompatible;
   if (detail.seatsFree <= 0) {
     throw new ApiError(409, "Este viaje ya no tiene asientos libres.", { code: "no_seats" });
   }
@@ -171,9 +184,7 @@ export async function requestSeat(
     });
   }
   if (!match) {
-    throw new ApiError(409, "Este viaje cambió y ya no es compatible con tu búsqueda.", {
-      code: "no_longer_compatible",
-    });
+    throw noLongerCompatible;
   }
   const [booking] = await database
     .insert(seatBooking)

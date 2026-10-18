@@ -539,6 +539,33 @@ export interface paths {
             "application/json": components["schemas"]["OfferDetail"];
           };
         };
+        /** @description No hay sesión iniciada (`unauthorized`) */
+        401: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description El viaje no existe o es de otra comunidad: se responde igual para no revelar ids (`offer_not_found`) */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description El identificador no es válido (`validation_error`) */
+        422: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
       };
     };
     put?: never;
@@ -580,6 +607,124 @@ export interface paths {
           };
           content: {
             "application/json": components["schemas"]["RequestSeatResponse"];
+          };
+        };
+        /** @description No hay sesión iniciada (`unauthorized`) */
+        401: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Es el viaje propio (`own_offer`) */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description El viaje no existe o es de otra comunidad (`offer_not_found`) */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Ya solicitado (`already_requested`), sin asientos (`no_seats`), sin búsqueda guardada (`search_required`) o el viaje ya no es compatible o ya no está activo (`no_longer_compatible`) */
+        409: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description El mensaje supera 280 caracteres o el identificador no es válido (`validation_error`) */
+        422: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/bookings/{id}/cancel": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description La solicitud pendiente quedó retirada */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["CancelBookingResponse"];
+          };
+        };
+        /** @description No hay sesión iniciada (`unauthorized`) */
+        401: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description La solicitud no existe o es de otra persona (`booking_not_found`) */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description La solicitud ya fue aceptada y no se retira aquí (`not_withdrawable`) */
+        409: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description El identificador no es válido (`validation_error`) */
+        422: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
           };
         };
       };
@@ -920,6 +1065,8 @@ export interface components {
     OfferDetail: {
       /** Format: uuid */
       offerId: string;
+      /** @enum {string} */
+      status: "active" | "paused" | "cancelled";
       driverName: string;
       communityName: string;
       originZoneName: string;
@@ -981,6 +1128,21 @@ export interface components {
     };
     RequestSeatRequest: {
       message?: string;
+    };
+    CancelBookingResponse: {
+      booking: {
+        /** Format: uuid */
+        id: string;
+        /** @enum {string} */
+        status:
+          | "pending"
+          | "accepted"
+          | "rejected"
+          | "cancelled_by_passenger"
+          | "cancelled_by_driver"
+          | "completed"
+          | "no_show";
+      };
     };
     WaitlistEntryResponse: {
       message: string;
