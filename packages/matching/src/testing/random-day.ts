@@ -19,6 +19,14 @@ export function seededRandom(seed: number) {
   };
 }
 
+// FNV-1a of the day as JSON: a fixture keeps it to notice when the generator changed.
+export function fingerprint(instance: DayInstance): string {
+  let hash = 0x811c9dc5;
+  for (const char of JSON.stringify(instance))
+    hash = Math.imul(hash ^ char.charCodeAt(0), 0x01000193);
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
 export interface DaySize {
   offers: number;
   requests: number;
