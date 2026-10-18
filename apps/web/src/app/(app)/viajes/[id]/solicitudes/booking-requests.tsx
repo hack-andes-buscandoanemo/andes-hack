@@ -4,13 +4,49 @@ import { useEffect, useState } from "react";
 
 import ProfileAvatar from "@/components/profile-avatar";
 import { Button } from "@/components/ui/button";
+import { reasonOf } from "@/lib/api-error";
 import { communitiesApi, type OfferBookingsResponse } from "@/lib/communities-api";
+
+const NO_SHOW_OPENS_MINUTES_AFTER = 10;
+const TODAY_LABELS = {
+  in_progress: "En el auto",
+  arrived: "Llegó bien",
+  no_show: "No se presentó",
+} as const;
+
+// Minutes since midnight in Lima. The server stays the authority; this only decides whether
+// the button looks open.
+function limaMinutes(now: Date) {
+  const [hours = 0, minutes = 0] = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "America/Lima",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  })
+    .format(now)
+    .split(":")
+    .map(Number);
+  return hours * 60 + minutes;
+}
+
+function noShowOpen(pickupAt: string, now: Date) {
+  const [hours = 0, minutes = 0] = pickupAt.split(":").map(Number);
+  return limaMinutes(now) >= hours * 60 + minutes + NO_SHOW_OPENS_MINUTES_AFTER;
+}
 
 export default function BookingRequests({ offerId }: { offerId: string }) {
   const [result, setResult] = useState<OfferBookingsResponse | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busyId, setBusyId] = useState("");
+  const [confirmingId, setConfirmingId] = useState("");
+  const [now, setNow] = useState(() => new Date());
+
+  // The button opens by itself while the driver waits at the meeting point.
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -32,23 +68,23 @@ export default function BookingRequests({ offerId }: { offerId: string }) {
     setError("");
     setNotice("");
     try {
-      const { booking, message } = await communitiesApi.noShowBooking(bookingId);
+      const { message } = await communitiesApi.noShowBooking(bookingId);
       setResult((current) =>
         current
           ? {
               ...current,
               bookings: current.bookings.map((item) =>
-                item.id === bookingId ? { ...item, status: booking.status } : item,
+                item.id === bookingId ? { ...item, today: "no_show" as const } : item,
               ),
             }
           : current,
       );
       setNotice(message);
     } catch (cause) {
-      const reason = (cause as { response?: { data?: { error?: unknown } } }).response?.data?.error;
-      setError(typeof reason === "string" ? reason : "No se pudo actualizar la solicitud.");
+      setError(reasonOf(cause, "No se pudo actualizar la solicitud."));
     } finally {
       setBusyId("");
+      setConfirmingId("");
     }
   }
 
@@ -84,9 +120,7 @@ export default function BookingRequests({ offerId }: { offerId: string }) {
         setNotice("Solicitud rechazada.");
       }
     } catch (cause) {
-      const message = (cause as { response?: { data?: { error?: unknown } } }).response?.data
-        ?.error;
-      setError(typeof message === "string" ? message : "No se pudo actualizar la solicitud.");
+      setError(reasonOf(cause, "No se pudo actualizar la solicitud."));
     } finally {
       setBusyId("");
     }
@@ -136,15 +170,50 @@ export default function BookingRequests({ offerId }: { offerId: string }) {
                 </Button>
               </div>
             ) : null}
-            {booking.status === "accepted" ? (
-              <Button
-                type="button"
-                variant="outline"
-                disabled={Boolean(busyId)}
-                onClick={() => markNoShow(booking.id)}
-              >
-                No se presentó
-              </Button>
+            {booking.status === "accepted" && booking.today && booking.today !== "not_started" ? (
+              <p className="font-semibold">{TODAY_LABELS[booking.today]}</p>
+            ) : null}
+            {booking.status === "accepted" && booking.today === "not_started" ? (
+              confirmingId === booking.id ? (
+                <div className="space-y-2">
+                  <p>¿Confirmas que esta persona no se presentó?</p>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      disabled={Boolean(busyId)}
+                      onClick={() => markNoShow(booking.id)}
+                    >
+                      Sí, no se presentó
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={Boolean(busyId)}
+                      onClick={() => setConfirmingId("")}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    aria-disabled={!noShowOpen(booking.pickupAt, now)}
+                    onClick={() => {
+                      if (noShowOpen(booking.pickupAt, now)) setConfirmingId(booking.id);
+                    }}
+                  >
+                    No se presentó
+                  </Button>
+                  {noShowOpen(booking.pickupAt, now) ? null : (
+                    <p className="text-sm text-muted-foreground">
+                      Podrás marcarlo 10 minutos después de la hora de recogida.
+                    </p>
+                  )}
+                </div>
+              )
             ) : null}
           </li>
         ))}

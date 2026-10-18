@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -41,9 +41,10 @@ afterEach(() => {
 const aboard = {
   booking: {
     id: BOOKING_ID,
-    status: "accepted",
+    tripDate: "2026-10-19",
     startedAt: "2026-10-19T11:45:00.000Z",
     arrivedAt: null,
+    outcome: null,
   },
   message: "Viaje en curso.",
 };
@@ -55,13 +56,64 @@ describe("TripProgress for the passenger", () => {
       throw new Error(`unexpected ${method} ${url}`);
     });
     render(<TripProgress trip={PASSENGER_TRIP} />);
-    expect(screen.getByRole("button", { name: "Llegué bien" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Llegué bien" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
 
     await userEvent.click(screen.getByRole("button", { name: "Ya estoy en el auto" }));
 
     expect(await screen.findByText("Viaje en curso")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Llegué bien" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Llegué bien" })).toHaveAttribute(
+      "aria-disabled",
+      "false",
+    );
     expect(screen.queryByRole("button", { name: "Ya estoy en el auto" })).not.toBeInTheDocument();
+  });
+});
+
+describe("TripProgress before the trip starts", () => {
+  it("explains why the arrival is not available yet instead of failing silently", async () => {
+    render(<TripProgress trip={PASSENGER_TRIP} />);
+
+    const arrive = screen.getByRole("button", { name: "Llegué bien" });
+    await userEvent.click(arrive);
+
+    expect(arrive).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByText("Disponible cuando el viaje haya iniciado.")).toBeInTheDocument();
+    expect(serverAnswer).not.toHaveBeenCalled();
+  });
+
+  it("sends a double tap once", async () => {
+    serverAnswer.mockImplementation(async () => aboard);
+    render(<TripProgress trip={PASSENGER_TRIP} />);
+    const button = screen.getByRole("button", { name: "Ya estoy en el auto" });
+
+    await userEvent.dblClick(button);
+
+    expect(serverAnswer).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not claim the trip is under way when the answer carries no start", async () => {
+    serverAnswer.mockImplementation(async () => ({
+      ...aboard,
+      booking: { ...aboard.booking, startedAt: null },
+    }));
+    render(<TripProgress trip={PASSENGER_TRIP} />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Ya estoy en el auto" }));
+
+    await waitFor(() => expect(serverAnswer).toHaveBeenCalled());
+    expect(screen.queryByText("Viaje en curso")).not.toBeInTheDocument();
+  });
+
+  it("remembers an arrival the server already recorded", () => {
+    render(<TripProgress trip={{ ...PASSENGER_TRIP, progress: "arrived" }} />);
+
+    expect(
+      screen.getByText("Llegada confirmada. ¡Gracias por compartir el viaje!"),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 });
 
@@ -72,9 +124,10 @@ describe("TripProgress arrival", () => {
         return {
           booking: {
             id: BOOKING_ID,
-            status: "completed",
+            tripDate: "2026-10-19",
             startedAt: "2026-10-19T11:45:00.000Z",
             arrivedAt: "2026-10-19T12:55:00.000Z",
+            outcome: "completed",
           },
           message: "Llegada confirmada. ¡Gracias por compartir el viaje!",
         };
@@ -110,18 +163,43 @@ describe("TripProgress refusals", () => {
 });
 
 describe("TripProgress for the driver", () => {
+  beforeEach(() =>
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-19T06:30:00-05:00") }),
+  );
+  afterEach(() => vi.useRealTimers());
   const DRIVER_TRIP = {
     id: OFFER_ID,
     offerId: OFFER_ID,
     role: "driver",
     status: "active",
     progress: null,
+    date: "2026-10-19",
+    time: "07:00:00",
   } as MyTrip;
+
+  it("keeps start closed before the 30-minute window and explains why", async () => {
+    vi.setSystemTime(new Date("2026-10-19T06:29:59-05:00"));
+    render(<TripProgress trip={DRIVER_TRIP} />);
+
+    const start = screen.getByRole("button", { name: "Iniciar viaje" });
+    await userEvent.click(start);
+
+    expect(start).toHaveAttribute("aria-disabled", "true");
+    expect(
+      screen.getByText("Podrás iniciar el viaje 30 minutos antes de la salida."),
+    ).toBeInTheDocument();
+    expect(serverAnswer).not.toHaveBeenCalled();
+  });
 
   it("starts the trip for everyone aboard and then only says it is under way", async () => {
     serverAnswer.mockImplementation(async (method: string, url: string) => {
       if (method === "post" && url === `/offers/${OFFER_ID}/start`) {
-        return { startedAt: "2026-10-19T11:30:00.000Z", boarded: 2, message: "Viaje en curso." };
+        return {
+          tripDate: "2026-10-19",
+          startedAt: "2026-10-19T11:30:00.000Z",
+          boarded: 2,
+          message: "Viaje en curso.",
+        };
       }
       throw new Error(`unexpected ${method} ${url}`);
     });

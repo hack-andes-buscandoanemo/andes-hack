@@ -129,6 +129,26 @@ describe("Viajes", () => {
     expect(screen.queryByRole("button", { name: "Ya estoy en el auto" })).not.toBeInTheDocument();
   });
 
+  it("lists each day a weekly seat travelled in the history, with its outcome", async () => {
+    tab = "historial";
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    listMyTrips.mockResolvedValue({
+      trips: [
+        { ...PASSENGER_TRIP, status: "completed", progress: "arrived", date: "2026-10-26" },
+        { ...PASSENGER_TRIP, status: "no_show", progress: null, date: "2026-10-19" },
+      ],
+    });
+    render(<Viajes />);
+
+    const items = await screen.findAllByRole("listitem");
+
+    expect(items).toHaveLength(2);
+    expect(within(items[0]!).getByText("Completada")).toBeInTheDocument();
+    expect(within(items[1]!).getByText("No se presentó")).toBeInTheDocument();
+    expect(error).not.toHaveBeenCalled();
+    error.mockRestore();
+  });
+
   it("offers Compartir viaje on an accepted passenger trip and nowhere else (US-028)", async () => {
     listMyTrips.mockResolvedValue({
       trips: [
