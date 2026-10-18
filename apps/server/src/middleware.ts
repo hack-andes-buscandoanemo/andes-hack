@@ -8,6 +8,10 @@ import { ApiError } from "./utils/api-response";
 export type Session = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
 export type SessionResolver = (headers: Headers) => Promise<Session | null>;
 export type MembershipLookup = (userId: string, communityId: string) => Promise<boolean>;
+export type OnboardingLookup = (
+  userId: string,
+  communityId: string,
+) => Promise<{ isMember: boolean; isOnboarded: boolean }>;
 export type RateLimitCheck = (identifier: string) => Promise<{ success: boolean; reset: number }>;
 export type User = Session["user"];
 
@@ -28,6 +32,19 @@ const lookupMembership: MembershipLookup = async (userId, communityId) => {
     sql`select 1 from community_member where user_id = ${userId} and community_id = ${communityId} limit 1`,
   );
   return result.rows.length > 0;
+};
+
+const lookupOnboarding: OnboardingLookup = async (userId, communityId) => {
+  const [{ db }, { sql }] = await Promise.all([import("@andes-hack/db"), import("drizzle-orm")]);
+  const result = await db.execute(
+    sql`select consent_at, usual_mode from community_member where user_id = ${userId} and community_id = ${communityId} limit 1`,
+  );
+  const row = result.rows[0] as { consent_at?: unknown; usual_mode?: unknown } | undefined;
+  if (!row) return { isMember: false, isOnboarded: false };
+  return {
+    isMember: true,
+    isOnboarded: row.consent_at != null && row.usual_mode != null,
+  };
 };
 
 const checkLimit: RateLimitCheck = async (identifier) => {
@@ -58,6 +75,31 @@ export const requireMember =
     if (!(await hasMembership(user.id, communityId))) {
       throw new ApiError(403, "No perteneces a esta comunidad.", {
         code: "community_membership_required",
+      });
+    }
+    await next();
+  };
+
+export const requireOnboardedMember =
+  (
+    communityId: string | ((c: Parameters<MiddlewareHandler>[0]) => string),
+    checkOnboarding: OnboardingLookup = lookupOnboarding,
+  ): MiddlewareHandler =>
+  async (c, next) => {
+    const user = c.get("user") as User | undefined;
+    if (!user) {
+      throw new ApiError(401, "Inicia sesión para continuar.", { code: "unauthorized" });
+    }
+    const resolvedCommunityId = typeof communityId === "function" ? communityId(c) : communityId;
+    const status = await checkOnboarding(user.id, resolvedCommunityId);
+    if (!status.isMember) {
+      throw new ApiError(403, "No perteneces a esta comunidad.", {
+        code: "community_membership_required",
+      });
+    }
+    if (!status.isOnboarded) {
+      throw new ApiError(403, "Completa tu registro antes de continuar.", {
+        code: "onboarding_required",
       });
     }
     await next();

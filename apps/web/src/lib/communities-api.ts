@@ -3,6 +3,9 @@ import { httpClient } from "./http-client";
 
 export type CommunitySummary = components["schemas"]["CommunitySummary"];
 export type JoinCommunityResponse = components["schemas"]["JoinCommunityResponse"];
+export type MeResponse = components["schemas"]["MeResponse"];
+export type MembershipSummary = components["schemas"]["MembershipSummary"];
+export type UpdateMembershipRequest = components["schemas"]["UpdateMembershipRequest"];
 
 export const communitiesApi = {
   async listCommunities(): Promise<CommunitySummary[]> {
@@ -33,6 +36,20 @@ export const communitiesApi = {
   async confirmEmailMembership(communityId: string): Promise<JoinCommunityResponse> {
     const response = await httpClient.post(
       `/communities/${communityId}/verify-email` as "/communities/{id}/verify-email",
+    );
+    return response.data;
+  },
+  async getMe(): Promise<MeResponse> {
+    const response = await httpClient.get("/me");
+    return response.data;
+  },
+  async updateMembership(
+    communityId: string,
+    payload: UpdateMembershipRequest,
+  ): Promise<MembershipSummary> {
+    const response = await httpClient.patch(
+      `/communities/${communityId}/membership` as "/communities/{id}/membership",
+      payload,
     );
     return response.data;
   },

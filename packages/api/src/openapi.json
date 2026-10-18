@@ -137,6 +137,140 @@
           }
         },
         "required": ["code"]
+      },
+      "MeResponse": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string",
+                "format": "email"
+              }
+            },
+            "required": ["id", "name", "email"]
+          },
+          "memberships": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MembershipSummary"
+            }
+          }
+        },
+        "required": ["user", "memberships"]
+      },
+      "MembershipSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "communityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "communityName": {
+            "type": "string"
+          },
+          "destinationName": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["member", "admin"]
+          },
+          "verificationMethod": {
+            "type": "string",
+            "enum": ["join_code", "email_domain"]
+          },
+          "consentVersion": {
+            "type": ["string", "null"]
+          },
+          "consentAt": {
+            "type": ["string", "null"]
+          },
+          "usualMode": {
+            "type": ["string", "null"],
+            "enum": [
+              "drove_alone",
+              "drove_with_others",
+              "car_passenger",
+              "public_transport",
+              "taxi_app",
+              "other",
+              null
+            ]
+          },
+          "travelRole": {
+            "type": ["string", "null"],
+            "enum": ["driver", "passenger", "both", null]
+          },
+          "alias": {
+            "type": ["string", "null"]
+          },
+          "identifiesAsWoman": {
+            "type": "boolean"
+          },
+          "womenOnly": {
+            "type": "boolean"
+          },
+          "isTeam": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "communityId",
+          "communityName",
+          "destinationName",
+          "role",
+          "verificationMethod",
+          "consentVersion",
+          "consentAt",
+          "usualMode",
+          "travelRole",
+          "alias",
+          "identifiesAsWoman",
+          "womenOnly",
+          "isTeam"
+        ]
+      },
+      "UpdateMembershipRequest": {
+        "type": "object",
+        "properties": {
+          "consentAccepted": {
+            "type": "boolean"
+          },
+          "usualMode": {
+            "type": "string",
+            "enum": [
+              "drove_alone",
+              "drove_with_others",
+              "car_passenger",
+              "public_transport",
+              "taxi_app",
+              "other"
+            ]
+          },
+          "travelRole": {
+            "type": "string",
+            "enum": ["driver", "passenger", "both"]
+          },
+          "alias": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 30
+          }
+        },
+        "required": ["consentAccepted", "usualMode", "travelRole"]
       }
     },
     "parameters": {}
@@ -234,6 +368,60 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JoinCommunityResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me": {
+      "get": {
+        "tags": ["Comunidades"],
+        "responses": {
+          "200": {
+            "description": "Perfil y membresías de la persona autenticada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/communities/{id}/membership": {
+      "patch": {
+        "tags": ["Comunidades"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMembershipRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Consentimiento, modo habitual y rol de viaje actualizados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipSummary"
                 }
               }
             }
