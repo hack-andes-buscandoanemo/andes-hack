@@ -381,8 +381,9 @@ describe("GET /me/trips", () => {
     const driver = await createMember(org.id, "driver-1", "Carlos Quispe", "Carlos Q.");
     const passenger = await createMember(org.id, "pax-1", "Lucía Ramos");
     const { offer } = await createOffer(org.id, driver.id);
+    const rejectedOffer = await createOffer(org.id, driver.id);
     await book(offer, passenger.id, "pending");
-    await book(offer, passenger.id, "rejected");
+    await book(rejectedOffer.offer, passenger.id, "rejected");
     const upcoming = await (
       await requestAs(passenger, "/me/trips?role=passenger&scope=upcoming")
     ).json();
