@@ -75,6 +75,17 @@ describe("shared trip /compartido/{token}", () => {
     expect(screen.queryByText("Placa: ABC123")).not.toBeInTheDocument();
   });
 
+  it("says to wait a moment when too many attempts were made (429)", async () => {
+    serverAnswer.mockRejectedValue(
+      serverError(429, "Demasiadas consultas. Inténtalo en un momento."),
+    );
+    render(<SharedTripPage />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Demasiados intentos. Inténtalo en un momento.",
+    );
+  });
+
   it("asks to try again when the server fails", async () => {
     serverAnswer.mockRejectedValue(serverError(500, "boom"));
     render(<SharedTripPage />);

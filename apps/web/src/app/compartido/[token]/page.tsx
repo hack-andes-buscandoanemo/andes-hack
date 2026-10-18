@@ -34,7 +34,9 @@ export default function SharedTripPage() {
         setProblem(
           status === 404 || status === 422
             ? "Este enlace ya no está disponible."
-            : "No pudimos cargar este viaje. Inténtalo de nuevo.",
+            : status === 429
+              ? "Demasiados intentos. Inténtalo en un momento."
+              : "No pudimos cargar este viaje. Inténtalo de nuevo.",
         );
       });
     return () => {
