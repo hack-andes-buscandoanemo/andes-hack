@@ -576,6 +576,62 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/me/trips": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: {
+      parameters: {
+        query?: {
+          role?: "passenger" | "driver";
+          scope?: "upcoming" | "past";
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Viajes de la persona como pasajera o conductora; la placa y el alias del otro solo en viajes aceptados */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["MyTripsResponse"];
+          };
+        };
+        /** @description No hay sesión iniciada (`unauthorized`) */
+        401: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description El rol o el periodo no son válidos (`validation_error`) */
+        422: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/offers/{id}/bookings": {
     parameters: {
       query?: never;
@@ -1104,6 +1160,43 @@ export interface components {
           | "completed"
           | "no_show";
       } | null;
+    };
+    MyTripsResponse: {
+      trips: components["schemas"]["MyTrip"][];
+    };
+    MyTrip: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      offerId: string;
+      /** @enum {string} */
+      role: "passenger" | "driver";
+      /** @enum {string} */
+      status:
+        | "pending"
+        | "accepted"
+        | "rejected"
+        | "cancelled"
+        | "completed"
+        | "no_show"
+        | "paused"
+        | "active";
+      /** @enum {string} */
+      direction: "outbound" | "return";
+      date: string | null;
+      daysOfWeek: number[] | null;
+      time: string;
+      originZoneName: string;
+      destinationName: string;
+      meetingPointName: string | null;
+      driver: {
+        alias: string;
+        plate: string | null;
+      } | null;
+      seatsTotal: number | null;
+      seatsFree: number | null;
+      pendingRequests: number | null;
+      acceptedPassengers: string[] | null;
     };
     RequestSeatResponse: {
       booking: {

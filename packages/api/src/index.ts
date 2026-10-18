@@ -681,6 +681,69 @@ export const getOfferDetailRoute = createRoute({
   },
 });
 
+export const MyTripsQuerySchema = z.object({
+  role: z.enum(["passenger", "driver"]).default("passenger"),
+  scope: z.enum(["upcoming", "past"]).default("upcoming"),
+});
+
+// Derived on the server from the booking and the offer, so every client shows the same state.
+export const TripStatusSchema = z.enum([
+  "pending",
+  "accepted",
+  "rejected",
+  "cancelled",
+  "completed",
+  "no_show",
+  "paused",
+  "active",
+]);
+
+export const MyTripSchema = z
+  .object({
+    // The booking for a passenger, the offer for a driver.
+    id: z.string().uuid(),
+    offerId: z.string().uuid(),
+    role: z.enum(["passenger", "driver"]),
+    status: TripStatusSchema,
+    direction: TripDirectionSchema,
+    date: z.string().nullable(),
+    daysOfWeek: z.array(z.number().int()).nullable(),
+    // Pickup time for a passenger, departure time for a driver.
+    time: z.string(),
+    originZoneName: z.string(),
+    destinationName: z.string(),
+    meetingPointName: z.string().nullable(),
+    // Alias always; the plate only once the request is accepted. Null for the driver's own view.
+    driver: z.object({ alias: z.string(), plate: z.string().nullable() }).nullable(),
+    // Driver view only: seats offered and seats still free (accepted passengers hold seats).
+    seatsTotal: z.number().int().nullable(),
+    seatsFree: z.number().int().nullable(),
+    // Driver view only: requests waiting for an answer, and the aliases of accepted passengers.
+    pendingRequests: z.number().int().nullable(),
+    acceptedPassengers: z.array(z.string()).nullable(),
+  })
+  .openapi("MyTrip");
+
+export const MyTripsResponseSchema = z
+  .object({ trips: z.array(MyTripSchema) })
+  .openapi("MyTripsResponse");
+
+export const listMyTripsRoute = createRoute({
+  method: "get",
+  path: "/me/trips",
+  tags: ["Viajes"],
+  request: { query: MyTripsQuerySchema },
+  responses: {
+    200: {
+      description:
+        "Viajes de la persona como pasajera o conductora; la placa y el alias del otro solo en viajes aceptados",
+      content: { "application/json": { schema: MyTripsResponseSchema } },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    422: apiErrorResponse("El rol o el periodo no son válidos (`validation_error`)"),
+  },
+});
+
 export const RequestSeatBodySchema = z
   .object({
     // Plain text for the driver; there is no chat before the request is accepted.
@@ -884,6 +947,7 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   updateOfferStatusRoute,
   searchTripsRoute,
   getOfferDetailRoute,
+  listMyTripsRoute,
   requestSeatRoute,
   cancelBookingRoute,
   joinWaitlistRoute,

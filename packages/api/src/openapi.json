@@ -1072,6 +1072,156 @@
           "booking"
         ]
       },
+      "MyTripsResponse": {
+        "type": "object",
+        "properties": {
+          "trips": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyTrip"
+            }
+          }
+        },
+        "required": [
+          "trips"
+        ]
+      },
+      "MyTrip": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "offerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "passenger",
+              "driver"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "accepted",
+              "rejected",
+              "cancelled",
+              "completed",
+              "no_show",
+              "paused",
+              "active"
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "outbound",
+              "return"
+            ]
+          },
+          "date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "daysOfWeek": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "integer"
+            }
+          },
+          "time": {
+            "type": "string"
+          },
+          "originZoneName": {
+            "type": "string"
+          },
+          "destinationName": {
+            "type": "string"
+          },
+          "meetingPointName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "driver": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "alias": {
+                "type": "string"
+              },
+              "plate": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "alias",
+              "plate"
+            ]
+          },
+          "seatsTotal": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "seatsFree": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "pendingRequests": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "acceptedPassengers": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "offerId",
+          "role",
+          "status",
+          "direction",
+          "date",
+          "daysOfWeek",
+          "time",
+          "originZoneName",
+          "destinationName",
+          "meetingPointName",
+          "driver",
+          "seatsTotal",
+          "seatsFree",
+          "pendingRequests",
+          "acceptedPassengers"
+        ]
+      },
       "RequestSeatResponse": {
         "type": "object",
         "properties": {
@@ -1780,6 +1930,73 @@
           },
           "422": {
             "description": "El identificador no es válido (`validation_error`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/trips": {
+      "get": {
+        "tags": [
+          "Viajes"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "passenger",
+                "driver"
+              ],
+              "default": "passenger"
+            },
+            "required": false,
+            "name": "role",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "upcoming",
+                "past"
+              ],
+              "default": "upcoming"
+            },
+            "required": false,
+            "name": "scope",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Viajes de la persona como pasajera o conductora; la placa y el alias del otro solo en viajes aceptados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyTripsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No hay sesión iniciada (`unauthorized`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "El rol o el periodo no son válidos (`validation_error`)",
             "content": {
               "application/json": {
                 "schema": {
