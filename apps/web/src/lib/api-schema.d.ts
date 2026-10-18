@@ -2572,6 +2572,8 @@ export interface components {
             role: "passenger" | "driver";
             /** @enum {string} */
             status: "pending" | "accepted" | "rejected" | "cancelled" | "completed" | "no_show" | "paused" | "active";
+            /** @enum {string|null} */
+            progress?: "not_started" | "in_progress" | "arrived" | null;
             /** @enum {string} */
             direction: "outbound" | "return";
             date: string | null;

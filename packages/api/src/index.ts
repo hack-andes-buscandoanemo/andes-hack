@@ -883,6 +883,8 @@ export const MyTripSchema = z
     offerId: z.string().uuid(),
     role: z.enum(["passenger", "driver"]),
     status: TripStatusSchema,
+    // Day-of-trip progress of an accepted seat (the driver sees "in_progress" once it started); null otherwise.
+    progress: z.enum(["not_started", "in_progress", "arrived"]).nullable().optional(),
     direction: TripDirectionSchema,
     date: z.string().nullable(),
     daysOfWeek: z.array(z.number().int()).nullable(),

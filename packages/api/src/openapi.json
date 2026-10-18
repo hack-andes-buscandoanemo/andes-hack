@@ -1275,6 +1275,18 @@
               "active"
             ]
           },
+          "progress": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "not_started",
+              "in_progress",
+              "arrived",
+              null
+            ]
+          },
           "direction": {
             "type": "string",
             "enum": [
