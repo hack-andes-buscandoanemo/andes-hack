@@ -232,7 +232,45 @@ describe("GET /offers/{id} (US-014)", () => {
       isOwn: false,
       match: null,
       booking: null,
+      fuelEstimate: { tripSoles: 10.04, perOccupantSoles: 5.02, occupants: 2 },
     });
+  });
+
+  it("estimates the fuel of the leg for the driver, the accepted passengers and the person looking", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const passenger = await createMember(alfa.id, "u-lucia", "Lucía");
+    const rider = await createMember(alfa.id, "u-rosa", "Rosa");
+    const offer = await seedOffer(alfa.id, driver.id);
+    await bookSeat(offer, rider.id, "accepted");
+
+    // La Molina → Centro Empresarial Real: 15.77 km by OSRM ÷ 35 km/gal × S/ 22,29 = S/ 10,04.
+    const fuelSeenBy = async (person: { id: string }) =>
+      ((await (await requestAs(person, `/offers/${offer.id}`)).json()) as { fuelEstimate: unknown })
+        .fuelEstimate;
+    const asPassenger = await fuelSeenBy(passenger);
+    const asDriver = await fuelSeenBy(driver);
+    const asRider = await fuelSeenBy(rider);
+
+    // Lucía would be the third in the car; Mateo and Rosa are already the two aboard.
+    expect(asPassenger).toEqual({ tripSoles: 10.04, perOccupantSoles: 3.34, occupants: 3 });
+    expect(asDriver).toEqual({ tripSoles: 10.04, perOccupantSoles: 5.02, occupants: 2 });
+    expect(asRider).toEqual({ tripSoles: 10.04, perOccupantSoles: 5.02, occupants: 2 });
+  });
+
+  it("reads the return leg from the headquarters back to the zone", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const passenger = await createMember(alfa.id, "u-lucia", "Lucía");
+    const offer = await seedOffer(alfa.id, driver.id);
+    await testDb.update(tripOffer).set({ direction: "return" }).where(eq(tripOffer.id, offer.id));
+
+    const body = (await (await requestAs(passenger, `/offers/${offer.id}`)).json()) as {
+      fuelEstimate: unknown;
+    };
+
+    // Centro Empresarial Real → La Molina is 14.89 km by OSRM: S/ 9,48 between two.
+    expect(body.fuelEstimate).toEqual({ tripSoles: 9.48, perOccupantSoles: 4.74, occupants: 2 });
   });
 
   it("still shows a trip whose driver left the community, under their account name", async () => {
