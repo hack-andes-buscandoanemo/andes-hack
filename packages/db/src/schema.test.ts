@@ -260,12 +260,33 @@ describe("trip schedules", () => {
     );
   });
 
+  const invalidWeekdays = [
+    { days: "no weekdays", daysOfWeek: [] },
+    { days: "weekday 0", daysOfWeek: [0] },
+    { days: "weekday 8", daysOfWeek: [1, 8] },
+  ];
+
+  test.each(invalidWeekdays)("rejects an offer with $days", async ({ daysOfWeek }) => {
+    await expect(givenOffer({ daysOfWeek })).rejects.toMatchObject(
+      checkViolation("trip_offer_days_of_week_check"),
+    );
+  });
+
   test.each(ambiguousSchedules)("rejects a need with $schedule", async ({ date, daysOfWeek }) => {
     const team = await givenCommunity();
     const point = await givenMeetingPoint();
 
     await expect(givenNeed(team.id, point.zoneId, { date, daysOfWeek })).rejects.toMatchObject(
       checkViolation("trip_request_schedule_check"),
+    );
+  });
+
+  test.each(invalidWeekdays)("rejects a need with $days", async ({ daysOfWeek }) => {
+    const team = await givenCommunity();
+    const point = await givenMeetingPoint();
+
+    await expect(givenNeed(team.id, point.zoneId, { daysOfWeek })).rejects.toMatchObject(
+      checkViolation("trip_request_days_of_week_check"),
     );
   });
 });

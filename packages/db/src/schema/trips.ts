@@ -84,6 +84,11 @@ export const tripOffer = pgTable(
       "trip_offer_schedule_check",
       sql`(${table.date} IS NULL) <> (${table.daysOfWeek} IS NULL)`,
     ),
+    // ISO weekdays, as in Postgres' extract(isodow): 1 = Monday … 7 = Sunday.
+    check(
+      "trip_offer_days_of_week_check",
+      sql`${table.daysOfWeek} IS NULL OR (cardinality(${table.daysOfWeek}) > 0 AND ${table.daysOfWeek} <@ ARRAY[1, 2, 3, 4, 5, 6, 7]::smallint[])`,
+    ),
     check(
       "trip_offer_seats_taken_check",
       sql`${table.seatsTaken} BETWEEN 0 AND ${table.seatsTotal}`,
@@ -118,6 +123,10 @@ export const tripRequest = pgTable(
     check(
       "trip_request_schedule_check",
       sql`(${table.date} IS NULL) <> (${table.daysOfWeek} IS NULL)`,
+    ),
+    check(
+      "trip_request_days_of_week_check",
+      sql`${table.daysOfWeek} IS NULL OR (cardinality(${table.daysOfWeek}) > 0 AND ${table.daysOfWeek} <@ ARRAY[1, 2, 3, 4, 5, 6, 7]::smallint[])`,
     ),
   ],
 );

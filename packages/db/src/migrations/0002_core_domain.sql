@@ -100,6 +100,7 @@ CREATE TABLE "trip_offer" (
 	CONSTRAINT "trip_offer_seats_total_check" CHECK ("trip_offer"."seats_total" BETWEEN 1 AND 6),
 	CONSTRAINT "trip_offer_max_detour_minutes_check" CHECK ("trip_offer"."max_detour_minutes" IN (0, 5, 10)),
 	CONSTRAINT "trip_offer_schedule_check" CHECK (("trip_offer"."date" IS NULL) <> ("trip_offer"."days_of_week" IS NULL)),
+	CONSTRAINT "trip_offer_days_of_week_check" CHECK ("trip_offer"."days_of_week" IS NULL OR (cardinality("trip_offer"."days_of_week") > 0 AND "trip_offer"."days_of_week" <@ ARRAY[1, 2, 3, 4, 5, 6, 7]::smallint[])),
 	CONSTRAINT "trip_offer_seats_taken_check" CHECK ("trip_offer"."seats_taken" BETWEEN 0 AND "trip_offer"."seats_total")
 );
 --> statement-breakpoint
@@ -118,7 +119,8 @@ CREATE TABLE "trip_request" (
 	"status" "request_status" DEFAULT 'open' NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "trip_request_schedule_check" CHECK (("trip_request"."date" IS NULL) <> ("trip_request"."days_of_week" IS NULL))
+	CONSTRAINT "trip_request_schedule_check" CHECK (("trip_request"."date" IS NULL) <> ("trip_request"."days_of_week" IS NULL)),
+	CONSTRAINT "trip_request_days_of_week_check" CHECK ("trip_request"."days_of_week" IS NULL OR (cardinality("trip_request"."days_of_week") > 0 AND "trip_request"."days_of_week" <@ ARRAY[1, 2, 3, 4, 5, 6, 7]::smallint[]))
 );
 --> statement-breakpoint
 CREATE TABLE "vehicle" (
