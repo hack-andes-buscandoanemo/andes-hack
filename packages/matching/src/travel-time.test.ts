@@ -57,4 +57,31 @@ describe("travel times between places of Lima", () => {
     expect(trip.minutes).toBeCloseTo(26);
     expect(trip.kind).toBe("estimado");
   });
+
+  it("estimates a pair that is not in the matrix from the distance and labels it as estimated", () => {
+    const model = createTravelTimeModel({
+      places: [
+        ...places,
+        { id: "miraflores", lat: -12.1206214, lng: -77.0294993 },
+        { id: "barranco", lat: -12.1496977, lng: -77.0212908 },
+      ],
+      matrix,
+    });
+
+    // 3.354 km in a straight line × 1.29 road km per straight km ÷ 42.5 km/h, at free flow.
+    const trip = model.minutes("miraflores", "barranco", mondayAt("03:00"));
+
+    expect(trip.minutes).toBeCloseTo(6.11, 2);
+    expect(trip.kind).toBe("estimado");
+  });
+
+  it("estimates the walk from a zone to a meeting point at 4.5 km/h", () => {
+    const model = createTravelTimeModel({
+      places: [...places, { id: "parque-la-balsa", lat: -12.0839519, lng: -76.9209402 }],
+      matrix,
+    });
+
+    // 0.774 km in a straight line × 1.29 road km per straight km ÷ 4.5 km/h.
+    expect(model.walkMinutes("la-molina", "parque-la-balsa")).toBeCloseTo(13.31, 2);
+  });
 });

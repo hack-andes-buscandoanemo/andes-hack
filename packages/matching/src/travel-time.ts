@@ -1,3 +1,4 @@
+import { haversineKm } from "./geo";
 import { type Source, type SourceKind, sources } from "./sources";
 
 export interface PlacePoint {
@@ -24,6 +25,8 @@ export interface TravelTime {
 
 export interface TravelTimeModel {
   minutes(fromId: string, toId: string, departAt: Date): TravelTime;
+  // Always an estimate: there is no walking matrix.
+  walkMinutes(zoneId: string, meetingPointId: string): number;
 }
 
 // Peru has no daylight saving time: Lima is always UTC−5.
@@ -65,6 +68,13 @@ function weekdayFactor(hour: number): { value: number; kind: SourceKind } {
 
 export function createTravelTimeModel(data: TravelTimeData): TravelTimeModel {
   const index = new Map(data.matrix.ids.map((id, position) => [id, position]));
+  const placesById = new Map(data.places.map((place) => [place.id, place]));
+
+  function place(id: string) {
+    const found = placesById.get(id);
+    if (!found) throw new Error(`Lugar desconocido: ${id}`);
+    return found;
+  }
 
   function freeFlowMinutes(fromId: string, toId: string) {
     const from = index.get(fromId);
@@ -73,12 +83,29 @@ export function createTravelTimeModel(data: TravelTimeData): TravelTimeModel {
     return data.matrix.minutes[from]?.[to] ?? null;
   }
 
+  // The straight line, stretched to street length.
+  function streetKm(fromId: string, toId: string) {
+    return haversineKm(place(fromId), place(toId)) * sources.circuityFactor.value;
+  }
+
+  // For a pair the matrix lacks.
+  function estimatedFreeFlowMinutes(fromId: string, toId: string) {
+    return (streetKm(fromId, toId) / sources.freeFlowSpeed.value) * 60;
+  }
+
   return {
     minutes(fromId, toId, departAt) {
-      const freeFlow = freeFlowMinutes(fromId, toId);
       const factor = trafficFactor(departAt);
-      if (freeFlow === null) throw new Error("Not implemented yet");
+      const freeFlow = freeFlowMinutes(fromId, toId);
+      if (freeFlow === null) {
+        const estimate = estimatedFreeFlowMinutes(fromId, toId);
+        return { minutes: estimate * factor.value, kind: "estimado" };
+      }
       return { minutes: freeFlow * factor.value, kind: factor.kind };
+    },
+
+    walkMinutes(zoneId, meetingPointId) {
+      return (streetKm(zoneId, meetingPointId) / sources.walkingSpeed.value) * 60;
     },
   };
 }

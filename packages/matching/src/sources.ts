@@ -66,4 +66,31 @@ export const sources = {
       "Supuesto del equipo: el fin de semana hay menos tráfico que en hora punta laborable. No tenemos la curva de TomTom para el fin de semana.",
     date: "2026-10-17",
   },
+  circuityFactor: {
+    label: "Factor de rodeo (km por calle ÷ km en línea recta)",
+    value: 1.29,
+    unit: "×",
+    kind: "estimado",
+    source:
+      "Mediana sobre los pares a más de 1 km de la matriz OSRM (© OpenStreetMap, ODbL), calculada por scripts/build-travel-matrix.ts",
+    date: "2026-10-17",
+  },
+  walkingSpeed: {
+    label: "Velocidad a pie",
+    value: 4.5,
+    unit: "km/h",
+    kind: "estimado",
+    source:
+      "Supuesto del equipo: paso urbano de un adulto. La caminata se mide en línea recta × el factor de rodeo.",
+    date: "2026-10-17",
+  },
+  freeFlowSpeed: {
+    label: "Velocidad en auto a flujo libre, para pares sin dato en la matriz",
+    value: 42.5,
+    unit: "km/h",
+    kind: "estimado",
+    source:
+      "Mediana sobre los pares a más de 1 km de la matriz OSRM (© OpenStreetMap, ODbL), calculada por scripts/build-travel-matrix.ts",
+    date: "2026-10-17",
+  },
 } as const satisfies Record<string, Source>;
