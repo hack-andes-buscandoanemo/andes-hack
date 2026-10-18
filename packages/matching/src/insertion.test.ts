@@ -44,6 +44,10 @@ const freeFlow: Record<string, number> = {
   "surquillo>centro-empresarial-real": 18,
   "surquillo>san-borja-municipalidad": 2,
   "surquillo>san-borja-estacion-san-borja-sur": 9,
+  // A driver from San Borja: either stop shows "+2 min".
+  "san-borja>centro-empresarial-real": 20,
+  "san-borja>san-borja-municipalidad": 5,
+  "san-borja>san-borja-estacion-san-borja-sur": 10.9,
   // The way back.
   "centro-empresarial-real>la-molina": 20,
   "centro-empresarial-real>san-borja-municipalidad": 15,
@@ -126,6 +130,18 @@ describe("best insertion of a passenger in a driver's route", () => {
     });
   });
 
+  it("between stops that cost the same displayed minutes, picks the shorter walk", () => {
+    // From San Borja the municipalidad adds 1 free-flow min (1.72) and the station 0.9
+    // (1.55): both show as 2 min, so she should walk 1 min instead of 14.
+    const result = bestInsertion(offer({ originZoneId: "san-borja" }), need(), model);
+
+    expect(result).toMatchObject({
+      meetingPointId: "san-borja-municipalidad",
+      detourMinutes: 2,
+      walkMinutes: 1,
+    });
+  });
+
   it("rejects the insertion when the only walkable point is off the route of a driver who accepts no detour", () => {
     // Within 5 min on foot there is only the municipalidad: 6 + 16 = 22 free-flow min
     // instead of 20 straight, 3.44 min more for a driver who accepts 0.
@@ -144,6 +160,18 @@ describe("best insertion of a passenger in a driver's route", () => {
     const result = bestInsertion(
       offer({ passengers: [acceptedInSurquillo] }),
       need({ maxWalkMinutes: 5 }),
+      model,
+    );
+
+    expect(result).toEqual({ feasible: false, reason: "detour_exceeded" });
+  });
+
+  it("blames the detour, not the timetable, when going straight would arrive in her window", () => {
+    // Straight, the driver arrives at 7:34, inside 7:30-7:35; stopping at the
+    // municipalidad costs 3.44 min of detour and arrives at 7:37.8. The detour is the cause.
+    const result = bestInsertion(
+      offer({ maxDetourMinutes: 0 }),
+      need({ maxWalkMinutes: 5, windowEnd: "07:35" }),
       model,
     );
 
@@ -288,6 +316,21 @@ describe("best insertion of a passenger in a driver's route", () => {
       detourMinutes: 0,
       walkMinutes: 14,
     });
+  });
+});
+
+describe("trips that cross midnight", () => {
+  it("writes a drop-off after midnight as an early-morning time", () => {
+    // Leaving at 23:55 with free-flow traffic, the station is 9 min away: 00:04.
+    const back = { direction: "return" as const };
+
+    const result = bestInsertion(
+      offer({ ...back, departureTime: "23:55" }),
+      need({ ...back, windowStart: "23:45", windowEnd: "23:59" }),
+      model,
+    );
+
+    expect(result).toMatchObject({ pickupAt: "23:55", arrivalAt: "00:04" });
   });
 });
 

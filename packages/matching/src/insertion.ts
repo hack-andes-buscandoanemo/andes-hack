@@ -89,7 +89,8 @@ function minutesOfDay(time: string) {
 }
 
 function timeOfDay(minutes: number) {
-  const rounded = Math.round(minutes);
+  // Past midnight the clock starts again at 00:00.
+  const rounded = Math.round(minutes) % (24 * 60);
   const hours = String(Math.floor(rounded / 60)).padStart(2, "0");
   return `${hours}:${String(rounded % 60).padStart(2, "0")}`;
 }
@@ -145,43 +146,58 @@ function ruleBreak(route: OfferRoute, request: RideRequest): InfeasibleReason | 
   return null;
 }
 
-export function bestInsertion(
+interface Candidate {
+  insertion: Insertion;
+  // Minutes between the time at the destination and the middle of the passenger's window.
+  windowGap: number;
+}
+
+// Smaller detour, then shorter walk, then closer to the middle of the window, compared on
+// the rounded minutes the passenger sees.
+function byFit(a: Candidate, b: Candidate) {
+  return (
+    a.insertion.detourMinutes - b.insertion.detourMinutes ||
+    a.insertion.walkMinutes - b.insertion.walkMinutes ||
+    a.windowGap - b.windowGap
+  );
+}
+
+function bestCandidate(
   route: OfferRoute,
   request: RideRequest,
   model: TravelTimeModel,
-): InsertionResult {
+): Candidate | InfeasibleReason {
   if (route.direction !== request.direction)
     throw new Error("La oferta y la necesidad van en sentidos distintos");
   const reason = ruleBreak(route, request);
-  if (reason) return { feasible: false, reason };
+  if (reason) return reason;
 
   const day = timingDay(request);
   const outbound = route.direction === "outbound";
   const departure = minutesOfDay(route.departureTime);
+  const middle = (minutesOfDay(request.windowStart) + minutesOfDay(request.windowEnd)) / 2;
   const current = route.passengers.map((passenger) => passenger.meetingPointId);
   const currentEnd = stopTimes(route, current, day, model).at(-1)!;
   const straightEnd = stopTimes(route, [], day, model).at(-1)!;
 
-  let best: { addedMinutes: number; insertion: Insertion } | undefined;
-  let windowMet = false;
+  let best: Candidate | undefined;
+  // If some insertion keeps within the detour, the timetable is what fails.
+  let detourKept = false;
   const candidates = model.walkableMeetingPoints(request.originZoneId, request.maxWalkMinutes);
-  if (candidates.length === 0) return { feasible: false, reason: "no_walkable_meeting_point" };
+  if (candidates.length === 0) return "no_walkable_meeting_point";
   for (const { meetingPointId, walkMinutes } of candidates) {
     for (let position = 0; position <= current.length; position++) {
       const times = stopTimes(route, current.toSpliced(position, 0, meetingPointId), day, model);
       const end = times.at(-1)!;
       const stop = times[position]!;
-      const addedMinutes = end - currentEnd;
+      // The maximum bounds the driver's whole detour, every passenger's together.
+      if (end - straightEnd > route.maxDetourMinutes) continue;
+      detourKept = true;
       // Windows are about the destination: arriving there, or leaving it on the way back.
       const atDestination = outbound ? end : departure;
       if (![request, ...route.passengers].every((passenger) => within(atDestination, passenger)))
         continue;
-      windowMet = true;
-      // The maximum bounds the driver's whole detour, every passenger's together.
-      if (end - straightEnd > route.maxDetourMinutes) continue;
-      if (best && addedMinutes >= best.addedMinutes) continue;
-      best = {
-        addedMinutes,
+      const candidate: Candidate = {
         insertion: {
           feasible: true,
           meetingPointId,
@@ -189,16 +205,26 @@ export function bestInsertion(
           // On the way back passengers board at the destination and get off at their stop.
           pickupAt: timeOfDay(outbound ? stop : departure),
           arrivalAt: timeOfDay(outbound ? end : stop),
-          detourMinutes: Math.round(addedMinutes),
+          detourMinutes: Math.round(end - currentEnd),
           walkMinutes: Math.round(walkMinutes),
         },
+        windowGap: Math.abs(atDestination - middle),
       };
+      // Ties keep the first one found: nearest point, then lowest id, then earliest position.
+      if (!best || byFit(candidate, best) < 0) best = candidate;
     }
   }
 
-  if (!best)
-    return { feasible: false, reason: windowMet ? "detour_exceeded" : "outside_time_window" };
-  return best.insertion;
+  return best ?? (detourKept ? "outside_time_window" : "detour_exceeded");
+}
+
+export function bestInsertion(
+  route: OfferRoute,
+  request: RideRequest,
+  model: TravelTimeModel,
+): InsertionResult {
+  const best = bestCandidate(route, request, model);
+  return typeof best === "string" ? { feasible: false, reason: best } : best.insertion;
 }
 
 export type OfferMatch = Insertion & { offerId: string };
@@ -214,27 +240,16 @@ export function rankOffersForRequest(
   offers: readonly OfferRoute[],
   model: TravelTimeModel,
 ): OfferRanking {
-  const matches: OfferMatch[] = [];
+  const found: (Candidate & { offerId: string })[] = [];
   const turnedDown = new Map<InfeasibleReason, number>();
   for (const offer of offers) {
     if (offer.direction !== request.direction) continue;
-    const result = bestInsertion(offer, request, model);
-    if (result.feasible) matches.push({ ...result, offerId: offer.id });
-    else turnedDown.set(result.reason, (turnedDown.get(result.reason) ?? 0) + 1);
+    const best = bestCandidate(offer, request, model);
+    if (typeof best === "string") turnedDown.set(best, (turnedDown.get(best) ?? 0) + 1);
+    else found.push({ ...best, offerId: offer.id });
   }
-  // Minutes between the time at the destination and the middle of the passenger's window.
-  const middle = (minutesOfDay(request.windowStart) + minutesOfDay(request.windowEnd)) / 2;
-  const windowGap = (match: OfferMatch) =>
-    Math.abs(
-      minutesOfDay(request.direction === "outbound" ? match.arrivalAt : match.pickupAt) - middle,
-    );
-  matches.sort(
-    (a, b) =>
-      a.detourMinutes - b.detourMinutes ||
-      a.walkMinutes - b.walkMinutes ||
-      windowGap(a) - windowGap(b) ||
-      a.offerId.localeCompare(b.offerId),
-  );
+  found.sort((a, b) => byFit(a, b) || a.offerId.localeCompare(b.offerId));
+  const matches = found.map(({ insertion, offerId }) => ({ ...insertion, offerId }));
   if (matches.length > 0) return { matches, reason: null };
 
   let reason: InfeasibleReason | null = null;
