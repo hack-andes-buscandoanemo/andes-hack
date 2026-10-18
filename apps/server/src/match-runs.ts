@@ -94,6 +94,7 @@ async function loadJourney(
       windowEnd: tripRequest.windowEnd,
       maxWalkMinutes: tripRequest.maxWalkMinutes,
       fallbackMode: tripRequest.fallbackMode,
+      womenOnly: tripRequest.womenOnly,
       passengerIsWoman: communityMember.identifiesAsWoman,
     })
     .from(tripRequest)
@@ -130,8 +131,7 @@ async function loadJourney(
       {
         userId: need.passengerId!,
         communityId,
-        // ponytail: the saved need does not store the "Solo mujeres" preference; the offer's own flag still applies.
-        womenOnly: false,
+        womenOnly: need.womenOnly,
         passengerIsWoman: need.passengerIsWoman,
       },
     ),

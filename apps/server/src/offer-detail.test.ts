@@ -452,6 +452,67 @@ describe("Solo mujeres trips (US-014)", () => {
     expect(await res.json()).toMatchObject({ details: { code: "no_longer_compatible" } });
   });
 
+  it("refuses a seat with a man driver to a woman who searched with Solo mujeres", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const mateo = await createMember(alfa.id, "u-mateo", "Mateo");
+    const offer = await seedOffer(alfa.id, mateo.id);
+    await seedMeetingPoint();
+    const lucia = await createMember(alfa.id, "u-lucia", "Lucía", { identifiesAsWoman: true });
+    await requestAs(lucia, `/communities/${alfa.id}/search`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        direction: "outbound",
+        originZoneId: "san-borja",
+        windowStart: "07:30",
+        windowEnd: "08:00",
+        daysOfWeek: [1, 2, 3],
+        fallbackMode: "taxi_app",
+        womenOnly: true,
+      }),
+    });
+
+    const res = await requestAs(lucia, `/offers/${offer.id}/bookings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    });
+
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ details: { code: "no_longer_compatible" } });
+  });
+
+  it("lets her request that seat as soon as she turns Solo mujeres off in her profile", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const mateo = await createMember(alfa.id, "u-mateo", "Mateo");
+    const offer = await seedOffer(alfa.id, mateo.id);
+    await seedMeetingPoint();
+    const lucia = await createMember(alfa.id, "u-lucia", "Lucía", { identifiesAsWoman: true });
+    const send = (path: string, method: string, body: unknown) =>
+      requestAs(lucia, path, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    await send(`/communities/${alfa.id}/search`, "POST", {
+      direction: "outbound",
+      originZoneId: "san-borja",
+      windowStart: "07:30",
+      windowEnd: "08:00",
+      daysOfWeek: [1, 2, 3],
+      fallbackMode: "taxi_app",
+      womenOnly: true,
+    });
+    await send(`/communities/${alfa.id}/preferences`, "PUT", {
+      identifiesAsWoman: true,
+      womenOnly: false,
+    });
+
+    const res = await send(`/offers/${offer.id}/bookings`, "POST", {});
+
+    expect(res.status).toBe(201);
+  });
+
   it("lets a passenger who identifies as a woman request the same trip", async () => {
     const { alfa, offer } = await womenOnlyOffer();
     const lucia = await createMember(alfa.id, "u-lucia", "Lucía", { identifiesAsWoman: true });

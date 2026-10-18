@@ -67,7 +67,7 @@ async function createMember(
   communityId: string,
   id: string,
   name: string,
-  options: { identifiesAsWoman?: boolean } = {},
+  options: { identifiesAsWoman?: boolean; womenOnly?: boolean } = {},
 ) {
   const [person] = await testDb
     .insert(user)
@@ -82,6 +82,7 @@ async function createMember(
     usualMode: "drove_alone",
     travelRole: "both",
     identifiesAsWoman: options.identifiesAsWoman ?? false,
+    womenOnly: options.womenOnly ?? false,
   });
   return person!;
 }
@@ -381,6 +382,23 @@ describe("POST /communities/{id}/search (US-013)", () => {
     await morningOffer(alfa.id, driver.id);
 
     const res = await searchAs(passenger, alfa.id, { ...weekdayMorning, womenOnly: true });
+
+    const body = (await res.json()) as { matches: unknown[]; reason: string | null };
+    expect(body.matches).toEqual([]);
+    expect(body.reason).toBe("women_only");
+  });
+
+  it("applies the Solo mujeres preference from the profile when the search does not say", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    await createZones();
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const passenger = await createMember(alfa.id, "u-lucia", "Lucía", {
+      identifiesAsWoman: true,
+      womenOnly: true,
+    });
+    await morningOffer(alfa.id, driver.id);
+
+    const res = await searchAs(passenger, alfa.id, weekdayMorning);
 
     const body = (await res.json()) as { matches: unknown[]; reason: string | null };
     expect(body.matches).toEqual([]);

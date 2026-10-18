@@ -54,6 +54,8 @@ export default function SearchPage() {
         setMemberships(me.memberships);
         setCommunityId(first.communityId);
         setFallbackMode(FALLBACK_FOR_USUAL_MODE[first.usualMode ?? "other"] ?? "other");
+        // The profile's "Solo mujeres" preference is where every search starts (US-026).
+        setWomenOnly(first.womenOnly);
       })
       .catch(() => {
         if (active) setLoadError("No pudimos cargar tu cuenta. Inténtalo de nuevo.");

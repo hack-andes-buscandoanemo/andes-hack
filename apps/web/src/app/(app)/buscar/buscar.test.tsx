@@ -339,10 +339,10 @@ describe("search page /buscar (US-013)", () => {
     );
   });
 
-  it("offers Solo mujeres only to who turned that preference on, and sends it", async () => {
+  it("offers Solo mujeres only to who identifies as a woman, and sends it", async () => {
     getMe.mockResolvedValue({
       ...ME,
-      memberships: [membership({ identifiesAsWoman: true, womenOnly: true })],
+      memberships: [membership({ identifiesAsWoman: true, womenOnly: false })],
     });
     searchTrips.mockResolvedValue({
       requestId: "33333333-3333-4333-8333-333333333333",
@@ -356,6 +356,26 @@ describe("search page /buscar (US-013)", () => {
     await user.click(screen.getByRole("checkbox", { name: "Solo mujeres" }));
     await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
 
+    expect(searchTrips).toHaveBeenCalledWith(
+      COMMUNITY_ID,
+      expect.objectContaining({ womenOnly: true }),
+    );
+  });
+
+  it("starts with Solo mujeres on when the profile has it on (US-026)", async () => {
+    getMe.mockResolvedValue({
+      ...ME,
+      memberships: [membership({ identifiesAsWoman: true, womenOnly: true })],
+    });
+    searchTrips.mockResolvedValue({
+      requestId: "33333333-3333-4333-8333-333333333333",
+      matches: [],
+      reason: "women_only",
+    });
+
+    await searchFromSanBorja();
+
+    expect(screen.getByRole("checkbox", { name: "Solo mujeres" })).toBeChecked();
     expect(searchTrips).toHaveBeenCalledWith(
       COMMUNITY_ID,
       expect.objectContaining({ womenOnly: true }),

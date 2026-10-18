@@ -251,6 +251,18 @@ export const updateMembershipRoute = createRoute({
   },
 });
 
+// "Me identifico como mujer" is only used for matching: no other person ever sees it.
+export const TravelPreferencesSchema = z
+  .object({
+    identifiesAsWoman: z.boolean(),
+    womenOnly: z.boolean(),
+  })
+  .openapi("TravelPreferences");
+
+export const TravelPreferencesResponseSchema = TravelPreferencesSchema.extend({
+  message: z.string(),
+}).openapi("TravelPreferencesResponse");
+
 export function normalizePlate(raw: string): string {
   return raw.replace(/[\s-]+/g, "").toUpperCase();
 }
@@ -560,7 +572,8 @@ export const SearchTripsBodySchema = z
       .optional(),
     maxWalkMinutes: z.number().int().min(1).max(30).default(15),
     fallbackMode: FallbackModeSchema,
-    womenOnly: z.boolean().default(false),
+    // Left out, the person's "Solo mujeres" preference from their profile applies.
+    womenOnly: z.boolean().optional(),
   })
   .refine((data) => Boolean(data.date) !== Boolean(data.daysOfWeek && data.daysOfWeek.length > 0), {
     message: "Elige una fecha puntual o días habituales, pero no ambos.",
@@ -631,6 +644,37 @@ export const ApiErrorSchema = z
 const apiErrorResponse = (description: string) => ({
   description,
   content: { "application/json": { schema: ApiErrorSchema } },
+});
+
+export const updateTravelPreferencesRoute = createRoute({
+  method: "put",
+  path: "/communities/{id}/preferences",
+  tags: ["Comunidades"],
+  request: {
+    params: JoinCommunityParamsSchema,
+    body: {
+      content: {
+        "application/json": {
+          schema: TravelPreferencesSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Preferencias de viaje guardadas",
+      content: {
+        "application/json": {
+          schema: TravelPreferencesResponseSchema,
+        },
+      },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    403: apiErrorResponse("No es miembro de la comunidad (`community_membership_required`)"),
+    422: apiErrorResponse(
+      "Solo mujeres sin confirmar que se identifica como mujer (`women_only_requires_declaration`), o datos no válidos (`validation_error`)",
+    ),
+  },
 });
 
 const BookingStatusSchema = z.enum([
@@ -1212,6 +1256,7 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   verifyEmailCommunityRoute,
   getMeRoute,
   updateMembershipRoute,
+  updateTravelPreferencesRoute,
   listVehiclesRoute,
   createVehicleRoute,
   listCommunityZonesRoute,

@@ -142,3 +142,10 @@ it("documents every error the offer detail, seat request and withdrawal routes r
   ]);
   expect(codes("/bookings/{id}/cancel", "post")).toEqual(["200", "401", "404", "409", "422"]);
 });
+
+it("publishes the travel preferences route with every error it returns", () => {
+  const doc = createOpenApiDocument();
+  const responses = doc.paths?.["/communities/{id}/preferences"]?.put?.responses ?? {};
+
+  expect(Object.keys(responses).sort()).toEqual(["200", "401", "403", "422"]);
+});
