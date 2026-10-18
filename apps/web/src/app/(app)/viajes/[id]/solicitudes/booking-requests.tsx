@@ -9,6 +9,7 @@ import EmptyState from "@/components/empty-state";
 import ProfileAvatar from "@/components/profile-avatar";
 import { Button } from "@/components/ui/button";
 import { reasonOf } from "@/lib/api-error";
+import { trackEvent } from "@/lib/analytics";
 import { communitiesApi, type OfferBookingsResponse } from "@/lib/communities-api";
 
 const NO_SHOW_OPENS_MINUTES_AFTER = 10;
@@ -99,6 +100,7 @@ export default function BookingRequests({ offerId }: { offerId: string }) {
     try {
       if (action === "accept") {
         await communitiesApi.acceptBooking(bookingId);
+        trackEvent("Pasajero aceptado");
         setResult((current) =>
           current
             ? {

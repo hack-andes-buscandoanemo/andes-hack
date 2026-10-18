@@ -28,6 +28,7 @@ import {
   type PaymentMethod,
   type VehicleSummary,
 } from "@/lib/communities-api";
+import { trackEvent } from "@/lib/analytics";
 import { currentPlace, findPlaces, type Place } from "@/lib/geo";
 import { dictateOffer, dictateVehicle } from "@/lib/voice-api";
 
@@ -171,6 +172,7 @@ export default function OfferPage() {
           membership.communityId,
           parsed.data,
         );
+        trackEvent("Viaje publicado");
         setOfferSuccess(result.message);
         router.push("/viajes");
       } catch (err: unknown) {

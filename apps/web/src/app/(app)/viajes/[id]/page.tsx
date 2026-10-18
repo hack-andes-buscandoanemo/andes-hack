@@ -25,6 +25,7 @@ import RouteMap from "@/components/route-map";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { LiveBadge, TripPrice } from "@/components/trip-price";
 import { reasonOf } from "@/lib/api-error";
+import { trackEvent } from "@/lib/analytics";
 import { communitiesApi, type OfferDetail } from "@/lib/communities-api";
 import type { Coordinates } from "@/lib/geo";
 
@@ -127,6 +128,7 @@ export default function TripDetailPage() {
     setError(null);
     try {
       const { booking } = await communitiesApi.requestSeat(id, message ? { message } : {});
+      trackEvent("Solicitud de asiento enviada");
       setSentId(booking.id);
       setWithdrawn(false);
     } catch (failure) {
