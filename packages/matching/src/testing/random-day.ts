@@ -1,8 +1,8 @@
-import { bestInsertion, type Direction, type OfferRoute } from "./insertion";
-import type { FallbackMode } from "./metrics";
-import type { DayInstance, DayRequest } from "./optimizer";
-import { places } from "./places";
-import type { TravelTimeModel } from "./travel-time";
+import { bestInsertion, type Direction, type OfferRoute } from "../insertion";
+import type { FallbackMode } from "../metrics";
+import type { DayInstance, DayRequest } from "../optimizer";
+import { places } from "../places";
+import type { TravelTimeModel } from "../travel-time";
 
 // Random days of one community on the real places of Lima, always the same for the same
 // seed. For the optimizer's tests and scripts/exhaustive-optima.ts; index.ts does not
