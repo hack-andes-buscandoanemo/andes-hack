@@ -10,13 +10,11 @@ import { clockLabel } from "./schedule";
 
 export default function TripCard({
   match,
-  communityName,
   best,
   onMap = false,
   onShowMap,
 }: {
   match: TripMatch;
-  communityName: string;
   best: boolean;
   // This card's trip is the one drawn on the map above the list.
   onMap?: boolean;
@@ -40,7 +38,6 @@ export default function TripCard({
         />
         <div className="min-w-0">
           <p className="font-bold">{match.driverName}</p>
-          <p className="text-xs text-muted-foreground">{communityName}</p>
         </div>
       </div>
       <p className="text-sm font-semibold">{`${from} → ${to}`}</p>

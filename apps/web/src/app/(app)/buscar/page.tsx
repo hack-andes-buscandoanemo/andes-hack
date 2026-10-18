@@ -374,7 +374,6 @@ export default function SearchPage() {
                 <TripCard
                   key={match.offerId}
                   match={match}
-                  communityName={membership?.communityName ?? ""}
                   best={index === 0}
                   onMap={(mapOfferId ?? result.matches[0]?.offerId) === match.offerId}
                   onShowMap={() => setMapOfferId(match.offerId)}

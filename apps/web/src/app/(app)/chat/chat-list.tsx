@@ -54,7 +54,7 @@ export default function ChatList() {
                   />
                   <p>{`${chat.driverName} · ${chat.role === "driver" ? "Conductor" : "Pasajero"}`}</p>
                 </div>
-                <p>{`${chat.communityName} · ${clockLabel(chat.departureTime.slice(0, 5))}`}</p>
+                <p>{`Sale a las ${clockLabel(chat.departureTime.slice(0, 5))}`}</p>
                 {chat.meetingPointName ? (
                   <p>{`Punto de encuentro: ${chat.meetingPointName}`}</p>
                 ) : null}

@@ -377,7 +377,6 @@ export default function TripDetailPage() {
           <p className="w-fit rounded-full bg-brand-yellow px-2.5 py-0.5 text-xs font-bold text-brand-black">
             Miembro verificado
           </p>
-          <p className="text-xs text-muted-foreground">{detail.communityName}</p>
         </div>
       </section>
       <section className="space-y-1 rounded-2xl border bg-card p-4 shadow-sm">

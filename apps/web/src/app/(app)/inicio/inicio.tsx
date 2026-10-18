@@ -14,15 +14,7 @@ import Proposals from "./proposals";
 const EMPTY_TRIPS = "Aún no tienes viajes. Busca uno o publica el que ya haces.";
 
 // ponytail: matches (US-016) and impact (US-030) show empty states until built.
-export default function Inicio({
-  name,
-  communityId,
-  communityName,
-}: {
-  name: string;
-  communityId?: string;
-  communityName?: string;
-}) {
+export default function Inicio({ name, communityId }: { name: string; communityId?: string }) {
   const [trips, setTrips] = useState<MyTrip[] | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -51,14 +43,6 @@ export default function Inicio({
           <h1 className="text-3xl font-extrabold">Hola, {name} 👋</h1>
           <p className="text-muted-foreground">¿A dónde vamos hoy?</p>
         </div>
-        {communityName && (
-          <p className="flex flex-col rounded-xl bg-muted px-3 py-2 text-sm">
-            <span className="font-bold">{communityName}</span>
-            <span className="font-medium text-brand-black">
-              <span aria-hidden>✓ </span>Miembro verificado
-            </span>
-          </p>
-        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3">

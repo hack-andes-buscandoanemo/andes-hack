@@ -108,12 +108,8 @@ describe("inicio", () => {
     expect(screen.getByText("¿A dónde vamos hoy?")).toBeInTheDocument();
   });
 
-  it("shows the community chip only when the community is known", () => {
-    const { rerender } = render(<Inicio name="Ana" communityName="Universidad Nacional" />);
-    expect(screen.getByText("Universidad Nacional")).toBeInTheDocument();
-    expect(screen.getByText("Miembro verificado")).toBeInTheDocument();
-
-    rerender(<Inicio name="Ana" />);
+  it("does not show the community on the home screen", () => {
+    render(<Inicio name="Ana" />);
     expect(screen.queryByText("Miembro verificado")).not.toBeInTheDocument();
   });
 
