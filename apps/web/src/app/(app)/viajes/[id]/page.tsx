@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import EmptyState from "@/components/empty-state";
+import SourceInfo from "@/components/source-info";
 import { Button } from "@/components/ui/button";
 import { communitiesApi, type OfferDetail } from "@/lib/communities-api";
 
@@ -207,7 +208,10 @@ export default function TripDetailPage() {
         <p className="text-sm">{`Salida: ${clockLabel(detail.departureTime.slice(0, 5))}`}</p>
         {match ? (
           <>
-            <p className="text-sm">{`Llegada estimada: ${clockLabel(match.arrivalAt)}`}</p>
+            <p className="text-sm">
+              {`Llegada estimada: ${clockLabel(match.arrivalAt)}`}
+              <SourceInfo topic="tiempos" />
+            </p>
             <div className="rounded-xl bg-brand-yellow/30 p-2 text-sm">
               <p className="text-xs font-bold">Tu punto de encuentro</p>
               <p>{match.meetingPointName}</p>
@@ -222,7 +226,12 @@ export default function TripDetailPage() {
             ? "1 asiento disponible"
             : `${detail.seatsFree} asientos disponibles`}
         </p>
-        {match ? <p>{`Desvío estimado: ${match.detourMinutes} min`}</p> : null}
+        {match ? (
+          <p>
+            {`Desvío estimado: ${match.detourMinutes} min`}
+            <SourceInfo topic="tiempos" />
+          </p>
+        ) : null}
         {detail.vehicle ? (
           <>
             <p>{`Vehículo: ${detail.vehicle.make} ${detail.vehicle.model}`}</p>
