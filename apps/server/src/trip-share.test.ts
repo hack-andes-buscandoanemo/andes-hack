@@ -378,6 +378,40 @@ describe("the status of the trip", () => {
 });
 
 describe("sharing again", () => {
+  it("leaves exactly one active link when the passenger shares twice at the same moment", async () => {
+    const { passenger, booking } = await world();
+
+    const replies = await Promise.all([
+      shareAs(passenger, booking.id),
+      shareAs(passenger, booking.id),
+    ]);
+
+    expect(replies.map((reply) => reply.status)).toEqual([201, 201]);
+    const links = await testDb
+      .select()
+      .from(tripShareLink)
+      .where(eq(tripShareLink.bookingId, booking.id));
+    expect(links.filter((link) => link.revokedAt === null)).toHaveLength(1);
+  });
+
+  it("refuses a second active link for the same booking at the database", async () => {
+    const { booking } = await world();
+    const link = (tokenHash: string) => ({
+      bookingId: booking.id,
+      tokenHash,
+      expiresAt: new Date("2026-10-20T05:00:00.000Z"),
+    });
+    await testDb.insert(tripShareLink).values(link("hash-one"));
+
+    await expect(testDb.insert(tripShareLink).values(link("hash-two"))).rejects.toThrow();
+
+    await testDb
+      .update(tripShareLink)
+      .set({ revokedAt: NOW })
+      .where(eq(tripShareLink.tokenHash, "hash-one"));
+    await expect(testDb.insert(tripShareLink).values(link("hash-two"))).resolves.toBeDefined();
+  });
+
   it("replaces the previous link, so only the newest one opens", async () => {
     const { passenger, booking } = await world();
     const first = await (await shareAs(passenger, booking.id)).json();

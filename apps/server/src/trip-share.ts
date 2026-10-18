@@ -23,6 +23,9 @@ async function sha256Hex(value: string) {
   return Buffer.from(digest).toString("hex");
 }
 
+const uniqueViolation = (error: unknown) =>
+  (error as { cause?: { code?: string } }).cause?.code === "23505";
+
 // Midnight at the end of `day` in Lima (UTC-5, no daylight saving time).
 const endOfLimaDay = (day: string) => new Date(Date.parse(`${day}T00:00:00.000Z`) + 29 * HOUR_MS);
 
@@ -49,21 +52,29 @@ export async function createShareLink(
       code: "booking_not_shareable",
     });
   }
-  // One link per trip: sharing again retires the one that may have been sent to the wrong chat.
-  await database
-    .update(tripShareLink)
-    .set({ revokedAt: input.now })
-    .where(and(eq(tripShareLink.bookingId, input.bookingId), isNull(tripShareLink.revokedAt)));
   const token = newToken();
-  const [link] = await database
-    .insert(tripShareLink)
-    .values({
-      bookingId: input.bookingId,
-      tokenHash: await sha256Hex(token),
-      expiresAt: endOfLimaDay(tripDay),
-    })
-    .returning({ id: tripShareLink.id, expiresAt: tripShareLink.expiresAt });
-  return { id: link!.id, token, expiresAt: link!.expiresAt.toISOString() };
+  const tokenHash = await sha256Hex(token);
+  const expiresAt = endOfLimaDay(tripDay);
+  // One link per trip: sharing again retires the one that may have been sent to the wrong chat.
+  // The Neon HTTP driver has no transactions, so the partial unique index (one live link per
+  // booking) is what keeps this safe: if a concurrent share inserted in between, ours is
+  // refused with 23505 and retried once, which then retires that one. The newest always wins.
+  const attempt = async () => {
+    await database
+      .update(tripShareLink)
+      .set({ revokedAt: input.now })
+      .where(and(eq(tripShareLink.bookingId, input.bookingId), isNull(tripShareLink.revokedAt)));
+    const [created] = await database
+      .insert(tripShareLink)
+      .values({ bookingId: input.bookingId, tokenHash, expiresAt })
+      .returning({ id: tripShareLink.id, expiresAt: tripShareLink.expiresAt });
+    return created!;
+  };
+  const link = await attempt().catch((error: unknown) => {
+    if (uniqueViolation(error)) return attempt();
+    throw error;
+  });
+  return { id: link.id, token, expiresAt: link.expiresAt.toISOString() };
 }
 
 const unavailable = () =>
