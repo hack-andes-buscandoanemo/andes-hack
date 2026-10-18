@@ -7,5 +7,8 @@ export default defineConfig({
   fixedExtension: true,
   outDir: "./dist",
   clean: true,
-  noExternal: [/@andes-hack\/.*/],
+  dts: false,
+  deps: {
+    alwaysBundle: [/@andes-hack\/.*/],
+  },
 });
