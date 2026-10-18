@@ -1,5 +1,5 @@
 {
-  "id": "ad292cab-df74-4074-80d2-511ed393530c",
+  "id": "cb1fe98a-adef-4f5c-b581-54c2f183db4f",
   "prevId": "09a06024-4fa7-4879-9098-89738cb90bfa",
   "version": "7",
   "dialect": "postgresql",
@@ -433,7 +433,13 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "community_slug_unique": {
+          "name": "community_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": ["slug"]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -589,7 +595,13 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "community_member_community_id_user_id_unique": {
+          "name": "community_member_community_id_user_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["community_id", "user_id"]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -1354,7 +1366,13 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "vehicle_plate_unique": {
+          "name": "vehicle_plate_unique",
+          "nullsNotDistinct": false,
+          "columns": ["plate"]
+        }
+      },
       "policies": {},
       "checkConstraints": {
         "vehicle_seats_check": {

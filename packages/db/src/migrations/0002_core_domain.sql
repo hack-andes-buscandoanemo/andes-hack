@@ -21,7 +21,8 @@ CREATE TABLE "community" (
 	"join_code_hash" text,
 	"is_demo" boolean DEFAULT false NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "community_slug_unique" UNIQUE("slug")
 );
 --> statement-breakpoint
 CREATE TABLE "community_member" (
@@ -40,7 +41,8 @@ CREATE TABLE "community_member" (
 	"consent_version" text,
 	"consent_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "community_member_community_id_user_id_unique" UNIQUE("community_id","user_id")
 );
 --> statement-breakpoint
 CREATE TABLE "meeting_point" (
@@ -133,6 +135,7 @@ CREATE TABLE "vehicle" (
 	"seats" smallint NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "vehicle_plate_unique" UNIQUE("plate"),
 	CONSTRAINT "vehicle_seats_check" CHECK ("vehicle"."seats" BETWEEN 1 AND 6)
 );
 --> statement-breakpoint

@@ -6,6 +6,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -36,7 +37,7 @@ export const travelRoleEnum = pgEnum("travel_role", ["driver", "passenger", "bot
 
 export const community = pgTable("community", {
   id: uuid("id").primaryKey().defaultRandom(),
-  slug: text("slug").notNull(),
+  slug: text("slug").notNull().unique(),
   name: text("name").notNull(),
   kind: communityKindEnum("kind").notNull(),
   destinationName: text("destination_name").notNull(),
@@ -72,7 +73,11 @@ export const communityMember = pgTable(
     consentAt: timestamp("consent_at", { withTimezone: true }),
     ...timestamps,
   },
-  (table) => [index("community_member_user_id_idx").on(table.userId)],
+  (table) => [
+    // Its index, led by community_id, also serves the lookups by community.
+    unique("community_member_community_id_user_id_unique").on(table.communityId, table.userId),
+    index("community_member_user_id_idx").on(table.userId),
+  ],
 );
 
 export type Community = typeof community.$inferSelect;

@@ -37,7 +37,7 @@ async function first<T>(rows: Promise<T[]>) {
   return row;
 }
 
-async function givenCommunity() {
+async function givenCommunity(values: Partial<typeof community.$inferInsert> = {}) {
   sequence += 1;
   return first(
     db
@@ -49,6 +49,7 @@ async function givenCommunity() {
         destinationName: "Sede de prueba",
         destinationLat: -12.0975,
         destinationLng: -77.0356,
+        ...values,
       })
       .returning(),
   );
@@ -175,6 +176,7 @@ async function givenNeed(
 
 // SQLSTATE codes from the PostgreSQL manual, appendix A.
 const checkViolation = (constraint: string) => ({ cause: { code: "23514", constraint } });
+const uniqueViolation = (constraint: string) => ({ cause: { code: "23505", constraint } });
 
 describe("core domain schema on a freshly migrated database", () => {
   test("a passenger requests a seat on a driver's offer and the booking starts pending", async () => {
@@ -200,6 +202,40 @@ describe("core domain schema on a freshly migrated database", () => {
     );
 
     expect(booking.status).toBe("pending");
+  });
+});
+
+describe("unique keys", () => {
+  test("rejects a second membership of the same person in the same community", async () => {
+    const team = await givenCommunity();
+    const person = await givenMember(team.id);
+
+    await expect(
+      db.insert(communityMember).values({
+        communityId: team.id,
+        userId: person.id,
+        verificationMethod: "email_domain",
+      }),
+    ).rejects.toMatchObject(uniqueViolation("community_member_community_id_user_id_unique"));
+  });
+
+  test("rejects a second community with the same slug", async () => {
+    const team = await givenCommunity();
+
+    await expect(givenCommunity({ slug: team.slug })).rejects.toMatchObject(
+      uniqueViolation("community_slug_unique"),
+    );
+  });
+
+  test("rejects registering a plate that another vehicle already has", async () => {
+    const team = await givenCommunity();
+    const owner = await givenMember(team.id);
+    const neighbour = await givenMember(team.id);
+    const car = await givenVehicle(owner.id);
+
+    await expect(givenVehicle(neighbour.id, { plate: car.plate })).rejects.toMatchObject(
+      uniqueViolation("vehicle_plate_unique"),
+    );
   });
 });
 

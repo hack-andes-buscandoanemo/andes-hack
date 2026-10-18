@@ -11,7 +11,8 @@ export const vehicle = pgTable(
     ownerId: text("owner_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    plate: text("plate").notNull(),
+    // Normalised by the API before it is stored (US-012); unique across owners.
+    plate: text("plate").notNull().unique(),
     make: text("make").notNull(),
     model: text("model").notNull(),
     color: text("color").notNull(),
