@@ -99,6 +99,10 @@ function within(minutes: number, window: { windowStart: string; windowEnd: strin
   return minutes >= minutesOfDay(window.windowStart) && minutes <= minutesOfDay(window.windowEnd);
 }
 
+// A stop right on the way adds 0 min of detour give or take the rounding error of the
+// legs' sum, so the maximum has to be exceeded by more than this to count.
+const detourTolerance = 1e-9;
+
 function limaInstant(day: string, minutes: number) {
   return new Date(Date.parse(`${day}T00:00:00-05:00`) + minutes * 60_000);
 }
@@ -188,13 +192,13 @@ function bestCandidate(
   route: OfferRoute,
   request: RideRequest,
   model: TravelTimeModel,
+  day: string,
 ): Candidate | InfeasibleReason {
   if (route.direction !== request.direction)
     throw new Error("La oferta y la necesidad van en sentidos distintos");
   const reason = firstBrokenRule(route, request);
   if (reason) return reason;
 
-  const day = timingDay(request);
   const outbound = route.direction === "outbound";
   const departure = minutesOfDay(route.departureTime);
   const middle = (minutesOfDay(request.windowStart) + minutesOfDay(request.windowEnd)) / 2;
@@ -213,9 +217,8 @@ function bestCandidate(
       const times = stopTimes(route, current.toSpliced(position, 0, meetingPointId), day, model);
       const end = times.at(-1)!;
       const stop = times[position]!;
-      // The maximum bounds the driver's whole detour, every passenger's together. A stop
-      // right on the way adds 0 min give or take the rounding error of the legs' sum.
-      if (end - straightEnd > route.maxDetourMinutes + 1e-9) continue;
+      // The maximum bounds the driver's whole detour, every passenger's together.
+      if (end - straightEnd > route.maxDetourMinutes + detourTolerance) continue;
       detourKept = true;
       // Windows are about the destination: arriving there, or leaving it on the way back.
       const atDestination = outbound ? end : departure;
@@ -242,13 +245,28 @@ function bestCandidate(
   return best ?? (detourKept ? "outside_time_window" : "detour_exceeded");
 }
 
+// `day` is when the trip is timed; the optimizer (US-017) passes the day it plans.
 export function bestInsertion(
   route: OfferRoute,
   request: RideRequest,
   model: TravelTimeModel,
+  day = timingDay(request),
 ): InsertionResult {
-  const best = bestCandidate(route, request, model);
+  const best = bestCandidate(route, request, model, day);
   return typeof best === "string" ? { feasible: false, reason: best } : best.insertion;
+}
+
+// Whether a route as it stands keeps the rules that hold for everyone on board: the seats,
+// the driver's maximum detour and every passenger's window. Taking someone off a route
+// moves the arrival, so the optimizer (US-017) checks the route again.
+export function routeFits(route: OfferRoute, day: string, model: TravelTimeModel): boolean {
+  if (route.passengers.length > route.seatsTotal) return false;
+  const stops = route.passengers.map((passenger) => passenger.meetingPointId);
+  const end = stopTimes(route, stops, day, model).at(-1)!;
+  const straightEnd = stopTimes(route, [], day, model).at(-1)!;
+  if (end - straightEnd > route.maxDetourMinutes + detourTolerance) return false;
+  const atDestination = route.direction === "outbound" ? end : minutesOfDay(route.departureTime);
+  return route.passengers.every((passenger) => within(atDestination, passenger));
 }
 
 export type OfferMatch = Insertion & { offerId: string };
@@ -263,12 +281,13 @@ export function rankOffersForRequest(
   request: RideRequest,
   offers: readonly OfferRoute[],
   model: TravelTimeModel,
+  day = timingDay(request),
 ): OfferRanking {
   const found: (Candidate & { offerId: string })[] = [];
   const turnedDown = new Map<InfeasibleReason, number>();
   for (const offer of offers) {
     if (offer.direction !== request.direction) continue;
-    const best = bestCandidate(offer, request, model);
+    const best = bestCandidate(offer, request, model, day);
     if (typeof best === "string") turnedDown.set(best, (turnedDown.get(best) ?? 0) + 1);
     else found.push({ ...best, offerId: offer.id });
   }

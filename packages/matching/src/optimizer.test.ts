@@ -67,6 +67,16 @@ function offer(overrides: Partial<OfferRoute> = {}): OfferRoute {
   };
 }
 
+// Lucía leaves Surquillo at 7:20; through the municipalidad she arrives at
+// 7:20 + 18 × 1.72 = 7:51. Carlos arrives at 7:38.
+const lucia = offer({
+  id: "lucia",
+  originZoneId: "surquillo",
+  departureTime: "07:20",
+  seatsTotal: 1,
+  maxDetourMinutes: 10,
+});
+
 // Someone from San Borja who wants to arrive between 7:30 and 8:00 and would drive alone.
 function request(passengerId: string, overrides: Partial<DayRequest> = {}): DayRequest {
   return {
@@ -106,21 +116,12 @@ describe("seats of a day assigned to maximise the car trips avoided", () => {
     ]);
   });
 
-  it("seats first the passenger with fewer options, so both fit", () => {
-    // Lucía leaves Surquillo at 7:20; through the municipalidad she arrives at
-    // 7:20 + 18 × 1.72 = 7:51. Carlos arrives at 7:38.
-    const lucia = offer({
-      id: "lucia",
-      originZoneId: "surquillo",
-      departureTime: "07:20",
-      seatsTotal: 1,
-      maxDetourMinutes: 10,
-    });
-    // Ana fits in both cars and costs Carlos less (3 min against 5); Bruno must arrive by
-    // 7:45, so only Carlos takes him.
-    const ana = request("ana", { windowEnd: "08:30" });
-    const bruno = request("bruno", { windowEnd: "07:45" });
+  // Ana fits in both cars and costs Carlos less (3 min against Lucía's 5); Bruno must arrive
+  // by 7:45, so only Carlos takes him.
+  const ana = request("ana", { windowEnd: "08:30" });
+  const bruno = request("bruno", { windowEnd: "07:45" });
 
+  it("seats first the passenger with fewer options, so both fit", () => {
     const plan = optimizeDay(
       { date: monday, offers: [offer({ seatsTotal: 1 }), lucia], requests: [ana, bruno] },
       model,
@@ -131,6 +132,22 @@ describe("seats of a day assigned to maximise the car trips avoided", () => {
       ["bruno", "carlos"],
     ]);
     expect(plan.unassigned).toEqual([]);
+  });
+
+  it("moves someone who would drive to another car to make room for a bus rider who fits only there", () => {
+    // Ana goes first because she would drive, and takes Carlos's cheaper seat; moving her
+    // to Lucía keeps her car trip avoided and seats Bruno too.
+    const busRider = { ...bruno, fallbackMode: "public_transport" as const };
+
+    const plan = optimizeDay(
+      { date: monday, offers: [offer({ seatsTotal: 1 }), lucia], requests: [ana, busRider] },
+      model,
+    );
+
+    expect(plan.assignments.map(({ passengerId, offerId }) => [passengerId, offerId])).toEqual([
+      ["ana", "lucia"],
+      ["bruno", "carlos"],
+    ]);
   });
 
   it("reports each passenger's times on the final route, after everyone is seated", () => {

@@ -1,9 +1,12 @@
 import {
+  bestInsertion,
   type InfeasibleReason,
+  type Insertion,
   type OfferMatch,
   type OfferRoute,
   rankOffersForRequest,
   type RideRequest,
+  routeFits,
   timeRoute,
 } from "./insertion";
 import { avoidsCarTrip, type FallbackMode } from "./metrics";
@@ -11,6 +14,9 @@ import type { TravelTimeModel } from "./travel-time";
 
 // Assigns the seats of one day among every passenger still looking for one. Nothing is
 // written: the plan is a recommendation each driver still accepts or rejects (US-019).
+//
+// Regret insertion builds a first plan, then a local search moves passengers between cars
+// while the objective improves. No step is random, so the same day gives the same plan.
 
 // An open need, or one with a pending request. `id` is the need's.
 export interface DayRequest extends RideRequest {
@@ -20,11 +26,16 @@ export interface DayRequest extends RideRequest {
 }
 
 export interface DayInstance {
-  // The day, "YYYY-MM-DD".
+  // The day, "YYYY-MM-DD"; every route is timed on it.
   date: string;
   // Their accepted passengers stay where they are; rejected pairs are never proposed.
   offers: readonly OfferRoute[];
   requests: readonly DayRequest[];
+}
+
+export interface OptimizeOptions {
+  // How long the local search may run; the plan it has by then is returned.
+  timeBudgetMs?: number;
 }
 
 export interface Assignment {
@@ -63,6 +74,45 @@ export interface DayPlan {
   objective: Objective;
 }
 
+// Someone the plan seats, with what their insertion cost.
+interface Rider {
+  request: DayRequest;
+  detourMinutes: number;
+  walkMinutes: number;
+}
+
+// An offer as the plan stands: the route with every stop, who the plan seats at each
+// (null where the driver had already accepted someone), and its share of the objective.
+interface Car {
+  route: OfferRoute;
+  riders: readonly (Rider | null)[];
+  score: Objective;
+}
+
+const nothing: Objective = {
+  carTripsAvoided: 0,
+  passengersMatched: 0,
+  detourMinutes: 0,
+  walkMinutes: 0,
+};
+
+const plus = (a: Objective, b: Objective, sign = 1): Objective => ({
+  carTripsAvoided: a.carTripsAvoided + sign * b.carTripsAvoided,
+  passengersMatched: a.passengersMatched + sign * b.passengersMatched,
+  detourMinutes: a.detourMinutes + sign * b.detourMinutes,
+  walkMinutes: a.walkMinutes + sign * b.walkMinutes,
+});
+
+// Positive when `a` is the better plan.
+function compare(a: Objective, b: Objective) {
+  return (
+    a.carTripsAvoided - b.carTripsAvoided ||
+    a.passengersMatched - b.passengersMatched ||
+    b.detourMinutes - a.detourMinutes ||
+    b.walkMinutes - a.walkMinutes
+  );
+}
+
 interface Candidate {
   request: DayRequest;
   // Its feasible offers, best first, on the routes as they stand.
@@ -90,86 +140,197 @@ function seatsFirst(a: Candidate, b: Candidate) {
   );
 }
 
-export function optimizeDay(instance: DayInstance, model: TravelTimeModel): DayPlan {
-  const routes = new Map(instance.offers.map((offer) => [offer.id, offer]));
-  // Who sits at each stop of a route, in its order: a request's id, or null for a
-  // passenger the driver had already accepted.
-  const riders = new Map(
-    instance.offers.map((offer) => [offer.id, offer.passengers.map((): string | null => null)]),
+export function optimizeDay(
+  instance: DayInstance,
+  model: TravelTimeModel,
+  options: OptimizeOptions = {},
+): DayPlan {
+  const { date } = instance;
+  const deadline = performance.now() + (options.timeBudgetMs ?? 1000);
+  const accepted = new Map(
+    instance.offers.map((offer) => [offer.id, timeRoute(offer, date, model).minutes]),
   );
-  const seated = new Map<string, Assignment>();
-  let waiting = instance.requests;
+
+  function car(route: OfferRoute, riders: readonly (Rider | null)[]): Car {
+    const seated = riders.filter((rider) => rider !== null);
+    if (seated.length === 0) return { route, riders, score: nothing };
+    const minutes = timeRoute(route, date, model).minutes;
+    const score = {
+      carTripsAvoided: seated.filter((rider) => avoidsCarTrip(rider.request.fallbackMode)).length,
+      passengersMatched: seated.length,
+      detourMinutes: Math.round(minutes - accepted.get(route.id)!),
+      walkMinutes: seated.reduce((sum, rider) => sum + rider.walkMinutes, 0),
+    };
+    return { route, riders, score };
+  }
+
+  function seat(current: Car, request: DayRequest, insertion: Insertion): Car {
+    const { meetingPointId, position, detourMinutes, walkMinutes } = insertion;
+    const { windowStart, windowEnd } = request;
+    const stop = { meetingPointId, windowStart, windowEnd };
+    return car(
+      { ...current.route, passengers: current.route.passengers.toSpliced(position, 0, stop) },
+      current.riders.toSpliced(position, 0, { request, detourMinutes, walkMinutes }),
+    );
+  }
+
+  function withRider(current: Car, request: DayRequest): Car | null {
+    const insertion = bestInsertion(current.route, request, model, date);
+    return insertion.feasible ? seat(current, request, insertion) : null;
+  }
+
+  // Null when the others no longer fit without them, say because the car now arrives
+  // before someone's window opens.
+  function withoutRider(current: Car, request: DayRequest): Car | null {
+    const stop = current.riders.findIndex((rider) => rider?.request === request);
+    const route = { ...current.route, passengers: current.route.passengers.toSpliced(stop, 1) };
+    return routeFits(route, date, model) ? car(route, current.riders.toSpliced(stop, 1)) : null;
+  }
+
+  const cars = new Map(
+    instance.offers.map((offer) => [
+      offer.id,
+      car(
+        offer,
+        offer.passengers.map(() => null),
+      ),
+    ]),
+  );
+  const seatedOn = new Map<DayRequest, string>();
+  const waiting = () => instance.requests.filter((request) => !seatedOn.has(request));
 
   // Regret insertion: one passenger per round, until nobody waiting fits anywhere.
   for (;;) {
-    const candidates = waiting
+    const routes = [...cars.values()].map((current) => current.route);
+    const candidates = waiting()
       .map((request) => ({
         request,
-        matches: rankOffersForRequest(request, [...routes.values()], model).matches,
+        matches: rankOffersForRequest(request, routes, model, date).matches,
       }))
       .filter((candidate) => candidate.matches.length > 0);
     // Stable, so a full tie goes to whoever asked first.
     const next = candidates.toSorted(seatsFirst)[0];
     if (!next) break;
-    const { request } = next;
     const best = next.matches[0]!;
-    waiting = waiting.filter((other) => other !== request);
-    const route = routes.get(best.offerId)!;
-    const stop = {
-      meetingPointId: best.meetingPointId,
-      windowStart: request.windowStart,
-      windowEnd: request.windowEnd,
-    };
-    routes.set(route.id, {
-      ...route,
-      passengers: route.passengers.toSpliced(best.position, 0, stop),
-    });
-    riders.set(route.id, riders.get(route.id)!.toSpliced(best.position, 0, request.id));
-    seated.set(request.id, {
-      requestId: request.id,
-      passengerId: request.passengerId,
-      offerId: best.offerId,
-      meetingPointId: best.meetingPointId,
-      position: best.position,
-      pickupAt: best.pickupAt,
-      arrivalAt: best.arrivalAt,
-      detourMinutes: best.detourMinutes,
-      walkMinutes: best.walkMinutes,
-      avoidsCarTrip: avoidsCarTrip(request.fallbackMode),
-    });
+    cars.set(best.offerId, seat(cars.get(best.offerId)!, next.request, best));
+    seatedOn.set(next.request, best.offerId);
   }
 
-  const offers = [...routes.values()];
-  let detourMinutes = 0;
-  for (const offer of instance.offers) {
-    const ids = riders.get(offer.id)!;
-    if (ids.every((requestId) => requestId === null)) continue;
+  // The offers a passenger could ever join. Seating others can only change the time a car
+  // reaches the destination, so an offer that turns them down for anything else is out.
+  const reachable = new Map(
+    instance.requests.map((request) => [
+      request,
+      instance.offers.filter((offer) => {
+        const alone = bestInsertion(offer, request, model, date);
+        return alone.feasible || alone.reason === "outside_time_window";
+      }),
+    ]),
+  );
+
+  // Every plan one move away, as the cars it changes.
+  function* moves(): Generator<Car[]> {
+    for (const request of waiting()) {
+      for (const offer of reachable.get(request)!) {
+        const target = cars.get(offer.id)!;
+        const joined = withRider(target, request);
+        if (joined) yield [joined];
+        // Make room: take someone off, and seat them elsewhere if possible.
+        for (const rider of target.riders) {
+          if (!rider) continue;
+          const freed = withoutRider(target, rider.request);
+          const replaced = freed && withRider(freed, request);
+          if (!replaced) continue;
+          yield [replaced];
+          for (const other of reachable.get(rider.request)!) {
+            if (other.id === offer.id) continue;
+            const moved = withRider(cars.get(other.id)!, rider.request);
+            if (moved) yield [replaced, moved];
+          }
+        }
+      }
+    }
+    for (const [request, from] of seatedOn) {
+      const source = withoutRider(cars.get(from)!, request);
+      if (!source) continue;
+      for (const offer of reachable.get(request)!) {
+        if (offer.id === from) {
+          const again = withRider(source, request);
+          if (again) yield [again];
+          continue;
+        }
+        const target = cars.get(offer.id)!;
+        const moved = withRider(target, request);
+        if (moved) yield [source, moved];
+        // Swap with someone who can take this seat.
+        for (const rider of target.riders) {
+          if (!rider || !reachable.get(rider.request)!.some(({ id }) => id === from)) continue;
+          const freed = withoutRider(target, rider.request);
+          const swappedIn = freed && withRider(freed, request);
+          const swappedBack = swappedIn && withRider(source, rider.request);
+          if (swappedBack) yield [swappedBack, swappedIn];
+        }
+      }
+    }
+  }
+
+  let total = [...cars.values()].reduce((sum, current) => plus(sum, current.score), nothing);
+  search: while (performance.now() < deadline) {
+    for (const changed of moves()) {
+      const next = changed.reduce(
+        (sum, current) => plus(plus(sum, current.score), cars.get(current.route.id)!.score, -1),
+        total,
+      );
+      if (compare(next, total) > 0) {
+        for (const current of changed) {
+          cars.set(current.route.id, current);
+          for (const rider of cars.get(current.route.id)!.riders)
+            if (rider) seatedOn.set(rider.request, current.route.id);
+        }
+        // Whoever no car carries any more is waiting again.
+        for (const [request, offerId] of seatedOn)
+          if (!cars.get(offerId)!.riders.some((rider) => rider?.request === request))
+            seatedOn.delete(request);
+        total = next;
+        continue search;
+      }
+      if (performance.now() >= deadline) break search;
+    }
+    break;
+  }
+
+  const seated = new Map<DayRequest, Assignment>();
+  for (const { route, riders } of cars.values()) {
+    if (riders.every((rider) => rider === null)) continue;
     // Seating someone ahead of a passenger delays them, so times come from the final route.
-    const timing = timeRoute(routes.get(offer.id)!, instance.date, model);
-    ids.forEach((requestId, stop) => {
-      const assignment = requestId === null ? undefined : seated.get(requestId);
-      if (assignment)
-        seated.set(assignment.requestId, { ...assignment, ...timing.stops[stop]!, position: stop });
+    const timing = timeRoute(route, date, model);
+    riders.forEach((rider, position) => {
+      if (!rider) return;
+      const { request, detourMinutes, walkMinutes } = rider;
+      seated.set(request, {
+        requestId: request.id,
+        passengerId: request.passengerId,
+        offerId: route.id,
+        meetingPointId: route.passengers[position]!.meetingPointId,
+        position,
+        ...timing.stops[position]!,
+        detourMinutes,
+        walkMinutes,
+        avoidsCarTrip: avoidsCarTrip(request.fallbackMode),
+      });
     });
-    // What the plan adds to the trip the driver already had.
-    detourMinutes += Math.round(timing.minutes - timeRoute(offer, instance.date, model).minutes);
   }
-  const assignments = instance.requests.flatMap((request) => seated.get(request.id) ?? []);
 
+  const routes = [...cars.values()].map((current) => current.route);
   return {
     // In the order the requests came.
-    assignments,
+    assignments: instance.requests.flatMap((request) => seated.get(request) ?? []),
     // Why each one is left out, on the final routes.
-    unassigned: waiting.map((request) => ({
+    unassigned: waiting().map((request) => ({
       requestId: request.id,
       passengerId: request.passengerId,
-      reason: rankOffersForRequest(request, offers, model).reason!,
+      reason: rankOffersForRequest(request, routes, model, date).reason!,
     })),
-    objective: {
-      carTripsAvoided: assignments.filter((assignment) => assignment.avoidsCarTrip).length,
-      passengersMatched: assignments.length,
-      detourMinutes,
-      walkMinutes: assignments.reduce((sum, assignment) => sum + assignment.walkMinutes, 0),
-    },
+    objective: total,
   };
 }
