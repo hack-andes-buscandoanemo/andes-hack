@@ -410,6 +410,8 @@ describe("GET /communities/{id}/proposals (US-019)", () => {
           pickupAt: "07:29",
           arrivalAt: "07:44",
           walkMinutes: 14,
+          // La Molina → Centro Empresarial Real, 15.77 km: S/ 10,04 between Mateo and Lucía.
+          fuelEstimate: { tripSoles: 10.04, perOccupantSoles: 5.02, occupants: 2 },
         },
       ],
     });

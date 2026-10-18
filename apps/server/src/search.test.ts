@@ -228,6 +228,8 @@ describe("POST /communities/{id}/search (US-013)", () => {
         arrivalAt: "07:44",
         detourMinutes: 6,
         walkMinutes: 14,
+        // La Molina → Centro Empresarial Real, 15.77 km: S/ 10,04 between Mateo and Lucía.
+        fuelEstimate: { tripSoles: 10.04, perOccupantSoles: 5.02, occupants: 2 },
       },
     ]);
   });
@@ -276,9 +278,30 @@ describe("POST /communities/{id}/search (US-013)", () => {
 
     const res = await searchAs(passenger, alfa.id, weekdayMorning);
 
-    const body = (await res.json()) as { matches: { seatsFree: number }[]; reason: string | null };
+    const body = (await res.json()) as {
+      matches: { seatsFree: number; fuelEstimate: unknown }[];
+      reason: string | null;
+    };
     expect(body.reason).toBeNull();
     expect(body.matches.map((match) => match.seatsFree)).toEqual([2]);
+    // The driver, Rosa (accepted) and Lucía would share the S/ 10,04 of the leg.
+    expect(body.matches.map((match) => match.fuelEstimate)).toEqual([
+      { tripSoles: 10.04, perOccupantSoles: 3.34, occupants: 3 },
+    ]);
+  });
+
+  it("does not count a passenger already accepted on the trip twice when they search again", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    await seedOfferWithAcceptedRider(alfa.id, 3);
+    const rosa = { id: "u-rosa" };
+
+    const res = await searchAs(rosa, alfa.id, weekdayMorning);
+
+    const body = (await res.json()) as { matches: { fuelEstimate: unknown }[] };
+    // Rosa is already aboard with the driver: the same S/ 5,02 she sees on the trip detail.
+    expect(body.matches.map((match) => match.fuelEstimate)).toEqual([
+      { tripSoles: 10.04, perOccupantSoles: 5.02, occupants: 2 },
+    ]);
   });
 
   it("keeps one active need per direction and saves it even when nothing matches", async () => {

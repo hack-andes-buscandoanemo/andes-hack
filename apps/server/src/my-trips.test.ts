@@ -214,9 +214,26 @@ describe("GET /me/trips", () => {
           seatsFree: null,
           pendingRequests: null,
           acceptedPassengers: null,
+          // La Molina → Centro Empresarial Real, 15.77 km: S/ 10,04 between Carlos and Lucía.
+          fuelEstimate: { tripSoles: 10.04, perOccupantSoles: 5.02, occupants: 2 },
         },
       ],
     });
+  });
+  it("counts a passenger still waiting as one more occupant than those already aboard", async () => {
+    const org = await seedWorld();
+    const driver = await createMember(org.id, "driver-1", "Carlos Quispe", "Carlos Q.");
+    const aboard = await createMember(org.id, "pax-1", "Lucía Ramos");
+    const waiting = await createMember(org.id, "pax-2", "Mario Soto");
+    const { offer } = await createOffer(org.id, driver.id);
+    await book(offer, aboard.id, "accepted");
+    await book(offer, waiting.id, "pending");
+
+    const body = await (await requestAs(waiting, "/me/trips?role=passenger&scope=upcoming")).json();
+
+    expect(body.trips.map((trip) => trip.fuelEstimate)).toEqual([
+      { tripSoles: 10.04, perOccupantSoles: 3.34, occupants: 3 },
+    ]);
   });
   it("hides the driver's alias and plate while the request is not accepted", async () => {
     const org = await seedWorld();
@@ -348,6 +365,8 @@ describe("GET /me/trips", () => {
           seatsFree: 2,
           pendingRequests: 1,
           acceptedPassengers: ["Lucía R."],
+          // Carlos and Lucía share the leg; Mario is not aboard until accepted.
+          fuelEstimate: { tripSoles: 10.04, perOccupantSoles: 5.02, occupants: 2 },
         },
       ],
     });

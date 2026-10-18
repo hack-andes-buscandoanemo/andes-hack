@@ -16,6 +16,7 @@ import { and, desc, eq, gte, inArray, isNull, notExists, notInArray, or, sql } f
 import { alias } from "drizzle-orm/pg-core";
 import type { z } from "zod";
 
+import { acceptedCountByOffer, fuelEstimateFor, occupantsSharingFuel } from "./fuel-estimate";
 import type { JourneyLock } from "./lib/journey-lock";
 import { logEvent } from "./lib/logger";
 import { destinationOf, loadOfferRoutes, toRideRequest } from "./search";
@@ -249,9 +250,12 @@ export async function listProposals(
       pickupAt: matchSuggestion.pickupAt,
       arrivalAt: matchSuggestion.arrivalAt,
       walkMinutes: matchSuggestion.walkMinutes,
+      originZoneId: tripOffer.originZoneId,
+      destinationName: community.destinationName,
     })
     .from(matchSuggestion)
     .innerJoin(matchRun, eq(matchSuggestion.runId, matchRun.id))
+    .innerJoin(community, eq(matchRun.communityId, community.id))
     .innerJoin(tripOffer, eq(matchSuggestion.offerId, tripOffer.id))
     .innerJoin(tripRequest, eq(matchSuggestion.requestId, tripRequest.id))
     .leftJoin(driverAccount, eq(tripOffer.driverId, driverAccount.id))
@@ -293,6 +297,12 @@ export async function listProposals(
       ),
     )
     .orderBy(matchRun.date, matchSuggestion.pickupAt);
+
+  const acceptedCount = await acceptedCountByOffer(
+    database,
+    rows.map((row) => row.offerId),
+  );
+
   return {
     proposals: rows.map((row) => ({
       suggestionId: row.suggestionId,
@@ -304,6 +314,13 @@ export async function listProposals(
       pickupAt: row.pickupAt.slice(0, 5),
       arrivalAt: row.arrivalAt.slice(0, 5),
       walkMinutes: row.walkMinutes,
+      // The person is only proposed a seat, so not aboard yet.
+      fuelEstimate: fuelEstimateFor({
+        direction: row.direction,
+        originZoneId: row.originZoneId,
+        destinationId: destinationOf(row).id,
+        occupants: occupantsSharingFuel(acceptedCount.get(row.offerId) ?? 0, false),
+      }),
     })),
   };
 }
