@@ -1,11 +1,5 @@
-import SectionPage from "@/components/section-page";
+import ChatList from "./chat-list";
 
-// ponytail: chat arrives with its own story.
 export default function ChatPage() {
-  return (
-    <SectionPage
-      title="Chat"
-      empty="Aún no tienes conversaciones. Aparecerán cuando aceptes un viaje."
-    />
-  );
+  return <ChatList />;
 }

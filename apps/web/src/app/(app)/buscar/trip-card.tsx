@@ -1,18 +1,11 @@
 import Link from "next/link";
+import type { Route } from "next";
 
 import { FuelShareLine } from "@/components/fuel-estimate";
+import ProfileAvatar from "@/components/profile-avatar";
 import type { TripMatch } from "@/lib/communities-api";
 
 import { clockLabel } from "./schedule";
-
-function initialsOf(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0]!.toUpperCase())
-    .join("");
-}
 
 export default function TripCard({
   match,
@@ -34,12 +27,11 @@ export default function TripCard({
         </span>
       ) : null}
       <div className="flex items-center gap-3">
-        <span
-          aria-hidden
-          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-brand-black text-sm font-bold text-white"
-        >
-          {initialsOf(match.driverName)}
-        </span>
+        <ProfileAvatar
+          name={match.driverName}
+          photoUrl={match.driverPhotoUrl}
+          className="size-11"
+        />
         <div className="min-w-0">
           <p className="font-bold">{match.driverName}</p>
           <p className="text-xs text-muted-foreground">{communityName}</p>
@@ -59,7 +51,10 @@ export default function TripCard({
         <li className="rounded-full bg-muted px-2.5 py-0.5">{`Llega ${match.arrivalAt}`}</li>
       </ul>
       <FuelShareLine estimate={match.fuelEstimate} />
-      <Link href={`/viajes/${match.offerId}`} className="w-fit text-sm font-bold underline">
+      <Link
+        href={`/viajes/${match.offerId}` as Route}
+        className="flex min-h-11 items-center justify-center rounded-xl border font-bold"
+      >
         Ver viaje
       </Link>
     </li>

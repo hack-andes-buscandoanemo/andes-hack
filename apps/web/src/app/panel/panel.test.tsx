@@ -214,6 +214,27 @@ describe("Panel", () => {
     expect(screen.queryByRole("region", { name: "Impacto vehicular" })).not.toBeInTheDocument();
   });
 
+  it("shows retained completed trips after the last member deletes their account", async () => {
+    statsResponse.mockResolvedValue({
+      ...STATS,
+      activity: {
+        enrolled: 0,
+        drivers: 0,
+        activeOffers: 0,
+        openNeeds: 0,
+        coverage: null,
+        acceptedRequests: 0,
+        completedTrips: 1,
+      },
+    });
+
+    render(<Panel />);
+
+    expect(await screen.findByText("Viajes completados")).toBeInTheDocument();
+    expect(screen.getByText("Viajes completados").nextSibling).toHaveTextContent("1");
+    expect(screen.queryByText("Aún no hay actividad en esta comunidad.")).not.toBeInTheDocument();
+  });
+
   it("loads another community when it is picked in the selector", async () => {
     render(<Panel />);
     const selector = await screen.findByRole("combobox", { name: "Comunidad" });

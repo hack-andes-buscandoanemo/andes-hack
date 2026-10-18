@@ -4,6 +4,7 @@ import { httpClient } from "./http-client";
 export type CommunitySummary = components["schemas"]["CommunitySummary"];
 export type JoinCommunityResponse = components["schemas"]["JoinCommunityResponse"];
 export type MeResponse = components["schemas"]["MeResponse"];
+export type DeleteMeResponse = components["schemas"]["DeleteMeResponse"];
 export type MembershipSummary = components["schemas"]["MembershipSummary"];
 export type UpdateMembershipRequest = components["schemas"]["UpdateMembershipRequest"];
 export type TravelPreferences = components["schemas"]["TravelPreferences"];
@@ -18,16 +19,31 @@ export type SearchTripsRequest = components["schemas"]["SearchTripsRequest"];
 export type SearchTripsResponse = components["schemas"]["SearchTripsResponse"];
 export type TripMatch = components["schemas"]["TripMatch"];
 export type OfferDetail = components["schemas"]["OfferDetail"];
-export type RequestSeatResponse = components["schemas"]["RequestSeatResponse"];
 export type MyTrip = components["schemas"]["MyTrip"];
 export type MyTripsResponse = components["schemas"]["MyTripsResponse"];
+export type RequestSeatRequest = components["schemas"]["RequestSeatRequest"];
+export type RequestSeatResponse = components["schemas"]["RequestSeatResponse"];
 export type CancelBookingResponse = components["schemas"]["CancelBookingResponse"];
 export type RunMatchingRequest = components["schemas"]["RunMatchingRequest"];
 export type MatchRunsResponse = components["schemas"]["MatchRunsResponse"];
 export type MatchSuggestion = components["schemas"]["MatchSuggestion"];
 export type MatchProposal = components["schemas"]["MatchProposal"];
-
+export type OfferBookingsResponse = components["schemas"]["OfferBookingsResponse"];
+export type AcceptBookingResponse = components["schemas"]["AcceptBookingResponse"];
+export type RejectBookingResponse = components["schemas"]["RejectBookingResponse"];
+export type MyChatsResponse = components["schemas"]["MyChatsResponse"];
+export type TripMessagesResponse = components["schemas"]["TripMessagesResponse"];
+export type TripMessage = TripMessagesResponse["messages"][number];
+export type TripMessagePayload =
+  | { kind: "text"; body: string }
+  | {
+      kind: "quick";
+      body: "Ya salí" | "Estoy en el punto de encuentro" | "Llego en 5 min" | "Hoy no podré ir";
+    };
 export type PublicStats = components["schemas"]["PublicStats"];
+export type ProfilePhotoUploadRequest = components["schemas"]["ProfilePhotoUploadRequest"];
+export type ProfilePhotoUploadResponse = components["schemas"]["ProfilePhotoUploadResponse"];
+export type MyProfilePhotoResponse = components["schemas"]["MyProfilePhotoResponse"];
 
 export const communitiesApi = {
   async listCommunities(): Promise<CommunitySummary[]> {
@@ -63,6 +79,28 @@ export const communitiesApi = {
   },
   async getMe(): Promise<MeResponse> {
     const response = await httpClient.get("/me");
+    return response.data;
+  },
+  async deleteMe(): Promise<DeleteMeResponse> {
+    const response = await httpClient.delete("/me");
+    return response.data;
+  },
+  async getMyProfilePhoto(): Promise<MyProfilePhotoResponse> {
+    const response = await httpClient.get("/me/profile-photo");
+    return response.data;
+  },
+  async uploadProfilePhoto(
+    payload: ProfilePhotoUploadRequest,
+  ): Promise<ProfilePhotoUploadResponse> {
+    const response = await httpClient.post("/me/profile-photo/upload", payload);
+    return response.data;
+  },
+  async confirmProfilePhoto(key: string): Promise<{ photoUrl: string }> {
+    const response = await httpClient.post("/me/profile-photo/confirm", { key });
+    return response.data;
+  },
+  async deleteMyProfilePhoto(): Promise<{ message: string }> {
+    const response = await httpClient.delete("/me/profile-photo");
     return response.data;
   },
   async updateMembership(
@@ -135,24 +173,21 @@ export const communitiesApi = {
     const response = await httpClient.get(`/offers/${offerId}` as "/offers/{id}");
     return response.data;
   },
-  async requestSeat(offerId: string, message?: string): Promise<RequestSeatResponse> {
-    const response = await httpClient.post(
-      `/offers/${offerId}/bookings` as "/offers/{id}/bookings",
-      { message },
-    );
-    return response.data;
-  },
-  async getPublicStats(slug: string): Promise<PublicStats> {
-    const response = await httpClient.get(
-      `/public/communities/${slug}/stats` as "/public/communities/{slug}/stats",
-    );
-    return response.data;
-  },
   async listMyTrips(
     role: "passenger" | "driver",
     scope: "upcoming" | "past",
   ): Promise<MyTripsResponse> {
     const response = await httpClient.get("/me/trips", { params: { role, scope } });
+    return response.data;
+  },
+  async requestSeat(
+    offerId: string,
+    payload: RequestSeatRequest = {},
+  ): Promise<RequestSeatResponse> {
+    const response = await httpClient.post(
+      `/offers/${offerId}/bookings` as "/offers/{id}/bookings",
+      payload,
+    );
     return response.data;
   },
   async cancelBooking(bookingId: string): Promise<CancelBookingResponse> {
@@ -179,5 +214,48 @@ export const communitiesApi = {
       `/communities/${communityId}/proposals` as "/communities/{id}/proposals",
     );
     return response.data.proposals;
+  },
+  async listOfferBookings(offerId: string): Promise<OfferBookingsResponse> {
+    const response = await httpClient.get(`/offers/${offerId}/bookings` as "/offers/{id}/bookings");
+    return response.data;
+  },
+  async acceptBooking(bookingId: string): Promise<AcceptBookingResponse> {
+    const response = await httpClient.post(
+      `/bookings/${bookingId}/accept` as "/bookings/{id}/accept",
+    );
+    return response.data;
+  },
+  async rejectBooking(bookingId: string): Promise<RejectBookingResponse> {
+    const response = await httpClient.post(
+      `/bookings/${bookingId}/reject` as "/bookings/{id}/reject",
+    );
+    return response.data;
+  },
+  async listMyChats(): Promise<MyChatsResponse> {
+    const response = await httpClient.get("/me/chats");
+    return response.data;
+  },
+  async getPublicStats(slug: string): Promise<PublicStats> {
+    const response = await httpClient.get(
+      `/public/communities/${slug}/stats` as "/public/communities/{slug}/stats",
+    );
+    return response.data;
+  },
+  async getTripMessages(offerId: string, after?: string): Promise<TripMessagesResponse> {
+    const query = after ? `?after=${encodeURIComponent(after)}` : "";
+    const response = await httpClient.get(
+      `/offers/${offerId}/messages${query}` as "/offers/{id}/messages",
+    );
+    return response.data;
+  },
+  async sendTripMessage(
+    offerId: string,
+    payload: TripMessagePayload,
+  ): Promise<{ message: TripMessage }> {
+    const response = await httpClient.post(
+      `/offers/${offerId}/messages` as "/offers/{id}/messages",
+      payload,
+    );
+    return response.data;
   },
 };

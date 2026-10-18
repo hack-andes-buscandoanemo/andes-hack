@@ -45,6 +45,7 @@ const ZONES = [
 const MATCH = {
   offerId: "22222222-2222-4222-8222-222222222222",
   driverName: "Mateo Q.",
+  driverPhotoUrl: "https://r2.example/mateo.jpg?signature=read",
   originZoneName: "La Molina",
   destinationName: "Centro Empresarial Real",
   direction: "outbound" as const,
@@ -86,7 +87,7 @@ afterEach(() => {
 
 // Zones arrive after the page shows, so wait for the option before picking it.
 async function pickSanBorja(user: ReturnType<typeof userEvent.setup>) {
-  await screen.findByRole("option", { name: "San Borja" });
+  await screen.findByRole("option", { name: "San Borja" }, { timeout: 5_000 });
   await user.selectOptions(screen.getByLabelText("Mi zona"), "san-borja");
 }
 
@@ -390,6 +391,10 @@ describe("search page /buscar (US-013)", () => {
     expect(await screen.findByText("1 coincidencia encontrada")).toBeInTheDocument();
     expect(screen.getByText("Mejor coincidencia")).toBeInTheDocument();
     expect(screen.getByText("Mateo Q.")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Foto de Mateo Q." })).toHaveAttribute(
+      "src",
+      "https://r2.example/mateo.jpg?signature=read",
+    );
     expect(screen.getByText("La Molina → Centro Empresarial Real")).toBeInTheDocument();
     expect(
       within(screen.getByText("Mateo Q.").closest("li")!).getByText("7:00 a. m."),
@@ -398,6 +403,10 @@ describe("search page /buscar (US-013)", () => {
     expect(screen.getByText("+6 min de desvío")).toBeInTheDocument();
     expect(screen.getByText("14 min a pie")).toBeInTheDocument();
     expect(screen.getByText("Llega 07:44")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ver viaje" })).toHaveAttribute(
+      "href",
+      "/viajes/22222222-2222-4222-8222-222222222222",
+    );
     expect(screen.queryByText(/%/)).not.toBeInTheDocument();
   });
 
