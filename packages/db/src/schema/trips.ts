@@ -126,6 +126,8 @@ export const tripRequest = pgTable(
     ...schedule,
     maxWalkMinutes: smallint("max_walk_minutes").notNull(),
     fallbackMode: fallbackModeEnum("fallback_mode").notNull(),
+    // "Solo mujeres" as the last search asked it; the seat request and the optimizer honour it (US-026).
+    womenOnly: boolean("women_only").default(false).notNull(),
     status: requestStatusEnum("status").default("open").notNull(),
     // Whether the last search for this need found at least one trip; feeds the coverage panel (US-030, US-031).
     hadResults: boolean("had_results"),

@@ -389,4 +389,35 @@ describe("seats of a day assigned to maximise the car trips avoided", () => {
       { requestId: "necesidad-sofia", passengerId: "sofia", reason: "outside_time_window" },
     ]);
   });
+
+  it("seats a woman who asked for women only with Lucía, though Carlos would cost less", () => {
+    const plan = optimizeDay(
+      {
+        date: monday,
+        offers: [offer(), offer({ ...lucia, driverIsWoman: true })],
+        requests: [request("ana", { windowEnd: "08:30", womenOnly: true, passengerIsWoman: true })],
+      },
+      model,
+    );
+
+    expect(plan.assignments.map(({ passengerId, offerId }) => [passengerId, offerId])).toEqual([
+      ["ana", "lucia"],
+    ]);
+  });
+
+  it("never seats Pedro in Lucía's women-only car, even when it is the only one", () => {
+    const plan = optimizeDay(
+      {
+        date: monday,
+        offers: [offer({ ...lucia, womenOnly: true, driverIsWoman: true })],
+        requests: [request("pedro", { windowEnd: "08:30" })],
+      },
+      model,
+    );
+
+    expect(plan.assignments).toEqual([]);
+    expect(plan.unassigned).toEqual([
+      { requestId: "necesidad-pedro", passengerId: "pedro", reason: "women_only" },
+    ]);
+  });
 });
