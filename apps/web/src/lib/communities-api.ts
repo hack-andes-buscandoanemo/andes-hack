@@ -19,6 +19,7 @@ export type SearchTripsRequest = components["schemas"]["SearchTripsRequest"];
 export type SearchTripsResponse = components["schemas"]["SearchTripsResponse"];
 export type TripMatch = components["schemas"]["TripMatch"];
 export type OfferDetail = components["schemas"]["OfferDetail"];
+export type RouteMap = components["schemas"]["RouteMap"];
 export type MyTrip = components["schemas"]["MyTrip"];
 export type MyTripsResponse = components["schemas"]["MyTripsResponse"];
 export type RequestSeatRequest = components["schemas"]["RequestSeatRequest"];
