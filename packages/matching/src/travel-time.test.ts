@@ -84,6 +84,14 @@ describe("travel times between places of Lima", () => {
     // 0.774 km in a straight line × 1.29 road km per straight km ÷ 4.5 km/h.
     expect(model.walkMinutes("la-molina", "parque-la-balsa")).toBeCloseTo(13.31, 2);
   });
+
+  it("refuses an invalid departure date", () => {
+    const model = createTravelTimeModel({ places, matrix });
+
+    expect(() => model.minutes("la-molina", "san-isidro", new Date("8:00"))).toThrow(
+      "Fecha de salida inválida",
+    );
+  });
 });
 
 describe("travel times with the real places of Lima", () => {

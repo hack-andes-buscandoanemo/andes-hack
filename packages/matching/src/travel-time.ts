@@ -48,6 +48,8 @@ const weekdayAnchors: readonly { hour: number; factor: Source }[] = [
 ];
 
 function trafficFactor(departAt: Date): { value: number; kind: SourceKind } {
+  if (Number.isNaN(departAt.getTime())) throw new RangeError("Fecha de salida inválida");
+
   // Shifted so its UTC fields read as the wall clock in Lima.
   const lima = new Date(departAt.getTime() + limaOffsetMs);
   const day = lima.getUTCDay();
@@ -61,7 +63,8 @@ function weekdayFactor(hour: number): { value: number; kind: SourceKind } {
 
   const before = weekdayAnchors.findLast((anchor) => anchor.hour < hour);
   const after = weekdayAnchors.find((anchor) => anchor.hour > hour);
-  if (!before || !after) throw new Error("Not implemented yet");
+  // Unreachable while the anchors span 0 to 23.
+  if (!before || !after) throw new Error(`Sin factor de tráfico para las ${hour}:00`);
 
   const share = (hour - before.hour) / (after.hour - before.hour);
   const value = before.factor.value + share * (after.factor.value - before.factor.value);
