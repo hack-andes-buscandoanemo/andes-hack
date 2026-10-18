@@ -20,6 +20,7 @@ import { meetingPoint, zone } from "@andes-hack/db/schema/places";
 import { seatBooking, tripOffer, tripRequest } from "@andes-hack/db/schema/trips";
 import { waitlistEntry } from "@andes-hack/db/schema/waitlist";
 import { createTestDb } from "@andes-hack/db/test-db";
+import { eq, inArray } from "drizzle-orm";
 
 import { createApp } from "./index";
 import { createPublicStatsRoutes, type PublicStatsDeps } from "./public-stats";
@@ -112,11 +113,17 @@ async function addOffer(
   driverId: string,
   options: { date?: string; status?: "active" | "paused" | "cancelled" } = {},
 ) {
+  const [driver] = await testDb
+    .select({ isTeam: communityMember.isTeam })
+    .from(communityMember)
+    .where(eq(communityMember.userId, driverId))
+    .limit(1);
   const [offer] = await testDb
     .insert(tripOffer)
     .values({
       communityId,
       driverId,
+      driverWasTeam: driver?.isTeam ?? false,
       direction: "outbound",
       originZoneId: "la-molina",
       departureTime: "07:00",
@@ -138,6 +145,11 @@ async function addBooking(
     fallbackMode?: "drive_alone" | "taxi_app" | "public_transport" | "picked_up" | "other";
   } = {},
 ) {
+  const [passenger] = await testDb
+    .select({ isTeam: communityMember.isTeam })
+    .from(communityMember)
+    .where(eq(communityMember.userId, passengerId))
+    .limit(1);
   const [need] = await testDb
     .insert(tripRequest)
     .values({
@@ -157,6 +169,7 @@ async function addBooking(
     offerId: offer.id,
     requestId: need!.id,
     passengerId,
+    passengerWasTeam: passenger?.isTeam ?? false,
     meetingPointId: "la-molina-parque",
     pickupAt: "06:55",
     detourMinutes: 6,
@@ -299,7 +312,7 @@ describe("GET /public/communities/{slug}/stats", () => {
       passengersMatched: 1,
     });
   });
-  it("excludes team drivers and passengers using membership in the selected community", async () => {
+  it("keeps deleted team members out of historical recommendations and impact", async () => {
     const org = await seedCommunity();
     const other = await seedCommunity("beta");
     await addMember(org.id, "driver", { travelRole: "driver" });
@@ -315,7 +328,7 @@ describe("GET /public/communities/{slug}/stats", () => {
     const offer = await addOffer(org.id, "driver");
     const teamOffer = await addOffer(org.id, "team-driver");
     const realNeed = await addBooking(offer, "ana");
-    const teamNeed = await addBooking(offer, "team-passenger");
+    const teamNeed = await addBooking(offer, "team-passenger", { status: "completed" });
     const teamRide = await addBooking(teamOffer, "ana");
     for (const algorithm of ["fcfs", "optimizer"] as const) {
       const run = await addRun(
@@ -327,9 +340,11 @@ describe("GET /public/communities/{slug}/stats", () => {
       await addSuggestion(run.id, offer.id, teamNeed.id, "team-passenger");
       await addSuggestion(run.id, teamOffer.id, teamRide.id, "ana");
     }
+    await testDb.delete(user).where(inArray(user.id, ["team-driver", "team-passenger"]));
     const body = PublicStatsSchema.parse(
       await (await statsApp().request("/public/communities/alfa/stats")).json(),
     );
+    expect(body.activity.acceptedRequests).toBe(1);
     expect(body.comparison?.optimizer).toEqual({ carTripsAvoided: 1, passengersMatched: 1 });
     expect(body.comparison?.firstComeFirstServed).toEqual({
       carTripsAvoided: 1,

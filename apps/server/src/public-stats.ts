@@ -4,7 +4,7 @@ import { community, communityMember } from "@andes-hack/db/schema/community";
 import { tripOffer } from "@andes-hack/db/schema/trips";
 import { measureImpact } from "@andes-hack/matching";
 import { OpenAPIHono, type z } from "@hono/zod-openapi";
-import { and, count, eq, isNull, or } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 
 import {
@@ -93,18 +93,11 @@ export function createPublicStatsRoutes(deps: PublicStatsDeps = {}) {
     const [offerCount] = await db
       .select({ activeOffers: count() })
       .from(tripOffer)
-      .leftJoin(
-        communityMember,
-        and(
-          eq(communityMember.communityId, tripOffer.communityId),
-          eq(communityMember.userId, tripOffer.driverId),
-        ),
-      )
       .where(
         and(
           eq(tripOffer.communityId, org.id),
           eq(tripOffer.status, "active"),
-          or(isNull(communityMember.isTeam), eq(communityMember.isTeam, false)),
+          eq(tripOffer.driverWasTeam, false),
         ),
       );
     const activity = await loadCommunityActivity(db, org, getNow());

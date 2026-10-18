@@ -19,6 +19,7 @@ import type { z } from "zod";
 import { acceptedCountByOffer, fuelEstimateFor, occupantsSharingFuel } from "./fuel-estimate";
 import type { JourneyLock } from "./lib/journey-lock";
 import { logEvent } from "./lib/logger";
+import { getCommunityProfilePhotos, type ProfilePhotoStorageResolver } from "./profile-photos";
 import { destinationOf, loadOfferRoutes, toRideRequest } from "./search";
 import { ApiError } from "./utils/api-response";
 
@@ -234,6 +235,7 @@ async function describeJourney(
 export async function listProposals(
   database: Database,
   input: { communityId: string; userId: string; today: string },
+  storageForPhotos?: ProfilePhotoStorageResolver,
 ) {
   const { communityId, userId, today } = input;
   const driverMember = alias(communityMember, "driver_member");
@@ -242,6 +244,7 @@ export async function listProposals(
     .select({
       suggestionId: matchSuggestion.id,
       offerId: matchSuggestion.offerId,
+      driverId: tripOffer.driverId,
       driverName: driverMember.alias,
       driverAccountName: driverAccount.name,
       direction: matchRun.direction,
@@ -297,17 +300,22 @@ export async function listProposals(
       ),
     )
     .orderBy(matchRun.date, matchSuggestion.pickupAt);
-
   const acceptedCount = await acceptedCountByOffer(
     database,
     rows.map((row) => row.offerId),
   );
-
+  const photos = await getCommunityProfilePhotos(
+    database,
+    storageForPhotos,
+    communityId,
+    rows.flatMap((row) => (row.driverId ? [row.driverId] : [])),
+  );
   return {
     proposals: rows.map((row) => ({
       suggestionId: row.suggestionId,
       offerId: row.offerId,
       driverName: row.driverName ?? row.driverAccountName ?? "Conductor",
+      driverPhotoUrl: row.driverId ? (photos.get(row.driverId) ?? null) : null,
       direction: row.direction,
       date: row.date,
       meetingPointName: meetingPointNames.get(row.meetingPointId) ?? row.meetingPointId,
