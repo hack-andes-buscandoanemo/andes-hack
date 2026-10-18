@@ -35,4 +35,13 @@ describe("perfil", () => {
     await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/"));
     expect(signOut).toHaveBeenCalled();
   });
+
+  it("links to the trip history", () => {
+    render(<Perfil name="Ana" email="ana@uni.pe" />);
+
+    expect(screen.getByRole("link", { name: "Historial de viajes" })).toHaveAttribute(
+      "href",
+      "/viajes?tab=historial",
+    );
+  });
 });

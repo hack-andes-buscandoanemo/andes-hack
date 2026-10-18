@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,12 @@ export default function Perfil({ name, email }: { name: string; email: string })
         <p className="font-bold">{name}</p>
         <p className="text-muted-foreground">{email}</p>
       </div>
+      <Link
+        href={{ pathname: "/viajes", query: { tab: "historial" } }}
+        className="rounded-xl border bg-card p-4 font-bold"
+      >
+        Historial de viajes
+      </Link>
       <Button
         variant="outline"
         className="min-h-12"

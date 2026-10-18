@@ -17,6 +17,8 @@ export type SearchTripsResponse = components["schemas"]["SearchTripsResponse"];
 export type TripMatch = components["schemas"]["TripMatch"];
 export type OfferDetail = components["schemas"]["OfferDetail"];
 export type RequestSeatResponse = components["schemas"]["RequestSeatResponse"];
+export type MyTrip = components["schemas"]["MyTrip"];
+export type MyTripsResponse = components["schemas"]["MyTripsResponse"];
 export type CancelBookingResponse = components["schemas"]["CancelBookingResponse"];
 
 export const communitiesApi = {
@@ -120,6 +122,13 @@ export const communitiesApi = {
       `/offers/${offerId}/bookings` as "/offers/{id}/bookings",
       { message },
     );
+    return response.data;
+  },
+  async listMyTrips(
+    role: "passenger" | "driver",
+    scope: "upcoming" | "past",
+  ): Promise<MyTripsResponse> {
+    const response = await httpClient.get("/me/trips", { params: { role, scope } });
     return response.data;
   },
   async cancelBooking(bookingId: string): Promise<CancelBookingResponse> {
