@@ -753,6 +753,8 @@ export const TripMatchSchema = z
   })
   .openapi("TripMatch");
 
+export type TripMatch = z.infer<typeof TripMatchSchema>;
+
 export const SearchTripsResponseSchema = z
   .object({
     // The passenger's saved need, one per direction; kept even when nothing matched.
@@ -840,6 +842,7 @@ export const OfferDetailSchema = z
     // The person's active or rejected request on this trip, if any.
     booking: z.object({ id: z.string().uuid(), status: BookingStatusSchema }).nullable(),
     fuelEstimate: FuelEstimateSchema,
+    alternatives: z.array(TripMatchSchema).optional(),
   })
   .openapi("OfferDetail");
 
@@ -1215,7 +1218,10 @@ export const cancelBookingRoute = createRoute({
       content: {
         "application/json": {
           schema: z
-            .object({ booking: z.object({ id: z.string().uuid(), status: BookingStatusSchema }) })
+            .object({
+              booking: z.object({ id: z.string().uuid(), status: BookingStatusSchema }),
+              lateCancelled: z.boolean(),
+            })
             .openapi("CancelBookingResponse"),
         },
       },
@@ -1223,6 +1229,46 @@ export const cancelBookingRoute = createRoute({
     401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
     404: apiErrorResponse("La solicitud no existe (`booking_not_found`)"),
     409: apiErrorResponse("No se puede retirar esta solicitud (`booking_conflict`)"),
+    422: apiErrorResponse("El identificador no es válido (`validation_error`)"),
+  },
+});
+
+export const CancelOfferResponseSchema = z
+  .object({
+    offer: z.object({
+      id: z.string().uuid(),
+      status: z.enum(["active", "paused", "cancelled"]),
+    }),
+    lateCancelled: z.boolean(),
+    affectedBookings: z.array(
+      z.object({
+        bookingId: z.string().uuid(),
+        passengerId: z.string().nullable(),
+        status: z.enum(["cancelled_by_driver"]),
+      }),
+    ),
+  })
+  .openapi("CancelOfferResponse");
+
+export type CancelOfferResponse = z.infer<typeof CancelOfferResponseSchema>;
+
+export const cancelOfferRoute = createRoute({
+  method: "post",
+  path: "/offers/{id}/cancel",
+  tags: ["Ofertas"],
+  request: { params: JoinCommunityParamsSchema },
+  responses: {
+    200: {
+      description: "El viaje fue cancelado por el conductor",
+      content: {
+        "application/json": {
+          schema: CancelOfferResponseSchema,
+        },
+      },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    403: apiErrorResponse("No puedes gestionar este viaje (`driver_required`)"),
+    404: apiErrorResponse("No encontramos este viaje (`offer_not_found`)"),
     422: apiErrorResponse("El identificador no es válido (`validation_error`)"),
   },
 });
@@ -1729,6 +1775,7 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   rejectBookingRoute,
   listOfferBookingsRoute,
   cancelBookingRoute,
+  cancelOfferRoute,
   runMatchingRoute,
   latestMatchRunsRoute,
   listProposalsRoute,
