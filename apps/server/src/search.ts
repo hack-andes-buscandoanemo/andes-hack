@@ -15,6 +15,7 @@ import { and, asc, eq, inArray, ne, type SQL } from "drizzle-orm";
 import type { z } from "zod";
 
 import { fuelEstimateFor, occupantsSharingFuel } from "./fuel-estimate";
+import { liveOfferIds, nearestZone } from "./live-location";
 import { logEvent } from "./lib/logger";
 import { getCommunityProfilePhotos, type ProfilePhotoStorageResolver } from "./profile-photos";
 import { displayName, seatsFree } from "./trip-rules";
@@ -61,6 +62,8 @@ export async function loadOfferRoutes(
       seatsTotal: tripOffer.seatsTotal,
       maxDetourMinutes: tripOffer.maxDetourMinutes,
       womenOnly: tripOffer.womenOnly,
+      priceCents: tripOffer.priceCents,
+      paymentMethods: tripOffer.paymentMethods,
       driverName: communityMember.alias,
       accountName: userTable.name,
       driverIsWoman: communityMember.identifiesAsWoman,
@@ -199,10 +202,13 @@ export async function matchOfferForNeed(database: Database, input: MatchOfferInp
 
 export async function searchTrips(
   database: Database,
-  input: { communityId: string; userId: string; body: SearchBody },
+  input: { communityId: string; userId: string; body: SearchBody; now?: Date },
   storageForPhotos?: ProfilePhotoStorageResolver,
 ) {
-  const { communityId, userId, body } = input;
+  const { communityId, userId, body: submitted } = input;
+  // From the device's location the zone is the nearest one; the coordinates are not kept.
+  const originZoneId = submitted.originZoneId ?? nearestZone(submitted.location!).id;
+  const body = { ...submitted, originZoneId };
   const [destinationRow] = await database
     .select({ destinationName: community.destinationName })
     .from(community)
@@ -289,6 +295,11 @@ export async function searchTrips(
     .returning({ id: tripRequest.id });
 
   const byId = new Map(rows.map((row) => [row.id, row]));
+  const live = await liveOfferIds(
+    database,
+    ranking.matches.map((match) => match.offerId),
+    input.now ?? new Date(),
+  );
   const meetingPointNames = new Map(places.meetingPoints.map((point) => [point.id, point.name]));
   const photoUrls = await getCommunityProfilePhotos(
     database,
@@ -302,6 +313,8 @@ export async function searchTrips(
 
   return {
     requestId: saved!.id,
+    originZoneId,
+    originZoneName: places.zones.find((place) => place.id === originZoneId)?.name ?? originZoneId,
     reason: ranking.reason,
     matches: ranking.matches.map((match) => {
       const offer = byId.get(match.offerId)!;
@@ -321,6 +334,9 @@ export async function searchTrips(
         arrivalAt: match.arrivalAt,
         detourMinutes: match.detourMinutes,
         walkMinutes: match.walkMinutes,
+        priceCents: offer.priceCents,
+        paymentMethods: offer.paymentMethods,
+        live: live.has(offer.id),
         // Someone already accepted on this trip who searches again is not counted twice.
         fuelEstimate: fuelEstimateFor({
           direction: offer.direction,

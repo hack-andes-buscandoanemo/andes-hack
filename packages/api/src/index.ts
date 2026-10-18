@@ -521,6 +521,10 @@ export const listCommunityZonesRoute = createRoute({
 export const TripDirectionSchema = z.enum(["outbound", "return"]);
 export const OfferStatusSchema = z.enum(["active", "paused", "cancelled"]);
 
+// How the cost is settled between driver and passengers. Te Jalo only shows it: the payment
+// happens outside the app.
+export const PaymentMethodSchema = z.enum(["yape", "cash"]);
+
 export const CreateTripOfferBodySchema = z
   .object({
     vehicleId: z.string().uuid("Selecciona un vehículo."),
@@ -537,6 +541,9 @@ export const CreateTripOfferBodySchema = z
     maxDetourMinutes: z.union([z.literal(0), z.literal(5), z.literal(10)]),
     womenOnly: z.boolean().default(false),
     note: z.string().max(280, "La nota no puede superar 280 caracteres.").nullable().optional(),
+    // The base price per seat, in céntimos of a sol (S/ 200 at most).
+    priceCents: z.number().int().min(0).max(20000).nullable().optional(),
+    paymentMethods: z.array(PaymentMethodSchema).max(2).default([]),
   })
   .refine(
     (data) => {
@@ -549,6 +556,10 @@ export const CreateTripOfferBodySchema = z
       path: ["date"],
     },
   )
+  .refine((data) => !data.priceCents || data.paymentMethods.length > 0, {
+    message: "Elige cómo se paga: Yape o efectivo.",
+    path: ["paymentMethods"],
+  })
   .openapi("CreateTripOfferRequest");
 
 export const TripOfferSummarySchema = z
@@ -568,6 +579,10 @@ export const TripOfferSummarySchema = z
     maxDetourMinutes: z.number().int(),
     womenOnly: z.boolean(),
     note: z.string().nullable(),
+    priceCents: z.number().int().nullable(),
+    paymentMethods: z.array(PaymentMethodSchema),
+    // Whether the driver has Te Jalo on and is sharing the car's position.
+    live: z.boolean(),
     status: OfferStatusSchema,
   })
   .openapi("TripOfferSummary");
@@ -687,10 +702,20 @@ const clockTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Ingresa una hor
 const todayInLima = () =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "America/Lima" }).format(new Date());
 
+export const LatLngSchema = z
+  .object({
+    lat: z.number().min(-90).max(90),
+    lng: z.number().min(-180).max(180),
+  })
+  .openapi("LatLng");
+
 export const SearchTripsBodySchema = z
   .object({
     direction: TripDirectionSchema,
-    originZoneId: z.string().min(1, "Selecciona tu zona."),
+    // Left out when `location` is given: the server takes the zone nearest to the person.
+    originZoneId: z.string().min(1, "Selecciona tu zona.").optional(),
+    // Where the person is now, from the device. Only used to pick the zone; never stored.
+    location: LatLngSchema.optional(),
     windowStart: clockTime,
     windowEnd: clockTime,
     daysOfWeek: z
@@ -714,6 +739,10 @@ export const SearchTripsBodySchema = z
   .refine((data) => Boolean(data.date) !== Boolean(data.daysOfWeek && data.daysOfWeek.length > 0), {
     message: "Elige una fecha puntual o días habituales, pero no ambos.",
     path: ["date"],
+  })
+  .refine((data) => Boolean(data.originZoneId) || Boolean(data.location), {
+    message: "Selecciona tu zona o activa tu ubicación.",
+    path: ["originZoneId"],
   })
   .refine((data) => data.windowStart < data.windowEnd, {
     message: "La hora de inicio debe ser anterior a la hora de fin.",
@@ -751,6 +780,11 @@ export const TripMatchSchema = z
     detourMinutes: z.number().int(),
     walkMinutes: z.number().int(),
     fuelEstimate: FuelEstimateSchema,
+    // The base price per seat in céntimos, as the driver set it; null when none is asked.
+    priceCents: z.number().int().nullable(),
+    paymentMethods: z.array(PaymentMethodSchema),
+    // The driver has Te Jalo on and the car's position is arriving right now.
+    live: z.boolean(),
   })
   .openapi("TripMatch");
 
@@ -760,6 +794,9 @@ export const SearchTripsResponseSchema = z
   .object({
     // The passenger's saved need, one per direction; kept even when nothing matched.
     requestId: z.string().uuid(),
+    // The zone the search ran from: the one chosen, or the one nearest to the person's location.
+    originZoneId: z.string(),
+    originZoneName: z.string(),
     // Best match first, in the engine's order.
     matches: z.array(TripMatchSchema),
     // Why nothing matched, from the engine; null when something did.
@@ -866,6 +903,9 @@ export const OfferDetailSchema = z
     // The person's active or rejected request on this trip, if any.
     booking: z.object({ id: z.string().uuid(), status: BookingStatusSchema }).nullable(),
     fuelEstimate: FuelEstimateSchema,
+    priceCents: z.number().int().nullable(),
+    paymentMethods: z.array(PaymentMethodSchema),
+    live: z.boolean(),
     routeMap: RouteMapSchema,
     alternatives: z.array(TripMatchSchema).optional(),
   })
@@ -884,6 +924,70 @@ export const getOfferDetailRoute = createRoute({
     401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
     404: apiErrorResponse("El viaje no existe o no pertenece a tu comunidad (`offer_not_found`)"),
     422: apiErrorResponse("El identificador no es válido (`validation_error`)"),
+  },
+});
+
+// The car's live position (Te Jalo): only the driver and the accepted passengers receive it,
+// and only while the driver keeps sharing.
+export const LiveLocationSchema = z
+  .object({
+    // The driver has Te Jalo on and the last position is recent.
+    active: z.boolean(),
+    position: z.object({ lat: z.number(), lng: z.number(), recordedAt: z.string() }).nullable(),
+  })
+  .openapi("LiveLocation");
+
+export const ShareLiveLocationBodySchema = LatLngSchema.openapi("ShareLiveLocationRequest");
+
+export const shareLiveLocationRoute = createRoute({
+  method: "post",
+  path: "/offers/{id}/live-location",
+  tags: ["Ofertas"],
+  request: {
+    params: JoinCommunityParamsSchema,
+    body: { content: { "application/json": { schema: ShareLiveLocationBodySchema } } },
+  },
+  responses: {
+    200: {
+      description: "Te Jalo activo: la posición del auto quedó guardada",
+      content: { "application/json": { schema: LiveLocationSchema } },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    403: apiErrorResponse("Solo quien maneja puede compartir la posición (`not_the_driver`)"),
+    404: apiErrorResponse("El viaje no existe (`offer_not_found`)"),
+    409: apiErrorResponse("El viaje no está activo (`offer_not_active`)"),
+  },
+});
+
+export const stopLiveLocationRoute = createRoute({
+  method: "delete",
+  path: "/offers/{id}/live-location",
+  tags: ["Ofertas"],
+  request: { params: JoinCommunityParamsSchema },
+  responses: {
+    200: {
+      description: "Te Jalo apagado: la posición del auto se borró",
+      content: { "application/json": { schema: LiveLocationSchema } },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    403: apiErrorResponse("Solo quien maneja puede dejar de compartir (`not_the_driver`)"),
+    404: apiErrorResponse("El viaje no existe (`offer_not_found`)"),
+  },
+});
+
+export const getLiveLocationRoute = createRoute({
+  method: "get",
+  path: "/offers/{id}/live-location",
+  tags: ["Ofertas"],
+  request: { params: JoinCommunityParamsSchema },
+  responses: {
+    200: {
+      description:
+        "Posición del auto para quien maneja y los pasajeros aceptados; los demás solo saben si está activo",
+      content: { "application/json": { schema: LiveLocationSchema } },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    404: apiErrorResponse("El viaje no existe o no es de tu comunidad (`offer_not_found`)"),
   },
 });
 
@@ -2028,7 +2132,10 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   createCommunityOfferRoute,
   updateOfferStatusRoute,
   searchTripsRoute,
+  getLiveLocationRoute,
   getOfferDetailRoute,
+  shareLiveLocationRoute,
+  stopLiveLocationRoute,
   listMyTripsRoute,
   getMyImpactRoute,
   requestSeatRoute,

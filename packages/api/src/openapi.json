@@ -703,6 +703,25 @@
               "null"
             ]
           },
+          "priceCents": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "paymentMethods": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "yape",
+                "cash"
+              ]
+            }
+          },
+          "live": {
+            "type": "boolean"
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -727,6 +746,9 @@
           "maxDetourMinutes",
           "womenOnly",
           "note",
+          "priceCents",
+          "paymentMethods",
+          "live",
           "status"
         ]
       },
@@ -823,6 +845,26 @@
               "null"
             ],
             "maxLength": 280
+          },
+          "priceCents": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 20000
+          },
+          "paymentMethods": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "yape",
+                "cash"
+              ]
+            },
+            "maxItems": 2,
+            "default": []
           }
         },
         "required": [
@@ -856,6 +898,12 @@
             "type": "string",
             "format": "uuid"
           },
+          "originZoneId": {
+            "type": "string"
+          },
+          "originZoneName": {
+            "type": "string"
+          },
           "matches": {
             "type": "array",
             "items": {
@@ -882,6 +930,8 @@
         },
         "required": [
           "requestId",
+          "originZoneId",
+          "originZoneName",
           "matches",
           "reason"
         ]
@@ -939,6 +989,25 @@
           },
           "fuelEstimate": {
             "$ref": "#/components/schemas/FuelEstimate"
+          },
+          "priceCents": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "paymentMethods": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "yape",
+                "cash"
+              ]
+            }
+          },
+          "live": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -955,7 +1024,10 @@
           "arrivalAt",
           "detourMinutes",
           "walkMinutes",
-          "fuelEstimate"
+          "fuelEstimate",
+          "priceCents",
+          "paymentMethods",
+          "live"
         ]
       },
       "FuelEstimate": {
@@ -994,6 +1066,9 @@
           "originZoneId": {
             "type": "string",
             "minLength": 1
+          },
+          "location": {
+            "$ref": "#/components/schemas/LatLng"
           },
           "windowStart": {
             "type": "string",
@@ -1045,10 +1120,62 @@
         },
         "required": [
           "direction",
-          "originZoneId",
           "windowStart",
           "windowEnd",
           "fallbackMode"
+        ]
+      },
+      "LatLng": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lng": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          }
+        },
+        "required": [
+          "lat",
+          "lng"
+        ]
+      },
+      "LiveLocation": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "position": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "lat": {
+                "type": "number"
+              },
+              "lng": {
+                "type": "number"
+              },
+              "recordedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "lat",
+              "lng",
+              "recordedAt"
+            ]
+          }
+        },
+        "required": [
+          "active",
+          "position"
         ]
       },
       "OfferDetail": {
@@ -1229,6 +1356,25 @@
           "fuelEstimate": {
             "$ref": "#/components/schemas/FuelEstimate"
           },
+          "priceCents": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "paymentMethods": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "yape",
+                "cash"
+              ]
+            }
+          },
+          "live": {
+            "type": "boolean"
+          },
           "routeMap": {
             "$ref": "#/components/schemas/RouteMap"
           },
@@ -1260,6 +1406,9 @@
           "match",
           "booking",
           "fuelEstimate",
+          "priceCents",
+          "paymentMethods",
+          "live",
           "routeMap"
         ]
       },
@@ -1323,6 +1472,25 @@
           "path",
           "approximate",
           "markers"
+        ]
+      },
+      "ShareLiveLocationRequest": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lng": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          }
+        },
+        "required": [
+          "lat",
+          "lng"
         ]
       },
       "MyTripsResponse": {
@@ -4033,6 +4201,191 @@
           },
           "422": {
             "description": "Los datos enviados no son válidos (`validation_error`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/offers/{id}/live-location": {
+      "get": {
+        "tags": [
+          "Ofertas"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Posición del auto para quien maneja y los pasajeros aceptados; los demás solo saben si está activo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveLocation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No hay sesión iniciada (`unauthorized`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El viaje no existe o no es de tu comunidad (`offer_not_found`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Ofertas"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShareLiveLocationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Te Jalo activo: la posición del auto quedó guardada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveLocation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No hay sesión iniciada (`unauthorized`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Solo quien maneja puede compartir la posición (`not_the_driver`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El viaje no existe (`offer_not_found`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "El viaje no está activo (`offer_not_active`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Ofertas"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Te Jalo apagado: la posición del auto se borró",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveLocation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No hay sesión iniciada (`unauthorized`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Solo quien maneja puede dejar de compartir (`not_the_driver`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El viaje no existe (`offer_not_found`)",
             "content": {
               "application/json": {
                 "schema": {

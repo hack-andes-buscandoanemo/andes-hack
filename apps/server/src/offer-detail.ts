@@ -15,6 +15,7 @@ import {
 import { and, asc, desc, eq, inArray, ne, sql } from "drizzle-orm";
 
 import { fuelEstimateFor, occupantsSharingFuel } from "./fuel-estimate";
+import { liveOfferIds } from "./live-location";
 import { destinationOf, loadOfferRoutes, matchOfferForNeed, toRideRequest } from "./search";
 import { getCommunityProfilePhotos, type ProfilePhotoStorageResolver } from "./profile-photos";
 import { currentDay, dayState, loadDays } from "./trip-days";
@@ -73,6 +74,8 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
       daysOfWeek: tripOffer.daysOfWeek,
       seatsTotal: tripOffer.seatsTotal,
       note: tripOffer.note,
+      priceCents: tripOffer.priceCents,
+      paymentMethods: tripOffer.paymentMethods,
       driverAlias: communityMember.alias,
       accountName: userTable.name,
       make: vehicle.make,
@@ -178,6 +181,7 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
     : [];
 
   const destination = destinationOf(row);
+  const live = (await liveOfferIds(database, [row.id], new Date())).has(row.id);
   // The person's open need in this direction, saved by their last search.
   const [need] = await database
     .select()
@@ -251,6 +255,9 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
       destinationId: destination.id,
       occupants: occupantsSharingFuel(acceptedCount, isOwn || mine?.status === "accepted"),
     }),
+    priceCents: row.priceCents,
+    paymentMethods: row.paymentMethods,
+    live,
     routeMap: routeMapFor({
       direction: row.direction,
       originZoneId: row.originZoneId,
@@ -305,6 +312,11 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
       row.communityId,
       altRows.flatMap((r) => (r.driverId ? [r.driverId] : [])),
     );
+    const altLive = await liveOfferIds(
+      database,
+      ranking.matches.map((m) => m.offerId),
+      new Date(),
+    );
 
     detail.alternatives = ranking.matches.map((m) => {
       const altOffer = byId.get(m.offerId)!;
@@ -323,6 +335,9 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
         arrivalAt: m.arrivalAt,
         detourMinutes: m.detourMinutes,
         walkMinutes: m.walkMinutes,
+        priceCents: altOffer.priceCents,
+        paymentMethods: altOffer.paymentMethods,
+        live: altLive.has(altOffer.id),
         fuelEstimate: fuelEstimateFor({
           direction: altOffer.direction,
           originZoneId: altOffer.originZoneId,
