@@ -24,6 +24,11 @@ import { createTestDb } from "@andes-hack/db/test-db";
 import { eq, sql } from "drizzle-orm";
 
 import { createApp } from "./index";
+import type { tripMessagesRoute } from "@andes-hack/api";
+import type { z } from "zod";
+type ChatResponse = z.infer<
+  (typeof tripMessagesRoute.responses)[200]["content"]["application/json"]["schema"]
+>;
 
 let testDb: Awaited<ReturnType<typeof createTestDb>>["db"];
 let closeDb: () => Promise<void>;
@@ -175,6 +180,7 @@ async function bookSeat(
   offer: { id: string; communityId: string },
   passengerId: string,
   status: "pending" | "accepted" | "rejected",
+  meetingPointId = "san-borja-estacion-san-borja-sur",
 ) {
   await seedMeetingPoint();
   const [need] = await testDb
@@ -197,7 +203,7 @@ async function bookSeat(
       offerId: offer.id,
       requestId: need!.id,
       passengerId,
-      meetingPointId: "san-borja-estacion-san-borja-sur",
+      meetingPointId,
       pickupAt: "07:29",
       detourMinutes: 6,
       walkMinutes: 14,
@@ -750,6 +756,204 @@ describe("POST /bookings/{id}/accept (US-020)", () => {
 });
 
 describe("GET and POST /offers/{id}/messages (US-024)", () => {
+  it("retains a completed one-off occurrence when its chat is opened the next day", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const passenger = await createMember(alfa.id, "u-lucia", "Lucía");
+    const offer = await seedOffer(alfa.id, driver.id);
+    await testDb
+      .update(tripOffer)
+      .set({ date: "2026-10-19", daysOfWeek: null })
+      .where(eq(tripOffer.id, offer.id));
+    const booking = await bookSeat(offer, passenger.id, "accepted");
+    const app = (person: { id: string }, date = "2026-10-19T12:00:00Z") =>
+      createApp({
+        db: testDb as never,
+        getSession: async () => ({ user: person }) as never,
+        rateLimit: async () => ({ success: true, reset: 0 }),
+        now: () => new Date(date),
+      });
+    expect(
+      (await app(driver).request(`/offers/${offer.id}/start`, { method: "POST" })).status,
+    ).toBe(200);
+    expect(
+      (await app(passenger).request(`/bookings/${booking.id}/arrive`, { method: "POST" })).status,
+    ).toBe(200);
+    expect(
+      (
+        (await (
+          await app(driver, "2026-10-20T12:00:00Z").request(`/offers/${offer.id}/messages`)
+        ).json()) as ChatResponse
+      ).conversation,
+    ).toMatchObject({ tripDate: "2026-10-19", tripState: "completed" });
+  });
+  it("does not infer departure when every accepted passenger is a no-show", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const passenger = await createMember(alfa.id, "u-lucia", "Lucía");
+    const offer = await seedOffer(alfa.id, driver.id);
+    const booking = await bookSeat(offer, passenger.id, "accepted");
+    const app = createApp({
+      db: testDb as never,
+      getSession: async () => ({ user: driver }) as never,
+      rateLimit: async () => ({ success: true, reset: 0 }),
+      now: () => new Date("2026-10-19T13:00:00Z"),
+    });
+    expect((await app.request(`/bookings/${booking.id}/no-show`, { method: "POST" })).status).toBe(
+      200,
+    );
+    expect(
+      ((await (await app.request(`/offers/${offer.id}/messages`)).json()) as ChatResponse)
+        .conversation.tripState,
+    ).toBe("confirmed");
+  });
+  it("revokes a withdrawn passenger's reads and writes while retaining the driver's chat", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const passenger = await createMember(alfa.id, "u-lucia", "Lucía");
+    const offer = await seedOffer(alfa.id, driver.id);
+    const booking = await bookSeat(offer, passenger.id, "accepted");
+    expect(
+      (await requestAs(passenger, `/bookings/${booking.id}/cancel`, { method: "POST" })).status,
+    ).toBe(200);
+    expect((await requestAs(passenger, `/offers/${offer.id}/messages`)).status).toBe(403);
+    expect(
+      (
+        await requestAs(passenger, `/offers/${offer.id}/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ kind: "text", body: "Hola" }),
+        })
+      ).status,
+    ).toBe(403);
+    expect((await requestAs(driver, `/offers/${offer.id}/messages`)).status).toBe(200);
+  });
+  it("provides public map coordinates and scopes pinned meeting points to the viewer", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const passenger = await createMember(alfa.id, "u-lucia", "Lucía");
+    const other = await createMember(alfa.id, "u-rosa", "Rosa");
+    const offer = await seedOffer(alfa.id, driver.id);
+    await bookSeat(offer, passenger.id, "accepted");
+    await testDb.insert(meetingPoint).values({
+      id: "san-borja-municipalidad",
+      zoneId: "san-borja",
+      name: "Municipalidad de San Borja",
+      kind: "other",
+      lat: -12.1071567,
+      lng: -76.9991313,
+      source: "test",
+    });
+    await bookSeat(offer, other.id, "accepted", "san-borja-municipalidad");
+    const own = (
+      (await (await requestAs(passenger, `/offers/${offer.id}/messages`)).json()) as ChatResponse
+    ).conversation;
+    expect(own.meetingPoints).toEqual([
+      {
+        participantName: "Lucía",
+        name: "Estación San Borja Sur (Línea 1)",
+        lat: -12.1004192,
+        lng: -77.001846,
+      },
+    ]);
+    expect(own.routeMap.markers).toEqual([
+      expect.objectContaining({ role: "start", name: "La Molina" }),
+      expect.objectContaining({
+        role: "meeting",
+        name: "Estación San Borja Sur (Línea 1)",
+        mine: true,
+      }),
+      expect.objectContaining({ role: "end", name: "Centro Empresarial Real" }),
+    ]);
+    const all = (
+      (await (await requestAs(driver, `/offers/${offer.id}/messages`)).json()) as ChatResponse
+    ).conversation;
+    expect(
+      all.meetingPoints.map((point: { participantName: string }) => point.participantName),
+    ).toEqual(["Lucía", "Rosa"]);
+    expect(
+      all.routeMap.markers
+        .filter((marker: { role: string }) => marker.role === "meeting")
+        .map((marker: { name: string }) => marker.name),
+    ).toEqual(["Estación San Borja Sur (Línea 1)", "Municipalidad de San Borja"]);
+  });
+  it("keeps departure confirmed when only one of two passengers boards", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const passenger = await createMember(alfa.id, "u-lucia", "Lucía");
+    const other = await createMember(alfa.id, "u-rosa", "Rosa");
+    const offer = await seedOffer(alfa.id, driver.id);
+    const booking = await bookSeat(offer, passenger.id, "accepted");
+    await bookSeat(offer, other.id, "accepted");
+    const app = createApp({
+      db: testDb as never,
+      getSession: async () => ({ user: passenger }) as never,
+      rateLimit: async () => ({ success: true, reset: 0 }),
+      now: () => new Date("2026-10-19T12:00:00Z"),
+    });
+    expect((await app.request(`/bookings/${booking.id}/board`, { method: "POST" })).status).toBe(
+      200,
+    );
+    expect(
+      ((await (await app.request(`/offers/${offer.id}/messages`)).json()) as ChatResponse)
+        .conversation.tripState,
+    ).toBe("confirmed");
+  });
+  it("derives chat progress from the current Lima occurrence and resets a recurring trip next week", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const passenger = await createMember(alfa.id, "u-lucia", "Lucía");
+    const offer = await seedOffer(alfa.id, driver.id);
+    const booking = await bookSeat(offer, passenger.id, "accepted");
+    const app = (person: { id: string }, date = "2026-10-19T12:00:00Z") =>
+      createApp({
+        db: testDb as never,
+        getSession: async () => ({ user: person }) as never,
+        rateLimit: async () => ({ success: true, reset: 0 }),
+        now: () => new Date(date),
+      });
+    const context = async (date?: string) =>
+      (
+        (await (
+          await app(driver, date).request(`/offers/${offer.id}/messages`)
+        ).json()) as ChatResponse
+      ).conversation;
+    expect(await context()).toMatchObject({ tripDate: "2026-10-19", tripState: "confirmed" });
+    expect(
+      (await app(driver).request(`/offers/${offer.id}/start`, { method: "POST" })).status,
+    ).toBe(200);
+    expect(await context()).toMatchObject({ tripState: "in_progress" });
+    expect(
+      (await app(passenger).request(`/bookings/${booking.id}/arrive`, { method: "POST" })).status,
+    ).toBe(200);
+    expect(await context()).toMatchObject({ tripState: "completed" });
+    expect(await context("2026-10-26T12:00:00Z")).toMatchObject({
+      tripDate: "2026-10-26",
+      tripState: "confirmed",
+    });
+  });
+  it("revokes chat reads and writes for everyone when the driver cancels the offer", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const passenger = await createMember(alfa.id, "u-lucia", "Lucía");
+    const offer = await seedOffer(alfa.id, driver.id);
+    await bookSeat(offer, passenger.id, "accepted");
+    expect((await requestAs(driver, `/offers/${offer.id}/cancel`, { method: "POST" })).status).toBe(
+      200,
+    );
+    for (const person of [driver, passenger]) {
+      expect((await requestAs(person, `/offers/${offer.id}/messages`)).status).toBe(403);
+      expect(
+        (
+          await requestAs(person, `/offers/${offer.id}/messages`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ kind: "text", body: "Hola" }),
+          })
+        ).status,
+      ).toBe(403);
+    }
+  });
   it("lets accepted passengers and the driver exchange messages, not other members", async () => {
     const alfa = await createCommunity("comunidad-alfa");
     const driver = await createMember(alfa.id, "u-mateo", "Mateo", { alias: "Mateo M." });

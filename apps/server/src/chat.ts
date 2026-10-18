@@ -4,9 +4,13 @@ import { community, communityMember } from "@andes-hack/db/schema/community";
 import { meetingPoint, zone } from "@andes-hack/db/schema/places";
 import { seatBooking, tripMessage, tripOffer } from "@andes-hack/db/schema/trips";
 import { aliasedTable, and, asc, eq, inArray, sql } from "drizzle-orm";
+import { routeMapFor } from "@andes-hack/matching";
 
 import { getCommunityProfilePhotos, type ProfilePhotoStorageResolver } from "./profile-photos";
 import { ApiError } from "./utils/api-response";
+import { currentDay, loadDays } from "./trip-days";
+import { limaClock } from "./trip-rules";
+import { destinationOf } from "./search";
 
 type Database = typeof defaultDb;
 type ChatSummary = {
@@ -25,14 +29,21 @@ type ChatSummary = {
   meetingPointName: string | null;
 };
 
-async function loadConversation(database: Database, offerId: string, userId: string) {
+async function loadConversation(
+  database: Database,
+  offerId: string,
+  userId: string,
+  now = new Date(),
+) {
   const [offer] = await database
     .select({
       id: tripOffer.id,
+      status: tripOffer.status,
       driverId: tripOffer.driverId,
       communityId: tripOffer.communityId,
       communityName: community.name,
       originZoneName: zone.name,
+      originZoneId: tripOffer.originZoneId,
       destinationName: community.destinationName,
       direction: tripOffer.direction,
       departureTime: tripOffer.departureTime,
@@ -55,13 +66,21 @@ async function loadConversation(database: Database, offerId: string, userId: str
     .where(eq(tripOffer.id, offerId))
     .limit(1);
   if (!offer) throw new ApiError(404, "No encontramos este viaje.", { code: "offer_not_found" });
+  if (offer.status === "cancelled") {
+    throw new ApiError(403, "Este viaje fue cancelado.", { code: "trip_participant_required" });
+  }
 
   const accepted = await database
     .select({
+      id: seatBooking.id,
       passengerId: seatBooking.passengerId,
       passengerAlias: communityMember.alias,
       passengerAccountName: userTable.name,
       meetingPointName: meetingPoint.name,
+      meetingPointId: meetingPoint.id,
+      meetingPointLat: meetingPoint.lat,
+      meetingPointLng: meetingPoint.lng,
+      pickupAt: seatBooking.pickupAt,
       status: seatBooking.status,
     })
     .from(seatBooking)
@@ -99,6 +118,26 @@ async function loadConversation(database: Database, offerId: string, userId: str
     ? accepted
     : accepted.filter((booking) => booking.passengerId === userId);
   const outbound = offer.direction === "outbound";
+  const today = limaClock(now).today;
+  const days = await loadDays(
+    database,
+    accepted.map((booking) => booking.id),
+    today,
+  );
+  const current = accepted.map((booking) =>
+    offer.date
+      ? days.get(booking.id)?.find((day) => day.tripDate === offer.date)
+      : currentDay(days.get(booking.id) ?? [], today),
+  );
+  const tripDate =
+    current.find((day) => day?.startedAt && !day.outcome)?.tripDate ?? offer.date ?? today;
+  const occurrence = current.map((day) => (day?.tripDate === tripDate ? day : undefined));
+  const completed =
+    occurrence.some((day) => day?.outcome === "completed") &&
+    occurrence.every((day) => !!day?.outcome);
+  const underway =
+    occurrence.some((day) => !!day?.startedAt) &&
+    occurrence.every((day) => !!day?.startedAt || !!day?.outcome);
 
   return {
     isDriver,
@@ -109,6 +148,12 @@ async function loadConversation(database: Database, offerId: string, userId: str
     ),
     conversation: {
       offerId: offer.id,
+      tripDate,
+      tripState: completed
+        ? ("completed" as const)
+        : underway
+          ? ("in_progress" as const)
+          : ("confirmed" as const),
       communityName: offer.communityName,
       origin: outbound ? offer.originZoneName : offer.destinationName,
       destination: outbound ? offer.destinationName : offer.originZoneName,
@@ -117,9 +162,26 @@ async function loadConversation(database: Database, offerId: string, userId: str
       daysOfWeek: offer.daysOfWeek,
       role: isDriver ? ("driver" as const) : ("passenger" as const),
       participants,
+      routeMap: routeMapFor({
+        direction: offer.direction,
+        originZoneId: offer.originZoneId,
+        destinationId: destinationOf(offer).id,
+        stops: [
+          ...new Map(
+            visibleBookings
+              .toSorted((a, b) => a.pickupAt.localeCompare(b.pickupAt))
+              .map((booking) => [
+                booking.meetingPointId,
+                { meetingPointId: booking.meetingPointId, mine: booking.passengerId === userId },
+              ]),
+          ).values(),
+        ],
+      }),
       meetingPoints: visibleBookings.map((booking) => ({
         participantName: booking.passengerAlias ?? booking.passengerAccountName,
         name: booking.meetingPointName,
+        lat: booking.meetingPointLat,
+        lng: booking.meetingPointLng,
       })),
     },
   };
@@ -246,13 +308,14 @@ export async function listMyChats(
 
 export async function getTripMessages(
   database: Database,
-  input: { offerId: string; userId: string; after?: string },
+  input: { offerId: string; userId: string; after?: string; now?: Date },
   storageForPhotos?: ProfilePhotoStorageResolver,
 ) {
   const { conversation, communityId, driverId, participantIds } = await loadConversation(
     database,
     input.offerId,
     input.userId,
+    input.now,
   );
   const cursorMessage = aliasedTable(tripMessage, "cursor_message");
   const messages = await database

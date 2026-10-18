@@ -1256,7 +1256,7 @@ export function createApp(deps: AppDeps = {}) {
     return c.json(
       await getTripMessages(
         database,
-        { offerId, userId: c.get("user").id, after },
+        { offerId, userId: c.get("user").id, after, now: getNow() },
         getProfilePhotoStorage,
       ),
       200,
