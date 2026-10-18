@@ -7,6 +7,8 @@ import type { MyTrip } from "@/lib/communities-api";
 const listMyTrips = vi.fn();
 const updateOfferStatus = vi.fn();
 const createShareLink = vi.fn();
+const cancelOffer = vi.fn();
+const cancelBooking = vi.fn();
 const push = vi.fn();
 let tab: string | null = null;
 let roleParam: string | null = null;
@@ -22,6 +24,8 @@ vi.mock("@/lib/communities-api", () => ({
     listMyTrips: (...args: unknown[]) => listMyTrips(...args),
     updateOfferStatus: (...args: unknown[]) => updateOfferStatus(...args),
     createShareLink: (...args: unknown[]) => createShareLink(...args),
+    cancelOffer: (...args: unknown[]) => cancelOffer(...args),
+    cancelBooking: (...args: unknown[]) => cancelBooking(...args),
   },
 }));
 
@@ -92,6 +96,8 @@ beforeEach(() => {
   listMyTrips.mockReset().mockResolvedValue({ trips: [PASSENGER_TRIP] });
   updateOfferStatus.mockReset();
   createShareLink.mockReset().mockResolvedValue({ id: "link-1", token: "t", expiresAt: "" });
+  cancelOffer.mockReset();
+  cancelBooking.mockReset();
   push.mockReset();
 });
 
@@ -519,5 +525,51 @@ describe("Viajes", () => {
 
     await waitFor(() => expect(listMyTrips).toHaveBeenLastCalledWith("passenger", "past"));
     expect(screen.getByRole("tab", { name: "Historial" })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("lets the driver cancel a trip from the list with reasons dialog (US-022)", async () => {
+    listMyTrips.mockImplementation(async (role: string) => ({
+      trips: role === "driver" ? [DRIVER_TRIP] : [],
+    }));
+    cancelOffer.mockResolvedValue({
+      offer: { id: OFFER_ID, status: "cancelled" },
+      lateCancelled: false,
+      affectedBookings: [],
+    });
+    const user = userEvent.setup();
+    render(<Viajes />);
+
+    await user.click(screen.getByRole("button", { name: "Como conductor" }));
+    const cancelBtn = await screen.findByRole("button", { name: "Cancelar viaje" });
+    await user.click(cancelBtn);
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByText("¿Cancelar este viaje?")).toBeInTheDocument();
+
+    await user.click(screen.getByLabelText("Cambié de horario"));
+    await user.click(screen.getByRole("button", { name: "Sí, cancelar" }));
+
+    expect(cancelOffer).toHaveBeenCalledWith(OFFER_ID);
+    expect(await screen.findByText("Cancelada")).toBeInTheDocument();
+  });
+
+  it("lets the passenger cancel an accepted trip from the list with reasons dialog (US-022)", async () => {
+    listMyTrips.mockResolvedValue({ trips: [PASSENGER_TRIP] });
+    cancelBooking.mockResolvedValue({
+      booking: { id: BOOKING_ID, status: "cancelled_by_passenger" },
+      lateCancelled: false,
+    });
+    const user = userEvent.setup();
+    render(<Viajes />);
+
+    const cancelBtn = await screen.findByRole("button", { name: "Cancelar viaje" });
+    await user.click(cancelBtn);
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    await user.click(screen.getByLabelText("No iré a la sede"));
+    await user.click(screen.getByRole("button", { name: "Sí, cancelar" }));
+
+    expect(cancelBooking).toHaveBeenCalledWith(BOOKING_ID);
+    expect(await screen.findByText("Cancelada")).toBeInTheDocument();
   });
 });

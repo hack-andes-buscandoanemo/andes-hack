@@ -1,9 +1,11 @@
 "use client";
 
 import { isAxiosError } from "axios";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { CancelTripDialog } from "@/components/cancel-trip-dialog";
 import EmptyState from "@/components/empty-state";
 import { FuelEstimateDetail } from "@/components/fuel-estimate";
 import ShareTrip from "@/components/share-trip";
@@ -24,6 +26,11 @@ export default function TripDetailPage() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelSubmitting, setCancelSubmitting] = useState(false);
+  const [driverCancelled, setDriverCancelled] = useState(false);
+  const [passengerCancelled, setPassengerCancelled] = useState(false);
+  const [showAlternatives, setShowAlternatives] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -34,6 +41,11 @@ export default function TripDetailPage() {
     setMessage("");
     setSentId(null);
     setWithdrawn(false);
+    setShowCancelDialog(false);
+    setCancelSubmitting(false);
+    setDriverCancelled(false);
+    setPassengerCancelled(false);
+    setShowAlternatives(false);
     communitiesApi
       .getOfferDetail(id)
       .then((loaded) => {
@@ -106,12 +118,170 @@ export default function TripDetailPage() {
     }
   }
 
+  function isLate(): boolean {
+    if (!detail) return false;
+    const timeStr = detail.match?.pickupAt ?? detail.departureTime;
+    const [hours, minutes] = timeStr.slice(0, 5).split(":").map(Number);
+    if (hours === undefined || minutes === undefined) return false;
+    const now = new Date();
+    const todayLima = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Lima" }).format(now);
+    let targetDateStr = detail.date;
+    if (!targetDateStr && detail.daysOfWeek && detail.daysOfWeek.length > 0) {
+      const limaDay = new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/Lima",
+        weekday: "short",
+      }).format(now);
+      const dayMap: Record<string, number> = {
+        Mon: 1,
+        Tue: 2,
+        Wed: 3,
+        Thu: 4,
+        Fri: 5,
+        Sat: 6,
+        Sun: 7,
+      };
+      const currentIsoDay = dayMap[limaDay];
+      if (currentIsoDay && detail.daysOfWeek.includes(currentIsoDay)) {
+        targetDateStr = todayLima;
+      } else {
+        return false;
+      }
+    }
+    if (!targetDateStr) return false;
+    const target = new Date(
+      `${targetDateStr}T${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:00-05:00`,
+    );
+    const diff = target.getTime() - now.getTime();
+    return diff < 60 * 60 * 1000;
+  }
+
   let action: React.ReactNode = null;
-  if (detail.isOwn) action = null;
-  else if (detail.status !== "active")
+  if (detail.isOwn) {
+    if (detail.status === "cancelled" || driverCancelled) {
+      action = <EmptyState>Cancelaste este viaje.</EmptyState>;
+    } else {
+      action = (
+        <div className="space-y-3">
+          {error ? (
+            <p role="alert" className="text-sm font-medium text-destructive">
+              {error}
+            </p>
+          ) : null}
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11 w-full rounded-xl font-bold text-destructive hover:text-destructive"
+            onClick={() => setShowCancelDialog(true)}
+          >
+            Cancelar viaje
+          </Button>
+          <CancelTripDialog
+            isOpen={showCancelDialog}
+            isLate={isLate()}
+            submitting={cancelSubmitting}
+            onConfirm={async () => {
+              setCancelSubmitting(true);
+              setError(null);
+              try {
+                await communitiesApi.cancelOffer(id);
+                setDriverCancelled(true);
+                setDetail((prev) => (prev ? { ...prev, status: "cancelled" } : null));
+                setShowCancelDialog(false);
+              } catch (failure) {
+                setError(reasonOf(failure, "No pudimos cancelar tu viaje. Inténtalo de nuevo."));
+              } finally {
+                setCancelSubmitting(false);
+              }
+            }}
+            onDismiss={() => setShowCancelDialog(false)}
+          />
+        </div>
+      );
+    }
+  } else if (detail.booking?.status === "cancelled_by_driver") {
+    action = (
+      <div className="space-y-3">
+        <EmptyState>{`${detail.driverName} canceló el viaje.`}</EmptyState>
+        <p className="text-center text-sm font-medium">
+          Te incluiremos en el próximo emparejamiento.
+        </p>
+        {detail.alternatives && detail.alternatives.length > 0 ? (
+          <div className="space-y-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full font-bold"
+              onClick={() => setShowAlternatives((prev) => !prev)}
+            >
+              {showAlternatives ? "Ocultar alternativas" : "Ver alternativas"}
+            </Button>
+            {showAlternatives ? (
+              <div className="space-y-2 pt-2">
+                <h3 className="text-sm font-bold">Viajes alternativos disponibles</h3>
+                {detail.alternatives.map((alt) => (
+                  <div
+                    key={alt.offerId}
+                    className="space-y-1 rounded-xl border bg-card p-3 shadow-sm"
+                  >
+                    <p className="font-bold">{alt.driverName}</p>
+                    <p className="text-sm text-muted-foreground">{`Salida: ${alt.departureTime.slice(0, 5)} · ${alt.meetingPointName}`}</p>
+                    <p className="text-xs text-muted-foreground">{`${alt.seatsFree} asientos libres`}</p>
+                    <Link
+                      href={`/viajes/${alt.offerId}`}
+                      className="inline-block pt-1 text-sm font-bold underline"
+                    >
+                      Ver viaje
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    );
+  } else if (passengerCancelled) {
+    action = <EmptyState>Cancelaste tu viaje.</EmptyState>;
+  } else if (detail.booking?.status === "accepted") {
+    action = (
+      <div className="space-y-3">
+        <EmptyState>{`${detail.driverName} aceptó tu solicitud.`}</EmptyState>
+        {error ? (
+          <p role="alert" className="text-sm font-medium text-destructive">
+            {error}
+          </p>
+        ) : null}
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 w-full rounded-xl font-bold text-destructive hover:text-destructive"
+          onClick={() => setShowCancelDialog(true)}
+        >
+          Cancelar viaje
+        </Button>
+        <CancelTripDialog
+          isOpen={showCancelDialog}
+          isLate={isLate()}
+          submitting={cancelSubmitting}
+          onConfirm={async () => {
+            setCancelSubmitting(true);
+            setError(null);
+            try {
+              await communitiesApi.cancelBooking(detail.booking!.id);
+              setPassengerCancelled(true);
+              setShowCancelDialog(false);
+            } catch (failure) {
+              setError(reasonOf(failure, "No pudimos cancelar tu viaje. Inténtalo de nuevo."));
+            } finally {
+              setCancelSubmitting(false);
+            }
+          }}
+          onDismiss={() => setShowCancelDialog(false)}
+        />
+      </div>
+    );
+  } else if (detail.status !== "active")
     action = <EmptyState>Este viaje cambió y ya no es compatible con tu búsqueda.</EmptyState>;
-  else if (detail.booking?.status === "accepted")
-    action = <EmptyState>{`${detail.driverName} aceptó tu solicitud.`}</EmptyState>;
   else if (detail.booking?.status === "rejected")
     action = <EmptyState>El conductor no pudo aceptar tu solicitud.</EmptyState>;
   else if (pendingId)
