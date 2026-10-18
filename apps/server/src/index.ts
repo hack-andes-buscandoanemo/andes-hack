@@ -13,6 +13,7 @@ import {
   getMeRoute,
   getMyProfilePhotoRoute,
   getMyImpactRoute,
+  getLiveLocationRoute,
   getOfferDetailRoute,
   healthRoute,
   joinCommunityRoute,
@@ -35,6 +36,8 @@ import {
   revokeShareLinkRoute,
   sharedTripRoute,
   searchTripsRoute,
+  shareLiveLocationRoute,
+  stopLiveLocationRoute,
   updateMembershipRoute,
   updateOfferStatusRoute,
   updateTravelPreferencesRoute,
@@ -63,6 +66,12 @@ import { sendEmail as defaultSendEmail, type SendEmailOptions } from "./lib/emai
 import type { JourneyLock } from "./lib/journey-lock";
 import { logEvent } from "./lib/logger";
 import { safeLimit } from "./lib/safe-limit";
+import {
+  getLiveLocation,
+  liveOfferIds,
+  shareLiveLocation,
+  stopLiveLocation,
+} from "./live-location";
 import { latestMatchRuns, listProposals, runMatching } from "./match-runs";
 import {
   rateLimitMiddleware,
@@ -334,6 +343,7 @@ export function createApp(deps: AppDeps = {}) {
   openApiApp.use("/offers/:id", requireSession(deps.getSession));
   openApiApp.use("/offers/:id/cancel", requireSession(deps.getSession));
   openApiApp.use("/offers/:id/start", requireSession(deps.getSession));
+  openApiApp.use("/offers/:id/live-location", requireSession(deps.getSession));
   openApiApp.use("/offers/:id/bookings", requireSession(deps.getSession));
   openApiApp.use("/me/chats", requireSession(deps.getSession));
   openApiApp.use("/offers/:id/messages", requireSession(deps.getSession));
@@ -1040,18 +1050,26 @@ export function createApp(deps: AppDeps = {}) {
         maxDetourMinutes: tripOffer.maxDetourMinutes,
         womenOnly: tripOffer.womenOnly,
         note: tripOffer.note,
+        priceCents: tripOffer.priceCents,
+        paymentMethods: tripOffer.paymentMethods,
         status: tripOffer.status,
       })
       .from(tripOffer)
       .leftJoin(zone, eq(tripOffer.originZoneId, zone.id))
       .where(and(eq(tripOffer.communityId, communityId), eq(tripOffer.driverId, sessionUser.id)))
       .orderBy(desc(tripOffer.createdAt));
+    const live = await liveOfferIds(
+      database,
+      rows.map((row) => row.id),
+      getNow(),
+    );
 
     return c.json(
       {
         offers: rows.map((row) => ({
           ...row,
           originZoneName: row.originZoneName ?? row.originZoneId,
+          live: live.has(row.id),
         })),
       },
       200,
@@ -1139,6 +1157,8 @@ export function createApp(deps: AppDeps = {}) {
         maxDetourMinutes: body.maxDetourMinutes,
         womenOnly: body.womenOnly,
         note: body.note?.trim() || null,
+        priceCents: body.priceCents ?? null,
+        paymentMethods: body.priceCents ? body.paymentMethods : [],
         status: "active",
       })
       .returning();
@@ -1161,6 +1181,9 @@ export function createApp(deps: AppDeps = {}) {
           maxDetourMinutes: created!.maxDetourMinutes,
           womenOnly: created!.womenOnly,
           note: created!.note,
+          priceCents: created!.priceCents,
+          paymentMethods: created!.paymentMethods,
+          live: false,
           status: created!.status,
         },
         message: "Viaje publicado.",
@@ -1175,7 +1198,7 @@ export function createApp(deps: AppDeps = {}) {
     return c.json(
       await searchTrips(
         database,
-        { communityId, userId: c.get("user").id, body },
+        { communityId, userId: c.get("user").id, body, now: getNow() },
         getProfilePhotoStorage,
       ),
       200,
@@ -1186,6 +1209,33 @@ export function createApp(deps: AppDeps = {}) {
     const { id: offerId } = c.req.valid("param");
     return c.json(
       await getOfferDetail(database, { offerId, userId: c.get("user").id }, getProfilePhotoStorage),
+      200,
+    );
+  });
+
+  openApiApp.openapi(shareLiveLocationRoute, async (c) => {
+    const { id: offerId } = c.req.valid("param");
+    const position = c.req.valid("json");
+    return c.json(
+      await shareLiveLocation(database, {
+        offerId,
+        userId: c.get("user").id,
+        position,
+        now: getNow(),
+      }),
+      200,
+    );
+  });
+
+  openApiApp.openapi(stopLiveLocationRoute, async (c) => {
+    const { id: offerId } = c.req.valid("param");
+    return c.json(await stopLiveLocation(database, { offerId, userId: c.get("user").id }), 200);
+  });
+
+  openApiApp.openapi(getLiveLocationRoute, async (c) => {
+    const { id: offerId } = c.req.valid("param");
+    return c.json(
+      await getLiveLocation(database, { offerId, userId: c.get("user").id, now: getNow() }),
       200,
     );
   });
@@ -1431,6 +1481,9 @@ export function createApp(deps: AppDeps = {}) {
         maxDetourMinutes: updated!.maxDetourMinutes,
         womenOnly: updated!.womenOnly,
         note: updated!.note,
+        priceCents: updated!.priceCents,
+        paymentMethods: updated!.paymentMethods,
+        live: updated!.liveStartedAt !== null && updated!.status === "active",
         status: updated!.status,
       },
       200,

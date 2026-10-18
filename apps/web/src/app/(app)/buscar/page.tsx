@@ -29,6 +29,10 @@ export default function SearchPage() {
   const [communityId, setCommunityId] = useState("");
   const [zones, setZones] = useState<ZoneSummary[]>([]);
   const [zoneId, setZoneId] = useState("");
+  // Where the person is now, when they let the app use their location; the server turns it into
+  // the nearest zone and the coordinates are not kept.
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locating, setLocating] = useState(false);
   const [outbound, setOutbound] = useState(true);
   const [dayChoice, setDayChoice] = useState<DayChoice>("today");
   const [days, setDays] = useState<number[]>([]);
@@ -115,6 +119,28 @@ export default function SearchPage() {
     };
   }, [communityId]);
 
+  function useMyLocation() {
+    if (locating) return;
+    if (!("geolocation" in navigator)) {
+      setError("Tu navegador no permite usar la ubicación. Elige tu zona de la lista.");
+      return;
+    }
+    setError(null);
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setLocation({ lat: coords.latitude, lng: coords.longitude });
+        setZoneId("");
+        setLocating(false);
+      },
+      () => {
+        setError("No pudimos obtener tu ubicación. Elige tu zona de la lista.");
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10_000 },
+    );
+  }
+
   function tripDate() {
     if (dayChoice === "days") return null;
     if (dayChoice === "other") return otherDate;
@@ -123,8 +149,8 @@ export default function SearchPage() {
 
   async function handleSearch(range = { start: windowStart, end: windowEnd }) {
     if (!membership || searching) return;
-    if (!zoneId) {
-      setError("Selecciona tu zona.");
+    if (!zoneId && !location) {
+      setError("Selecciona tu zona o usa tu ubicación.");
       return;
     }
     if (dayChoice === "other" && !otherDate) {
@@ -144,19 +170,23 @@ export default function SearchPage() {
       fallback: FALLBACK_OPTIONS.find((option) => option.value === fallbackMode)!.label,
     };
     try {
-      setResult(
-        await communitiesApi.searchTrips(membership.communityId, {
-          direction: outbound ? "outbound" : "return",
-          originZoneId: zoneId,
-          windowStart: range.start,
-          windowEnd: range.end,
-          date: tripDate(),
-          daysOfWeek: dayChoice === "days" ? days : null,
-          maxWalkMinutes: 15,
-          fallbackMode,
-          womenOnly,
-        }),
-      );
+      const response = await communitiesApi.searchTrips(membership.communityId, {
+        direction: outbound ? "outbound" : "return",
+        ...(location ? { location } : { originZoneId: zoneId }),
+        windowStart: range.start,
+        windowEnd: range.end,
+        date: tripDate(),
+        daysOfWeek: dayChoice === "days" ? days : null,
+        maxWalkMinutes: 15,
+        fallbackMode,
+        womenOnly,
+      });
+      setResult(response);
+      // The nearest zone the server found takes the place of the coordinates, which are dropped.
+      if (location) {
+        setZoneId(response.originZoneId);
+        setLocation(null);
+      }
       setCompletedSearch(submittedSearch);
     } catch (err: unknown) {
       const apiError = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
@@ -212,17 +242,34 @@ export default function SearchPage() {
                           className={selectClass}
                           aria-label="Mi zona"
                           value={zoneId}
-                          onChange={(event) => setZoneId(event.target.value)}
+                          onChange={(event) => {
+                            setZoneId(event.target.value);
+                            setLocation(null);
+                          }}
                         >
-                          <option value="">Elige tu zona</option>
+                          <option value="">
+                            {location ? "Tu ubicación actual" : "Elige tu zona"}
+                          </option>
                           {zones.map((zone) => (
                             <option key={zone.id} value={zone.id}>
                               {zone.name}
                             </option>
                           ))}
                         </select>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 rounded-lg text-xs font-bold"
+                          disabled={locating}
+                          onClick={useMyLocation}
+                        >
+                          {locating ? "Ubicando…" : "Usar mi ubicación"}
+                        </Button>
                         <span className="text-xs text-muted-foreground">
-                          No pedimos tu dirección exacta
+                          {location
+                            ? "Buscaremos desde tu zona más cercana"
+                            : "No guardamos tu dirección exacta"}
                         </span>
                       </div>
                     )}

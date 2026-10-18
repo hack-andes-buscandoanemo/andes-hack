@@ -10,12 +10,14 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type z from "zod";
 
+import { paymentMethodOptions } from "@/components/trip-price";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   communitiesApi,
   type MembershipSummary,
+  type PaymentMethod,
   type VehicleSummary,
   type ZoneSummary,
 } from "@/lib/communities-api";
@@ -103,6 +105,8 @@ export default function OfferPage() {
       maxDetourMinutes: 5 as 0 | 5 | 10,
       womenOnly: false,
       note: "",
+      price: "",
+      paymentMethods: [] as PaymentMethod[],
     },
     onSubmit: async ({ value }) => {
       if (!membership) return;
@@ -113,6 +117,13 @@ export default function OfferPage() {
       const seatsNum = Number(value.seatsTotal);
       if (selectedVehicle && seatsNum > selectedVehicle.seats) {
         setOfferError("No puedes ofrecer más asientos de los que tiene tu vehículo.");
+        return;
+      }
+
+      // Soles typed as "5" or "5.50"; the API takes céntimos.
+      const priceSoles = Number(value.price.replace(",", "."));
+      if (value.price.trim() && (!Number.isFinite(priceSoles) || priceSoles < 0)) {
+        setOfferError("Ingresa un precio válido, por ejemplo 5 o 5.50.");
         return;
       }
 
@@ -127,6 +138,8 @@ export default function OfferPage() {
         maxDetourMinutes: value.maxDetourMinutes,
         womenOnly: membership.identifiesAsWoman ? value.womenOnly : false,
         note: value.note.trim() || null,
+        priceCents: value.price.trim() ? Math.round(priceSoles * 100) : null,
+        paymentMethods: value.price.trim() ? value.paymentMethods : [],
       };
 
       const parsed = CreateTripOfferBodySchema.safeParse(payload);
@@ -508,6 +521,65 @@ export default function OfferPage() {
               )}
             </offerForm.Field>
           )}
+
+          <offerForm.Field name="price">
+            {(field) => (
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="offer-price">Precio base por asiento (S/, opcional)</Label>
+                <Input
+                  id="offer-price"
+                  inputMode="decimal"
+                  placeholder="5.00"
+                  maxLength={6}
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Los pasajeros lo ven antes de pedir el asiento. Te Jalo no cobra: se paga contigo.
+                </p>
+              </div>
+            )}
+          </offerForm.Field>
+
+          <offerForm.Subscribe selector={(state) => state.values.price.trim() !== ""}>
+            {(hasPrice) =>
+              hasPrice ? (
+                <offerForm.Field name="paymentMethods">
+                  {(field) => (
+                    <fieldset className="flex flex-col gap-2">
+                      <legend className="text-sm font-semibold">Cómo te pagan</legend>
+                      <div className="flex gap-2">
+                        {paymentMethodOptions.map((option) => {
+                          const active = field.state.value.includes(option.value);
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              aria-pressed={active}
+                              onClick={() =>
+                                field.handleChange(
+                                  active
+                                    ? field.state.value.filter((method) => method !== option.value)
+                                    : [...field.state.value, option.value],
+                                )
+                              }
+                              className={`rounded-xl border px-4 py-2 text-sm font-medium ${
+                                active
+                                  ? "border-foreground bg-brand-yellow/20 font-bold"
+                                  : "bg-card"
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </fieldset>
+                  )}
+                </offerForm.Field>
+              ) : null
+            }
+          </offerForm.Subscribe>
 
           <offerForm.Field name="note">
             {(field) => (

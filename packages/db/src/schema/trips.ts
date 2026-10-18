@@ -4,7 +4,9 @@ import {
   boolean,
   check,
   date,
+  doublePrecision,
   index,
+  integer,
   pgEnum,
   pgTable,
   primaryKey,
@@ -56,6 +58,10 @@ export const bookingStatusEnum = pgEnum("booking_status", [
 // How one day of a trip ended for a seat (US-025). A seat that is still open has no outcome.
 export const tripDayOutcomeEnum = pgEnum("trip_day_outcome", ["completed", "no_show"]);
 
+// How the passengers settle the shared cost with the driver. Te Jalo only shows the choice:
+// the payment itself happens outside the app, between the two of them.
+export const paymentMethodEnum = pgEnum("payment_method", ["yape", "cash"]);
+
 export const tripMessageKindEnum = pgEnum("trip_message_kind", ["text", "quick"]);
 
 // A trip happens on one date or every week on some weekdays, never both.
@@ -100,6 +106,11 @@ export const tripOffer = pgTable(
     maxDetourMinutes: smallint("max_detour_minutes").notNull(),
     womenOnly: boolean("women_only").default(false).notNull(),
     note: varchar("note", { length: 280 }),
+    // The base price per seat the driver sets, in céntimos of a sol; null when none is asked.
+    priceCents: integer("price_cents"),
+    paymentMethods: paymentMethodEnum("payment_methods").array().default([]).notNull(),
+    // When the driver turned Te Jalo on for this trip; null until then (or once they turn it off).
+    liveStartedAt: timestamp("live_started_at", { withTimezone: true }),
     status: offerStatusEnum("status").default("active").notNull(),
     ...timestamps,
   },
@@ -107,6 +118,10 @@ export const tripOffer = pgTable(
     index("trip_offer_community_id_idx").on(table.communityId),
     index("trip_offer_driver_id_idx").on(table.driverId),
     check("trip_offer_seats_total_check", sql`${table.seatsTotal} BETWEEN 1 AND 6`),
+    check(
+      "trip_offer_price_cents_check",
+      sql`${table.priceCents} IS NULL OR ${table.priceCents} BETWEEN 0 AND 20000`,
+    ),
     check("trip_offer_max_detour_minutes_check", sql`${table.maxDetourMinutes} IN (0, 5, 10)`),
     ...scheduleChecks("trip_offer", table),
     check(
@@ -243,6 +258,17 @@ export const tripMessage = pgTable(
   },
   (table) => [index("trip_message_offer_created_idx").on(table.offerId, table.createdAt, table.id)],
 );
+
+// The last position the driver shared while Te Jalo is on: one row per trip, overwritten on
+// every update, so the table never keeps a trail of where the car has been.
+export const tripLiveLocation = pgTable("trip_live_location", {
+  offerId: uuid("offer_id")
+    .primaryKey()
+    .references(() => tripOffer.id, { onDelete: "cascade" }),
+  lat: doublePrecision("lat").notNull(),
+  lng: doublePrecision("lng").notNull(),
+  recordedAt: timestamp("recorded_at", { withTimezone: true }).defaultNow().notNull(),
+});
 
 export type TripOffer = typeof tripOffer.$inferSelect;
 export type TripRequest = typeof tripRequest.$inferSelect;

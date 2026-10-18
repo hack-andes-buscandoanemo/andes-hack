@@ -2,7 +2,7 @@ const QUESTIONS = [
   {
     question: "¿Por qué Te Jalo no cobra?",
     answer:
-      "Te Jalo no procesa pagos ni cobra comisión. Quienes viajan comparten el gasto de combustible con quien maneja, sin ganancia comercial.",
+      "Te Jalo no procesa pagos ni cobra comisión. Quien maneja fija un precio base por asiento y los pasajeros le pagan directamente con Yape o efectivo, sin intermediarios.",
   },
   {
     question: "¿Quién puede entrar a mi comunidad?",
