@@ -513,6 +513,85 @@ export const updateOfferStatusRoute = createRoute({
   },
 });
 
+const waitlistContact = {
+  institution: z.string().trim().min(1).max(120),
+  email: z.email().max(254),
+  // Nothing is stored without explicit consent (Ley 29733 de protección de datos personales).
+  consent: z.literal(true),
+  // Left empty by people; bots that fill every field are thanked and ignored.
+  website: z.string().optional(),
+};
+
+export const WaitlistEntryRequestSchema = z
+  .discriminatedUnion("kind", [
+    z.object({
+      kind: z.literal("institution"),
+      ...waitlistContact,
+      role: z.string().trim().min(1).max(80),
+      onSiteCount: z.number().int().min(1).max(100_000),
+      wantsPilot: z.boolean(),
+    }),
+    z.object({
+      kind: z.literal("individual"),
+      ...waitlistContact,
+    }),
+  ])
+  .openapi("WaitlistEntryRequest");
+
+export const WaitlistEntryResponseSchema = z
+  .object({
+    message: z.string(),
+  })
+  .openapi("WaitlistEntryResponse");
+
+export const joinWaitlistRoute = createRoute({
+  method: "post",
+  path: "/public/waitlist",
+  tags: ["Público"],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: WaitlistEntryRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: "Inscripción recibida en la lista de espera",
+      content: {
+        "application/json": {
+          schema: WaitlistEntryResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+export const WaitlistSummarySchema = z
+  .object({
+    institutions: z.number().int(),
+    individuals: z.number().int(),
+  })
+  .openapi("WaitlistSummary");
+
+export const waitlistSummaryRoute = createRoute({
+  method: "get",
+  path: "/public/waitlist/summary",
+  tags: ["Público"],
+  responses: {
+    200: {
+      description: "Totales de la lista de espera, sin datos de contacto",
+      content: {
+        "application/json": {
+          schema: WaitlistSummarySchema,
+        },
+      },
+    },
+  },
+});
+
 export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   healthRoute,
   listCommunitiesRoute,
@@ -526,6 +605,8 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   listCommunityOffersRoute,
   createCommunityOfferRoute,
   updateOfferStatusRoute,
+  joinWaitlistRoute,
+  waitlistSummaryRoute,
 ];
 
 export function createOpenApiDocument(routes: readonly RouteConfig[] = registeredOpenApiRoutes) {
