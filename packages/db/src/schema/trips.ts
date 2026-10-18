@@ -228,6 +228,10 @@ export const tripShareLink = pgTable(
   (table) => [
     uniqueIndex("trip_share_link_token_hash_idx").on(table.tokenHash),
     index("trip_share_link_booking_id_idx").on(table.bookingId),
+    // One live link per booking: two shares at once cannot both stay active.
+    uniqueIndex("trip_share_link_active_booking_idx")
+      .on(table.bookingId)
+      .where(sql`${table.revokedAt} IS NULL`),
   ],
 );
 
