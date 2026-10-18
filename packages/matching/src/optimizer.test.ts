@@ -158,4 +158,27 @@ describe("seats of a day assigned to maximise the car trips avoided", () => {
       ["sofia", "la-molina-plaza-de-armas", "07:02", "07:40"],
     ]);
   });
+
+  it("scores the plan by car trips avoided, passengers, then the drivers' detour and the walk", () => {
+    const plan = optimizeDay(
+      {
+        date: monday,
+        offers: [offer({ maxDetourMinutes: 10 })],
+        requests: [
+          request("pedro"),
+          request("sofia", { originZoneId: "la-molina", fallbackMode: "public_transport" }),
+        ],
+      },
+      model,
+    );
+
+    // Carlos goes from 20 to 23 free-flow min: 3 × 1.72 = 5.16. Pedro walks 0.56 min and
+    // Sofía a few metres.
+    expect(plan.objective).toEqual({
+      carTripsAvoided: 1,
+      passengersMatched: 2,
+      detourMinutes: 5,
+      walkMinutes: 1,
+    });
+  });
 });

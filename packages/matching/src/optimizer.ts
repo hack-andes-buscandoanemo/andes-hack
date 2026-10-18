@@ -4,7 +4,7 @@ import {
   type OfferRoute,
   rankOffersForRequest,
   type RideRequest,
-  timetable,
+  timeRoute,
 } from "./insertion";
 import { avoidsCarTrip, type FallbackMode } from "./metrics";
 import type { TravelTimeModel } from "./travel-time";
@@ -45,9 +45,20 @@ export interface Unassigned {
   reason: InfeasibleReason;
 }
 
+// What the plan maximises, in this order: car trips avoided, then passengers seated, then
+// fewer minutes of detour for the drivers, then fewer minutes on foot.
+export interface Objective {
+  carTripsAvoided: number;
+  passengersMatched: number;
+  // Each driver's, against the trip with the passengers they had already accepted.
+  detourMinutes: number;
+  walkMinutes: number;
+}
+
 export interface DayPlan {
   assignments: Assignment[];
   unassigned: Unassigned[];
+  objective: Objective;
 }
 
 interface Candidate {
@@ -126,23 +137,35 @@ export function optimizeDay(instance: DayInstance, model: TravelTimeModel): DayP
   }
 
   const offers = [...routes.values()];
-  // Seating someone ahead of a passenger delays them, so times come from the final routes.
-  for (const route of offers) {
-    const times = timetable(route, instance.date, model);
-    riders.get(route.id)!.forEach((requestId, stop) => {
+  let detourMinutes = 0;
+  for (const offer of instance.offers) {
+    const ids = riders.get(offer.id)!;
+    if (ids.every((requestId) => requestId === null)) continue;
+    // Seating someone ahead of a passenger delays them, so times come from the final route.
+    const timing = timeRoute(routes.get(offer.id)!, instance.date, model);
+    ids.forEach((requestId, stop) => {
       const assignment = requestId === null ? undefined : seated.get(requestId);
-      if (assignment) seated.set(assignment.requestId, { ...assignment, ...times[stop]! });
+      if (assignment) seated.set(assignment.requestId, { ...assignment, ...timing.stops[stop]! });
     });
+    // What the plan adds to the trip the driver already had.
+    detourMinutes += Math.round(timing.minutes - timeRoute(offer, instance.date, model).minutes);
   }
+  const assignments = instance.requests.flatMap((request) => seated.get(request.id) ?? []);
 
   return {
     // In the order the requests came.
-    assignments: instance.requests.flatMap((request) => seated.get(request.id) ?? []),
+    assignments,
     // Why each one is left out, on the final routes.
     unassigned: waiting.map((request) => ({
       requestId: request.id,
       passengerId: request.passengerId,
       reason: rankOffersForRequest(request, offers, model).reason!,
     })),
+    objective: {
+      carTripsAvoided: assignments.filter((assignment) => assignment.avoidsCarTrip).length,
+      passengersMatched: assignments.length,
+      detourMinutes,
+      walkMinutes: assignments.reduce((sum, assignment) => sum + assignment.walkMinutes, 0),
+    },
   };
 }

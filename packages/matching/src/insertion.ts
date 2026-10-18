@@ -122,23 +122,26 @@ function stopTimes(
   });
 }
 
-export interface StopTimes {
-  pickupAt: string;
-  arrivalAt: string;
+export interface RouteTiming {
+  // Each passenger's times, in route order.
+  stops: { pickupAt: string; arrivalAt: string }[];
+  // From the departure to the end of the trip.
+  minutes: number;
 }
 
-// Every passenger's times on the route as it stands, in route order, on `day`.
-export function timetable(route: OfferRoute, day: string, model: TravelTimeModel): StopTimes[] {
+// The route as it stands, timed on `day` with the same legs and traffic as an insertion.
+export function timeRoute(route: OfferRoute, day: string, model: TravelTimeModel): RouteTiming {
   const outbound = route.direction === "outbound";
   const departure = minutesOfDay(route.departureTime);
-  const stops = route.passengers.map((passenger) => passenger.meetingPointId);
-  const times = stopTimes(route, stops, day, model);
+  const ids = route.passengers.map((passenger) => passenger.meetingPointId);
+  const times = stopTimes(route, ids, day, model);
   const end = times.at(-1)!;
   // On the way back passengers board at the destination and get off at their stop.
-  return times.slice(0, -1).map((stop) => ({
+  const stops = times.slice(0, -1).map((stop) => ({
     pickupAt: timeOfDay(outbound ? stop : departure),
     arrivalAt: timeOfDay(outbound ? end : stop),
   }));
+  return { stops, minutes: end - departure };
 }
 
 function isoWeekday(date: string) {
