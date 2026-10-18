@@ -544,6 +544,21 @@ export const WaitlistEntryResponseSchema = z
   })
   .openapi("WaitlistEntryResponse");
 
+// The body of every error, as apps/server's error handler writes it.
+export const ApiFailureSchema = z
+  .object({
+    success: z.literal(false),
+    status: z.number().int(),
+    error: z.string(),
+    details: z.unknown().optional(),
+  })
+  .openapi("ApiFailure");
+
+const failure = (description: string) => ({
+  description,
+  content: { "application/json": { schema: ApiFailureSchema } },
+});
+
 export const joinWaitlistRoute = createRoute({
   method: "post",
   path: "/public/waitlist",
@@ -566,6 +581,9 @@ export const joinWaitlistRoute = createRoute({
         },
       },
     },
+    409: failure("Ya está en la lista: «Ya estás en la lista.»"),
+    422: failure("Datos incompletos o sin consentimiento"),
+    429: failure("Demasiados envíos desde la misma IP: «Inténtalo en unos minutos.»"),
   },
 });
 

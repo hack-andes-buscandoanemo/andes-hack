@@ -708,6 +708,29 @@
           "message"
         ]
       },
+      "ApiFailure": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "status": {
+            "type": "integer"
+          },
+          "error": {
+            "type": "string"
+          },
+          "details": {}
+        },
+        "required": [
+          "success",
+          "status",
+          "error"
+        ]
+      },
       "WaitlistEntryRequest": {
         "oneOf": [
           {
@@ -1186,6 +1209,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WaitlistEntryResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ya está en la lista: «Ya estás en la lista.»",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiFailure"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos incompletos o sin consentimiento",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiFailure"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Demasiados envíos desde la misma IP: «Inténtalo en unos minutos.»",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiFailure"
                 }
               }
             }

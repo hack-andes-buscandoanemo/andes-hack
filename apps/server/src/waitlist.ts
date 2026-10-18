@@ -2,7 +2,7 @@ import { joinWaitlistRoute, waitlistSummaryRoute } from "@andes-hack/api";
 import type * as schema from "@andes-hack/db/schema/index";
 import { waitlistEntry } from "@andes-hack/db/schema/waitlist";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { count, eq } from "drizzle-orm";
+import { count } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 
 import { ApiError } from "./utils/api-response";
@@ -22,7 +22,7 @@ export function createWaitlistRoutes(deps: WaitlistDeps = {}) {
   const app = new OpenAPIHono({ defaultHook: validationHook });
   app.onError(errorHandler);
 
-  const database = async () => deps.db ?? (await import("@andes-hack/db")).db;
+  const getDb = async () => deps.db ?? (await import("@andes-hack/db")).db;
   const limit =
     deps.limit ??
     (async (identifier: string) => {
@@ -41,7 +41,7 @@ export function createWaitlistRoutes(deps: WaitlistDeps = {}) {
     // A filled trap field means a bot: it gets the same answer, so it learns nothing.
     if (website) return c.json({ message: thanks }, 201);
 
-    const db = await database();
+    const db = await getDb();
     const stored = await db
       .insert(waitlistEntry)
       .values({ ...entry, email: entry.email.toLowerCase() })
@@ -54,17 +54,16 @@ export function createWaitlistRoutes(deps: WaitlistDeps = {}) {
   });
 
   app.openapi(waitlistSummaryRoute, async (c) => {
-    const db = await database();
-    const [institutions] = await db
-      .select({ total: count() })
+    const db = await getDb();
+    const totals = await db
+      .select({ kind: waitlistEntry.kind, total: count() })
       .from(waitlistEntry)
-      .where(eq(waitlistEntry.kind, "institution"));
-    const [individuals] = await db
-      .select({ total: count() })
-      .from(waitlistEntry)
-      .where(eq(waitlistEntry.kind, "individual"));
+      .groupBy(waitlistEntry.kind);
+    // A list nobody has joined yet has no row of its own.
+    const totalOf = (kind: "institution" | "individual") =>
+      totals.find((row) => row.kind === kind)?.total ?? 0;
     return c.json(
-      { institutions: institutions?.total ?? 0, individuals: individuals?.total ?? 0 },
+      { institutions: totalOf("institution"), individuals: totalOf("individual") },
       200,
     );
   });
