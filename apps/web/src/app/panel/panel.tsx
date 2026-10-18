@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import EmptyState from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import { communitiesApi, type CommunitySummary, type PublicStats } from "@/lib/communities-api";
+import { kg } from "@/lib/format";
 
 function Card({ label, value }: { label: string; value: string }) {
   return (
@@ -36,9 +37,6 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
     </section>
   );
 }
-
-// One decimal and a comma, as people read it in Peru.
-const kg = (value: number) => `${value.toFixed(1).replace(".", ",")} kg`;
 
 // The server's clock, shown in Lima time whatever the visitor's device says.
 const limaClock = new Intl.DateTimeFormat("es-PE", {

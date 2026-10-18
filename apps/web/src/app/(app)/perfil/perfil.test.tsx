@@ -54,7 +54,7 @@ const MEMBERSHIP = {
   communityName: "Comunidad Alfa",
   alias: "Ana T.",
   verificationMethod: "join_code" as const,
-  usualMode: "drove_alone",
+  usualMode: "drove_alone" as const,
   travelRole: "passenger" as const,
 };
 

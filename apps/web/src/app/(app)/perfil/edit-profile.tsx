@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { communitiesApi } from "@/lib/communities-api";
 import { USUAL_MODE_OPTIONS, type UsualMode } from "@/lib/usual-modes";
 
-export type EditableProfile = { alias: string | null; usualMode: string | null };
+export type EditableProfile = { alias: string | null; usualMode: UsualMode | null };
 
 export default function EditProfile({
   communityId,
@@ -20,13 +20,14 @@ export default function EditProfile({
   onSaved: (profile: EditableProfile) => void;
 }) {
   const [alias, setAlias] = useState(initial.alias ?? "");
-  const [usualMode, setUsualMode] = useState(initial.usualMode ?? "other");
+  // Only onboarded members reach the profile, so the usual mode is always set already.
+  const [usualMode, setUsualMode] = useState<UsualMode>(initial.usualMode ?? "other");
   const [message, setMessage] = useState<string | null>(null);
 
   async function save(event: FormEvent) {
     event.preventDefault();
     // No consent in the body: the server keeps the one given at onboarding.
-    const payload = { alias: alias.trim() || undefined, usualMode: usualMode as UsualMode };
+    const payload = { alias: alias.trim() || undefined, usualMode };
     try {
       await communitiesApi.updateMembership(communityId, payload);
     } catch {
@@ -60,7 +61,7 @@ export default function EditProfile({
           <select
             id="profile-usual-mode"
             value={usualMode}
-            onChange={(event) => setUsualMode(event.target.value)}
+            onChange={(event) => setUsualMode(event.target.value as UsualMode)}
             className="min-h-11 rounded-md border bg-background px-3"
           >
             {USUAL_MODE_OPTIONS.map((option) => (

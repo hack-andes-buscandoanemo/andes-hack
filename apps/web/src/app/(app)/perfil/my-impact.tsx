@@ -3,9 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { communitiesApi, type MyImpact as Impact } from "@/lib/communities-api";
-
-// One decimal and a comma, as people read it in Peru.
-const kg = (value: number) => `${value.toFixed(1).replace(".", ",")} kg`;
+import { kg } from "@/lib/format";
 
 function Figure({ label, value }: { label: string; value: string }) {
   return (

@@ -1,11 +1,12 @@
 import { authClient } from "@/lib/auth-client";
+import type { UsualMode } from "@/lib/usual-modes";
 
 export type ProfileMembership = {
   communityId: string;
   communityName: string;
   alias: string | null;
   verificationMethod: "join_code" | "email_domain";
-  usualMode: string | null;
+  usualMode: UsualMode | null;
   travelRole: "driver" | "passenger" | "both" | null;
 };
 
