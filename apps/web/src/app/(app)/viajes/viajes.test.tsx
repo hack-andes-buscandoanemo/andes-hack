@@ -96,6 +96,32 @@ beforeEach(() => {
 });
 
 describe("Viajes", () => {
+  it("offers the day-of-trip buttons on accepted passenger trips and active driver trips only (US-025)", async () => {
+    listMyTrips.mockResolvedValue({
+      trips: [
+        PASSENGER_TRIP,
+        { ...PASSENGER_TRIP, id: "pending-1", status: "pending", driver: null },
+        DRIVER_TRIP,
+      ],
+    });
+    render(<Viajes />);
+
+    await screen.findAllByRole("listitem");
+
+    expect(screen.getAllByRole("button", { name: "Ya estoy en el auto" })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "Iniciar viaje" })).toHaveLength(1);
+  });
+
+  it("does not offer them in the history", async () => {
+    tab = "historial";
+    listMyTrips.mockResolvedValue({ trips: [{ ...PASSENGER_TRIP, status: "completed" }] });
+    render(<Viajes />);
+
+    await screen.findAllByRole("listitem");
+
+    expect(screen.queryByRole("button", { name: "Ya estoy en el auto" })).not.toBeInTheDocument();
+  });
+
   it("offers Compartir viaje on an accepted passenger trip and nowhere else (US-028)", async () => {
     listMyTrips.mockResolvedValue({
       trips: [

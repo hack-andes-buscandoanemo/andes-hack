@@ -2,14 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-const { listOfferBookings, acceptBooking, rejectBooking } = vi.hoisted(() => ({
+const { listOfferBookings, acceptBooking, rejectBooking, noShowBooking } = vi.hoisted(() => ({
   listOfferBookings: vi.fn(),
   acceptBooking: vi.fn(),
   rejectBooking: vi.fn(),
+  noShowBooking: vi.fn(),
 }));
 
 vi.mock("@/lib/communities-api", () => ({
-  communitiesApi: { listOfferBookings, acceptBooking, rejectBooking },
+  communitiesApi: { listOfferBookings, acceptBooking, rejectBooking, noShowBooking },
 }));
 
 import BookingRequests from "./booking-requests";
@@ -40,6 +41,7 @@ beforeEach(() => {
   listOfferBookings.mockReset().mockResolvedValue(BOOKINGS);
   acceptBooking.mockReset();
   rejectBooking.mockReset();
+  noShowBooking.mockReset();
 });
 
 afterEach(cleanup);
@@ -83,5 +85,26 @@ describe("booking requests", () => {
     expect(rejectBooking).toHaveBeenCalledWith(BOOKING_ID);
     expect(await screen.findByText("Solicitud rechazada.")).toBeInTheDocument();
     expect(screen.queryByText("Lucía R. · Miembro verificado")).not.toBeInTheDocument();
+  });
+
+  it("lets the driver mark a no-show for an accepted passenger and confirms it", async () => {
+    const user = userEvent.setup();
+    listOfferBookings.mockResolvedValue({
+      ...BOOKINGS,
+      bookings: [{ ...BOOKINGS.bookings[0], status: "accepted" as const }],
+    });
+    noShowBooking.mockResolvedValue({
+      booking: { id: BOOKING_ID, status: "no_show", startedAt: null, arrivedAt: null },
+      message: "Registramos que la persona no se presentó.",
+    });
+    render(<BookingRequests offerId={OFFER_ID} />);
+
+    await user.click(await screen.findByRole("button", { name: "No se presentó" }));
+
+    expect(noShowBooking).toHaveBeenCalledWith(BOOKING_ID);
+    expect(
+      await screen.findByText("Registramos que la persona no se presentó."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "No se presentó" })).not.toBeInTheDocument();
   });
 });

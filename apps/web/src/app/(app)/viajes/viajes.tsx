@@ -8,6 +8,7 @@ import EmptyState from "@/components/empty-state";
 import { pairReturns, type PairedReturn } from "@/components/return-pairs";
 import ReturnTripCard from "@/components/return-trip-card";
 import ShareTrip from "@/components/share-trip";
+import TripProgress from "@/components/trip-progress";
 import TripSummaryCard from "@/components/trip-summary-card";
 import { FUEL_NOTE } from "@/components/fuel-estimate";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,11 @@ function TripCard({
         ) : null}
         {trip.role === "passenger" && trip.status === "accepted" ? (
           <ShareTrip bookingId={trip.id} label="Compartir viaje" />
+        ) : null}
+        {coordinateReturn &&
+        ((trip.role === "passenger" && trip.status === "accepted") ||
+          (trip.role === "driver" && trip.status === "active")) ? (
+          <TripProgress trip={trip} />
         ) : null}
         {coordinateReturn ? <ReturnTripCard trip={trip} returns={returns} /> : null}
       </TripSummaryCard>

@@ -27,6 +27,31 @@ export default function BookingRequests({ offerId }: { offerId: string }) {
     };
   }, [offerId]);
 
+  async function markNoShow(bookingId: string) {
+    setBusyId(bookingId);
+    setError("");
+    setNotice("");
+    try {
+      const { booking, message } = await communitiesApi.noShowBooking(bookingId);
+      setResult((current) =>
+        current
+          ? {
+              ...current,
+              bookings: current.bookings.map((item) =>
+                item.id === bookingId ? { ...item, status: booking.status } : item,
+              ),
+            }
+          : current,
+      );
+      setNotice(message);
+    } catch (cause) {
+      const reason = (cause as { response?: { data?: { error?: unknown } } }).response?.data?.error;
+      setError(typeof reason === "string" ? reason : "No se pudo actualizar la solicitud.");
+    } finally {
+      setBusyId("");
+    }
+  }
+
   async function decide(bookingId: string, action: "accept" | "reject") {
     setBusyId(bookingId);
     setError("");
@@ -110,6 +135,16 @@ export default function BookingRequests({ offerId }: { offerId: string }) {
                   Rechazar
                 </Button>
               </div>
+            ) : null}
+            {booking.status === "accepted" ? (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={Boolean(busyId)}
+                onClick={() => markNoShow(booking.id)}
+              >
+                No se presentó
+              </Button>
             ) : null}
           </li>
         ))}
