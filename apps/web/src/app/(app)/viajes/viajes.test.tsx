@@ -133,7 +133,7 @@ describe("Viajes", () => {
       listMyTrips.mockResolvedValue({ trips: [OUTBOUND, trip] });
       render(<Viajes />);
 
-      await screen.findByRole("region", { name: "¿Y el regreso?" });
+      await screen.findAllByRole("region", { name: "¿Y el regreso?" });
       expect(screen.queryByRole("region", { name: /^Ida y regreso:/ })).not.toBeInTheDocument();
       expect(screen.getAllByRole("listitem")).toHaveLength(2);
     },

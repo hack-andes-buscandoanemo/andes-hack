@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -39,7 +39,21 @@ const TRIP: MyTrip = {
 
 beforeEach(() => push.mockReset());
 
+// Without a shared calendar there is nothing to prefill, but the way back must stay reachable.
+function expectOnlySearchEntry() {
+  const card = screen.getByRole("region", { name: "¿Y el regreso?" });
+  expect(within(card).getByRole("link", { name: "Buscar regreso" })).toHaveAttribute(
+    "href",
+    "/buscar",
+  );
+  expect(within(card).queryByLabelText("Desde")).not.toBeInTheDocument();
+}
+
 describe("return coordination card", () => {
+  it("falls back to a plain return search when the trip has no return context", () => {
+    render(<ReturnTripCard trip={{ ...TRIP, passengerRequest: undefined }} />);
+    expectOnlySearchEntry();
+  });
   it("requires a recurring offer to serve the passenger's one-off date", () => {
     render(
       <ReturnTripCard
@@ -54,7 +68,7 @@ describe("return coordination card", () => {
         }}
       />,
     );
-    expect(screen.queryByRole("region", { name: "¿Y el regreso?" })).not.toBeInTheDocument();
+    expectOnlySearchEntry();
   });
   it("rejects different one-off dates even when both are accepted", () => {
     render(
@@ -71,15 +85,15 @@ describe("return coordination card", () => {
         }}
       />,
     );
-    expect(screen.queryByRole("region", { name: "¿Y el regreso?" })).not.toBeInTheDocument();
+    expectOnlySearchEntry();
   });
   it("does not coordinate a one-off offer outside the passenger's recurring days", () => {
     render(<ReturnTripCard trip={{ ...TRIP, date: "2099-03-03", daysOfWeek: null }} />);
-    expect(screen.queryByRole("region", { name: "¿Y el regreso?" })).not.toBeInTheDocument();
+    expectOnlySearchEntry();
   });
   it("does not invent accepted service when the passenger and offer calendars do not overlap", () => {
     render(<ReturnTripCard trip={{ ...TRIP, daysOfWeek: [2, 4] }} />);
-    expect(screen.queryByRole("region", { name: "¿Y el regreso?" })).not.toBeInTheDocument();
+    expectOnlySearchEntry();
   });
   it("only offers coordination for an accepted outward passenger trip", () => {
     const { rerender } = render(<ReturnTripCard trip={{ ...TRIP, status: "pending" }} />);

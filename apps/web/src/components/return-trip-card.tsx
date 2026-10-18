@@ -39,15 +39,19 @@ export default function ReturnTripCard({
   const [start, setStart] = useState(context?.returnWindow?.start ?? "");
   const [end, setEnd] = useState(context?.returnWindow?.end ?? "");
   const [error, setError] = useState(false);
-  if (
-    !context ||
-    trip.role !== "passenger" ||
-    trip.status !== "accepted" ||
-    trip.direction !== "outbound"
-  )
+  if (trip.role !== "passenger" || trip.status !== "accepted" || trip.direction !== "outbound")
     return null;
-  const calendar = commonCalendar(trip, context);
-  if (!calendar) return null;
+  const calendar = context ? commonCalendar(trip, context) : null;
+  // Nothing to prefill without a shared calendar, but the way back must stay reachable.
+  if (!context || !calendar)
+    return (
+      <section aria-label="¿Y el regreso?" className="space-y-3 rounded-2xl border bg-card p-4">
+        <h2 className="text-lg font-bold">¿Y el regreso?</h2>
+        <Link href="/buscar" className="text-sm font-bold underline">
+          Buscar regreso
+        </Link>
+      </section>
+    );
   const { date, days } = calendar;
   return (
     <section aria-label="¿Y el regreso?" className="space-y-3 rounded-2xl border bg-card p-4">

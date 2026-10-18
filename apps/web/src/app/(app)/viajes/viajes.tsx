@@ -1,28 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import EmptyState from "@/components/empty-state";
 import { pairReturns, type PairedReturn } from "@/components/return-pairs";
 import ReturnTripCard from "@/components/return-trip-card";
-import { FUEL_NOTE, FuelShareLine } from "@/components/fuel-estimate";
+import TripSummaryCard from "@/components/trip-summary-card";
+import { FUEL_NOTE } from "@/components/fuel-estimate";
 import { Button } from "@/components/ui/button";
 import { communitiesApi, type MyTrip } from "@/lib/communities-api";
-
-import { clockLabel, dateLabel, daysLabel } from "../buscar/schedule";
-
-const STATUS_LABELS: Record<MyTrip["status"], string> = {
-  pending: "Pendiente",
-  accepted: "Aceptada",
-  rejected: "Rechazada",
-  cancelled: "Cancelada",
-  completed: "Completada",
-  no_show: "No se presentó",
-  paused: "Pausado",
-  active: "Activo",
-};
 
 function TripCard({
   trip,
@@ -37,62 +24,22 @@ function TripCard({
   coordinateReturn: boolean;
   returns: PairedReturn[];
 }) {
-  const outbound = trip.direction === "outbound";
-  const from = outbound ? trip.originZoneName : trip.destinationName;
-  const to = outbound ? trip.destinationName : trip.originZoneName;
   return (
-    <li className="flex flex-col gap-2 rounded-2xl border bg-card p-4 shadow-sm">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-bold">{outbound ? "Ida" : "Regreso"}</span>
-        <span className="rounded-full bg-brand-yellow px-2.5 py-0.5 text-xs font-bold text-brand-black">
-          {STATUS_LABELS[trip.status]}
-        </span>
-      </div>
-      <p className="text-sm font-semibold">{`${from} → ${to}`}</p>
-      <p className="flex gap-4 text-sm">
-        <span>{trip.date ? dateLabel(trip.date) : daysLabel(trip.daysOfWeek ?? [])}</span>
-        <span>{clockLabel(trip.time.slice(0, 5))}</span>
-      </p>
-      {trip.meetingPointName ? (
-        <p className="text-xs text-muted-foreground">
-          {`Punto de encuentro: ${trip.meetingPointName}`}
-        </p>
-      ) : null}
-      {trip.driver ? (
-        <p className="text-sm">
-          <span className="font-bold">{trip.driver.alias}</span>
-          {trip.driver.plate ? <span className="ml-3">{`Placa: ${trip.driver.plate}`}</span> : null}
-        </p>
-      ) : null}
-      {trip.seatsTotal !== null && trip.seatsFree !== null ? (
-        <p className="text-sm">{`${trip.seatsFree} de ${trip.seatsTotal} asientos libres`}</p>
-      ) : null}
-      {trip.pendingRequests !== null ? (
-        <p className="text-sm">
-          {trip.pendingRequests === 1
-            ? "1 solicitud pendiente"
-            : `${trip.pendingRequests} solicitudes pendientes`}
-        </p>
-      ) : null}
-      {trip.acceptedPassengers?.length ? (
-        <p className="text-sm">{`Pasajeros: ${trip.acceptedPassengers.join(", ")}`}</p>
-      ) : null}
-      <FuelShareLine estimate={trip.fuelEstimate} />
-      <Link href={`/viajes/${trip.offerId}`} className="w-fit text-sm font-bold underline">
-        Ver viaje
-      </Link>
-      {trip.role === "driver" && (trip.status === "active" || trip.status === "paused") ? (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={busy}
-          onClick={() => onToggle(trip)}
-        >
-          {trip.status === "paused" ? "Reactivar" : "Pausar"}
-        </Button>
-      ) : null}
-      {coordinateReturn ? <ReturnTripCard trip={trip} returns={returns} /> : null}
+    <li>
+      <TripSummaryCard trip={trip}>
+        {trip.role === "driver" && (trip.status === "active" || trip.status === "paused") ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={busy}
+            onClick={() => onToggle(trip)}
+          >
+            {trip.status === "paused" ? "Reactivar" : "Pausar"}
+          </Button>
+        ) : null}
+        {coordinateReturn ? <ReturnTripCard trip={trip} returns={returns} /> : null}
+      </TripSummaryCard>
     </li>
   );
 }
