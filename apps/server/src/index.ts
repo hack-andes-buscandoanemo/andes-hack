@@ -1,7 +1,9 @@
 import {
+  cancelBookingRoute,
   createCommunityOfferRoute,
   createVehicleRoute,
   getMeRoute,
+  getOfferDetailRoute,
   healthRoute,
   joinCommunityRoute,
   listCommunitiesRoute,
@@ -9,6 +11,7 @@ import {
   listCommunityZonesRoute,
   listVehiclesRoute,
   OPENAPI_DOCUMENT_CONFIG,
+  requestSeatRoute,
   searchTripsRoute,
   updateMembershipRoute,
   updateOfferStatusRoute,
@@ -36,6 +39,7 @@ import {
   type RateLimitCheck,
   type SessionResolver,
 } from "./middleware";
+import { getOfferDetail, requestSeat, withdrawRequest } from "./offer-detail";
 import { searchTrips } from "./search";
 import { ApiError } from "./utils/api-response";
 import { errorHandler, validationHook } from "./utils/error-handler";
@@ -234,6 +238,9 @@ export function createApp(deps: AppDeps = {}) {
   );
   openApiApp.use("/vehicles", requireSession(deps.getSession));
   openApiApp.use("/offers/:id/status", requireSession(deps.getSession));
+  openApiApp.use("/offers/:id", requireSession(deps.getSession));
+  openApiApp.use("/offers/:id/bookings", requireSession(deps.getSession));
+  openApiApp.use("/bookings/:id/cancel", requireSession(deps.getSession));
   openApiApp.use("/me", requireSession(deps.getSession));
 
   openApiApp.openapi(healthRoute, (c) => {
@@ -867,6 +874,22 @@ export function createApp(deps: AppDeps = {}) {
       await searchTrips(database, { communityId, userId: c.get("user").id, body }),
       200,
     );
+  });
+
+  openApiApp.openapi(getOfferDetailRoute, async (c) => {
+    const { id: offerId } = c.req.valid("param");
+    return c.json(await getOfferDetail(database, { offerId, userId: c.get("user").id }), 200);
+  });
+
+  openApiApp.openapi(requestSeatRoute, async (c) => {
+    const { id: offerId } = c.req.valid("param");
+    const { message } = c.req.valid("json");
+    return c.json(await requestSeat(database, { offerId, userId: c.get("user").id, message }), 201);
+  });
+
+  openApiApp.openapi(cancelBookingRoute, async (c) => {
+    const { id: bookingId } = c.req.valid("param");
+    return c.json(await withdrawRequest(database, { bookingId, userId: c.get("user").id }), 200);
   });
 
   openApiApp.openapi(updateOfferStatusRoute, async (c) => {

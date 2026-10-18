@@ -726,6 +726,197 @@
         },
         "required": ["direction", "originZoneId", "windowStart", "windowEnd", "fallbackMode"]
       },
+      "OfferDetail": {
+        "type": "object",
+        "properties": {
+          "offerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "driverName": {
+            "type": "string"
+          },
+          "communityName": {
+            "type": "string"
+          },
+          "originZoneName": {
+            "type": "string"
+          },
+          "destinationName": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string",
+            "enum": ["outbound", "return"]
+          },
+          "departureTime": {
+            "type": "string"
+          },
+          "date": {
+            "type": ["string", "null"]
+          },
+          "daysOfWeek": {
+            "type": ["array", "null"],
+            "items": {
+              "type": "integer"
+            }
+          },
+          "seatsFree": {
+            "type": "integer"
+          },
+          "vehicle": {
+            "type": ["object", "null"],
+            "properties": {
+              "make": {
+                "type": "string"
+              },
+              "model": {
+                "type": "string"
+              },
+              "plate": {
+                "type": ["string", "null"]
+              }
+            },
+            "required": ["make", "model", "plate"]
+          },
+          "note": {
+            "type": ["string", "null"]
+          },
+          "isOwn": {
+            "type": "boolean"
+          },
+          "match": {
+            "type": ["object", "null"],
+            "properties": {
+              "meetingPointName": {
+                "type": "string"
+              },
+              "pickupAt": {
+                "type": "string"
+              },
+              "arrivalAt": {
+                "type": "string"
+              },
+              "detourMinutes": {
+                "type": "integer"
+              },
+              "walkMinutes": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "meetingPointName",
+              "pickupAt",
+              "arrivalAt",
+              "detourMinutes",
+              "walkMinutes"
+            ]
+          },
+          "booking": {
+            "type": ["object", "null"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "accepted",
+                  "rejected",
+                  "cancelled_by_passenger",
+                  "cancelled_by_driver",
+                  "completed",
+                  "no_show"
+                ]
+              }
+            },
+            "required": ["id", "status"]
+          }
+        },
+        "required": [
+          "offerId",
+          "driverName",
+          "communityName",
+          "originZoneName",
+          "destinationName",
+          "direction",
+          "departureTime",
+          "date",
+          "daysOfWeek",
+          "seatsFree",
+          "vehicle",
+          "note",
+          "isOwn",
+          "match",
+          "booking"
+        ]
+      },
+      "RequestSeatResponse": {
+        "type": "object",
+        "properties": {
+          "booking": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "accepted",
+                  "rejected",
+                  "cancelled_by_passenger",
+                  "cancelled_by_driver",
+                  "completed",
+                  "no_show"
+                ]
+              },
+              "message": {
+                "type": ["string", "null"]
+              },
+              "meetingPointName": {
+                "type": "string"
+              },
+              "pickupAt": {
+                "type": "string"
+              },
+              "arrivalAt": {
+                "type": "string"
+              },
+              "detourMinutes": {
+                "type": "integer"
+              },
+              "walkMinutes": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id",
+              "status",
+              "message",
+              "meetingPointName",
+              "pickupAt",
+              "arrivalAt",
+              "detourMinutes",
+              "walkMinutes"
+            ]
+          }
+        },
+        "required": ["booking"]
+      },
+      "RequestSeatRequest": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "maxLength": 280
+          }
+        }
+      },
       "WaitlistEntryResponse": {
         "type": "object",
         "properties": {
@@ -1232,6 +1423,71 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/offers/{id}": {
+      "get": {
+        "tags": ["Ofertas"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalle del viaje para miembros de su comunidad, sin placa hasta la aceptación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/offers/{id}/bookings": {
+      "post": {
+        "tags": ["Ofertas"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestSeatRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Solicitud pendiente con el punto de encuentro y la recogida calculados por el servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestSeatResponse"
                 }
               }
             }

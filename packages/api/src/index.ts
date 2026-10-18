@@ -618,6 +618,120 @@ const apiErrorResponse = (description: string) => ({
   content: { "application/json": { schema: ApiErrorSchema } },
 });
 
+const BookingStatusSchema = z.enum([
+  "pending",
+  "accepted",
+  "rejected",
+  "cancelled_by_passenger",
+  "cancelled_by_driver",
+  "completed",
+  "no_show",
+]);
+
+export const OfferDetailSchema = z
+  .object({
+    offerId: z.string().uuid(),
+    driverName: z.string(),
+    communityName: z.string(),
+    originZoneName: z.string(),
+    destinationName: z.string(),
+    direction: TripDirectionSchema,
+    departureTime: z.string(),
+    date: z.string().nullable(),
+    daysOfWeek: z.array(z.number().int()).nullable(),
+    seatsFree: z.number().int(),
+    // The plate stays null until the driver accepts the person (or for the driver themself).
+    vehicle: z
+      .object({ make: z.string(), model: z.string(), plate: z.string().nullable() })
+      .nullable(),
+    note: z.string().nullable(),
+    isOwn: z.boolean(),
+    // What the server calculates for the person's saved need; null without a need or when it no longer fits.
+    match: z
+      .object({
+        meetingPointName: z.string(),
+        pickupAt: z.string(),
+        arrivalAt: z.string(),
+        detourMinutes: z.number().int(),
+        walkMinutes: z.number().int(),
+      })
+      .nullable(),
+    // The person's own active request on this trip, if any.
+    booking: z.object({ id: z.string().uuid(), status: BookingStatusSchema }).nullable(),
+  })
+  .openapi("OfferDetail");
+
+export const getOfferDetailRoute = createRoute({
+  method: "get",
+  path: "/offers/{id}",
+  tags: ["Ofertas"],
+  request: { params: JoinCommunityParamsSchema },
+  responses: {
+    200: {
+      description: "Detalle del viaje para miembros de su comunidad, sin placa hasta la aceptación",
+      content: { "application/json": { schema: OfferDetailSchema } },
+    },
+  },
+});
+
+export const RequestSeatBodySchema = z
+  .object({
+    // Plain text for the driver; there is no chat before the request is accepted.
+    message: z.string().trim().max(280).optional(),
+  })
+  .openapi("RequestSeatRequest");
+
+export const RequestSeatResponseSchema = z
+  .object({
+    booking: z.object({
+      id: z.string().uuid(),
+      status: BookingStatusSchema,
+      message: z.string().nullable(),
+      meetingPointName: z.string(),
+      pickupAt: z.string(),
+      arrivalAt: z.string(),
+      detourMinutes: z.number().int(),
+      walkMinutes: z.number().int(),
+    }),
+  })
+  .openapi("RequestSeatResponse");
+
+export const requestSeatRoute = createRoute({
+  method: "post",
+  path: "/offers/{id}/bookings",
+  tags: ["Ofertas"],
+  request: {
+    params: JoinCommunityParamsSchema,
+    body: { content: { "application/json": { schema: RequestSeatBodySchema } } },
+  },
+  responses: {
+    201: {
+      description:
+        "Solicitud pendiente con el punto de encuentro y la recogida calculados por el servidor",
+      content: { "application/json": { schema: RequestSeatResponseSchema } },
+    },
+  },
+});
+
+export const cancelBookingRoute = createRoute({
+  method: "post",
+  path: "/bookings/{id}/cancel",
+  tags: ["Ofertas"],
+  request: { params: JoinCommunityParamsSchema },
+  responses: {
+    200: {
+      description: "La solicitud pendiente quedó retirada",
+      content: {
+        "application/json": {
+          schema: z
+            .object({ booking: z.object({ id: z.string().uuid(), status: BookingStatusSchema }) })
+            .openapi("CancelBookingResponse"),
+        },
+      },
+    },
+  },
+});
+
 export const searchTripsRoute = createRoute({
   method: "post",
   path: "/communities/{id}/search",
@@ -749,6 +863,8 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   createCommunityOfferRoute,
   updateOfferStatusRoute,
   searchTripsRoute,
+  getOfferDetailRoute,
+  requestSeatRoute,
   joinWaitlistRoute,
   waitlistSummaryRoute,
 ];

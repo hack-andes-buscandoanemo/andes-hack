@@ -512,6 +512,84 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/offers/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Detalle del viaje para miembros de su comunidad, sin placa hasta la aceptación */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["OfferDetail"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/offers/{id}/bookings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: {
+        content: {
+          "application/json": components["schemas"]["RequestSeatRequest"];
+        };
+      };
+      responses: {
+        /** @description Solicitud pendiente con el punto de encuentro y la recogida calculados por el servidor */
+        201: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["RequestSeatResponse"];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/public/waitlist": {
     parameters: {
       query?: never;
@@ -838,6 +916,71 @@ export interface components {
       fallbackMode: "drive_alone" | "taxi_app" | "public_transport" | "picked_up" | "other";
       /** @default false */
       womenOnly: boolean;
+    };
+    OfferDetail: {
+      /** Format: uuid */
+      offerId: string;
+      driverName: string;
+      communityName: string;
+      originZoneName: string;
+      destinationName: string;
+      /** @enum {string} */
+      direction: "outbound" | "return";
+      departureTime: string;
+      date: string | null;
+      daysOfWeek: number[] | null;
+      seatsFree: number;
+      vehicle: {
+        make: string;
+        model: string;
+        plate: string | null;
+      } | null;
+      note: string | null;
+      isOwn: boolean;
+      match: {
+        meetingPointName: string;
+        pickupAt: string;
+        arrivalAt: string;
+        detourMinutes: number;
+        walkMinutes: number;
+      } | null;
+      booking: {
+        /** Format: uuid */
+        id: string;
+        /** @enum {string} */
+        status:
+          | "pending"
+          | "accepted"
+          | "rejected"
+          | "cancelled_by_passenger"
+          | "cancelled_by_driver"
+          | "completed"
+          | "no_show";
+      } | null;
+    };
+    RequestSeatResponse: {
+      booking: {
+        /** Format: uuid */
+        id: string;
+        /** @enum {string} */
+        status:
+          | "pending"
+          | "accepted"
+          | "rejected"
+          | "cancelled_by_passenger"
+          | "cancelled_by_driver"
+          | "completed"
+          | "no_show";
+        message: string | null;
+        meetingPointName: string;
+        pickupAt: string;
+        arrivalAt: string;
+        detourMinutes: number;
+        walkMinutes: number;
+      };
+    };
+    RequestSeatRequest: {
+      message?: string;
     };
     WaitlistEntryResponse: {
       message: string;
