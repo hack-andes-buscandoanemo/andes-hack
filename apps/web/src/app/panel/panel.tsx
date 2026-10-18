@@ -173,7 +173,12 @@ export default function Panel() {
   }
   const { activity } = stats;
   const hasActivity =
-    activity.enrolled + activity.activeOffers + activity.openNeeds + activity.acceptedRequests > 0;
+    activity.enrolled +
+      activity.activeOffers +
+      activity.openNeeds +
+      activity.acceptedRequests +
+      activity.completedTrips >
+    0;
   return (
     <Shell>
       {selector}

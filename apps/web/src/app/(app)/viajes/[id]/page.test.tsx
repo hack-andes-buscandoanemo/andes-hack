@@ -27,6 +27,7 @@ const DETAIL = {
   offerId: OFFER_ID,
   status: "active" as const,
   driverName: "Mateo Q.",
+  driverPhotoUrl: "https://r2.example/mateo.jpg?signature=read",
   communityName: "Comunidad Alfa",
   originZoneName: "La Molina",
   destinationName: "Centro Empresarial Real",
@@ -38,6 +39,7 @@ const DETAIL = {
   vehicle: { make: "Toyota", model: "Corolla", plate: null },
   note: "Salgo puntual",
   isOwn: false,
+  hasOpenNeed: true,
   match: {
     meetingPointName: "Estación San Borja Sur (Línea 1)",
     pickupAt: "07:29",
@@ -61,6 +63,10 @@ describe("trip detail /viajes/{id} (US-014)", () => {
     render(<TripDetailPage />);
 
     expect(await screen.findByText("Mateo Q.")).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Foto de Mateo Q." })).toHaveAttribute(
+      "src",
+      "https://r2.example/mateo.jpg?signature=read",
+    );
     expect(screen.getAllByText("Miembro verificado").length).toBeGreaterThan(0);
     expect(screen.getByText("Comunidad Alfa")).toBeTruthy();
     expect(screen.getByText("La Molina → Centro Empresarial Real")).toBeTruthy();
@@ -151,7 +157,7 @@ describe("trip detail /viajes/{id} (US-014)", () => {
     expect(
       await screen.findByText("Solicitud enviada. Te avisaremos cuando Mateo Q. responda."),
     ).toBeTruthy();
-    expect(requestSeat).toHaveBeenCalledWith(OFFER_ID, "Voy con una mochila");
+    expect(requestSeat).toHaveBeenCalledWith(OFFER_ID, { message: "Voy con una mochila" });
     expect(screen.queryByRole("button", { name: "Solicitar asiento" })).toBeNull();
   });
 
@@ -285,6 +291,22 @@ describe("trip detail /viajes/{id} (US-014)", () => {
     render(<TripDetailPage />);
 
     expect(await screen.findByText("Mateo Q. aceptó tu solicitud.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Solicitar asiento" })).toBeNull();
+  });
+
+  it("shows the previous rejection and hides another request action", async () => {
+    getOfferDetail.mockResolvedValue({ ...DETAIL, booking: { id: "b-1", status: "rejected" } });
+    render(<TripDetailPage />);
+
+    expect(await screen.findByText("El conductor no pudo aceptar tu solicitud.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Solicitar asiento" })).toBeNull();
+  });
+
+  it("asks for a saved search before offering the request action", async () => {
+    getOfferDetail.mockResolvedValue({ ...DETAIL, hasOpenNeed: false, match: null });
+    render(<TripDetailPage />);
+
+    expect(await screen.findByText("Busca tu viaje antes de solicitar un asiento.")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Solicitar asiento" })).toBeNull();
   });
 
