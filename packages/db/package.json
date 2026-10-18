@@ -26,6 +26,7 @@
   },
   "devDependencies": {
     "@andes-hack/config": "workspace:*",
+    "@andes-hack/matching": "workspace:*",
     "@electric-sql/pglite": "0.5.8",
     "drizzle-kit": "^0.31.11",
     "typescript": "^6.0.3",
