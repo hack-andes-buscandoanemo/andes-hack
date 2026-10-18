@@ -396,12 +396,14 @@ describe("GET /me/trips", () => {
     const org = await seedWorld();
     const driver = await createMember(org.id, "driver-1", "Carlos Quispe", "Carlos Q.");
     const passenger = await createMember(org.id, "pax-1", "Lucía Ramos");
-    const { offer } = await createOffer(org.id, driver.id);
-    await book(offer, passenger.id, "rejected");
-    await book(offer, passenger.id, "cancelled_by_passenger");
-    await book(offer, passenger.id, "completed");
-    await book(offer, passenger.id, "no_show");
-    await book(offer, passenger.id, "pending");
+    const offers = await Promise.all(
+      Array.from({ length: 5 }, () => createOffer(org.id, driver.id)),
+    );
+    await book(offers[0]!.offer, passenger.id, "rejected");
+    await book(offers[1]!.offer, passenger.id, "cancelled_by_passenger");
+    await book(offers[2]!.offer, passenger.id, "completed");
+    await book(offers[3]!.offer, passenger.id, "no_show");
+    await book(offers[4]!.offer, passenger.id, "pending");
 
     const past = await (await requestAs(passenger, "/me/trips?role=passenger&scope=past")).json();
     const upcoming = await (
@@ -570,8 +572,9 @@ describe("GET /me/trips", () => {
     const driver = await createMember(org.id, "driver-1", "Carlos Quispe", "Carlos Q.");
     const passenger = await createMember(org.id, "pax-1", "Lucía Ramos");
     const { offer } = await createOffer(org.id, driver.id, { status: "paused" });
+    const rejectedOffer = await createOffer(org.id, driver.id, { status: "paused" });
     await book(offer, passenger.id, "accepted");
-    await book(offer, passenger.id, "rejected");
+    await book(rejectedOffer.offer, passenger.id, "rejected");
 
     const statuses = async (scope: string) =>
       (await (await requestAs(passenger, `/me/trips?role=passenger&scope=${scope}`)).json()).trips
