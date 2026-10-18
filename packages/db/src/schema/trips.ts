@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
   check,
   date,
@@ -50,6 +51,26 @@ export const bookingStatusEnum = pgEnum("booking_status", [
   "no_show",
 ]);
 
+// A trip happens on one date or every week on some weekdays, never both.
+// Weekdays are ISO, as in Postgres' extract(isodow): 1 = Monday … 7 = Sunday.
+const schedule = {
+  daysOfWeek: smallint("days_of_week").array(),
+  date: date("date"),
+};
+
+function scheduleChecks(tableName: string, table: { date: AnyPgColumn; daysOfWeek: AnyPgColumn }) {
+  return [
+    check(
+      `${tableName}_schedule_check`,
+      sql`(${table.date} IS NULL) <> (${table.daysOfWeek} IS NULL)`,
+    ),
+    check(
+      `${tableName}_days_of_week_check`,
+      sql`${table.daysOfWeek} IS NULL OR (cardinality(${table.daysOfWeek}) > 0 AND ${table.daysOfWeek} <@ ARRAY[1, 2, 3, 4, 5, 6, 7]::smallint[])`,
+    ),
+  ];
+}
+
 export const tripOffer = pgTable(
   "trip_offer",
   {
@@ -65,8 +86,7 @@ export const tripOffer = pgTable(
       .notNull()
       .references(() => zone.id, { onDelete: "restrict" }),
     departureTime: time("departure_time").notNull(),
-    daysOfWeek: smallint("days_of_week").array(),
-    date: date("date"),
+    ...schedule,
     seatsTotal: smallint("seats_total").notNull(),
     seatsTaken: smallint("seats_taken").default(0).notNull(),
     maxDetourMinutes: smallint("max_detour_minutes").notNull(),
@@ -80,16 +100,7 @@ export const tripOffer = pgTable(
     index("trip_offer_driver_id_idx").on(table.driverId),
     check("trip_offer_seats_total_check", sql`${table.seatsTotal} BETWEEN 1 AND 6`),
     check("trip_offer_max_detour_minutes_check", sql`${table.maxDetourMinutes} IN (0, 5, 10)`),
-    // A trip happens on one date or every week on some weekdays, never both.
-    check(
-      "trip_offer_schedule_check",
-      sql`(${table.date} IS NULL) <> (${table.daysOfWeek} IS NULL)`,
-    ),
-    // ISO weekdays, as in Postgres' extract(isodow): 1 = Monday … 7 = Sunday.
-    check(
-      "trip_offer_days_of_week_check",
-      sql`${table.daysOfWeek} IS NULL OR (cardinality(${table.daysOfWeek}) > 0 AND ${table.daysOfWeek} <@ ARRAY[1, 2, 3, 4, 5, 6, 7]::smallint[])`,
-    ),
+    ...scheduleChecks("trip_offer", table),
     check(
       "trip_offer_seats_taken_check",
       sql`${table.seatsTaken} BETWEEN 0 AND ${table.seatsTotal}`,
@@ -111,8 +122,7 @@ export const tripRequest = pgTable(
       .references(() => zone.id, { onDelete: "restrict" }),
     windowStart: time("window_start").notNull(),
     windowEnd: time("window_end").notNull(),
-    daysOfWeek: smallint("days_of_week").array(),
-    date: date("date"),
+    ...schedule,
     maxWalkMinutes: smallint("max_walk_minutes").notNull(),
     fallbackMode: fallbackModeEnum("fallback_mode").notNull(),
     status: requestStatusEnum("status").default("open").notNull(),
@@ -121,14 +131,7 @@ export const tripRequest = pgTable(
   (table) => [
     index("trip_request_community_id_idx").on(table.communityId),
     index("trip_request_passenger_id_idx").on(table.passengerId),
-    check(
-      "trip_request_schedule_check",
-      sql`(${table.date} IS NULL) <> (${table.daysOfWeek} IS NULL)`,
-    ),
-    check(
-      "trip_request_days_of_week_check",
-      sql`${table.daysOfWeek} IS NULL OR (cardinality(${table.daysOfWeek}) > 0 AND ${table.daysOfWeek} <@ ARRAY[1, 2, 3, 4, 5, 6, 7]::smallint[])`,
-    ),
+    ...scheduleChecks("trip_request", table),
   ],
 );
 
@@ -146,6 +149,7 @@ export const seatBooking = pgTable(
     meetingPointId: text("meeting_point_id")
       .notNull()
       .references(() => meetingPoint.id, { onDelete: "restrict" }),
+    // A time of day like departure_time, not an instant: it repeats on every day of the trip.
     pickupAt: time("pickup_at").notNull(),
     detourMinutes: smallint("detour_minutes").notNull(),
     walkMinutes: smallint("walk_minutes").notNull(),

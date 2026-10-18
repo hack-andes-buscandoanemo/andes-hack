@@ -1,7 +1,8 @@
 import { doublePrecision, pgEnum, pgTable, text } from "drizzle-orm/pg-core";
 
-// Only zones and public places have coordinates: no column stores a person's exact address.
-// Both use stable slugs as ids so they match the engine's places.json (US-015).
+// Coordinates only describe zones, public meeting points and a community's destination:
+// no column stores a person's exact address. Zones and meeting points use stable slugs as
+// ids so they match the engine's places.json (US-015).
 
 export const meetingPointKindEnum = pgEnum("meeting_point_kind", [
   "park",

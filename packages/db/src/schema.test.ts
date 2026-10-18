@@ -4,7 +4,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
-import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
   community,
@@ -124,15 +124,15 @@ async function givenVehicle(ownerId: string, values: Partial<typeof vehicle.$inf
 }
 
 async function givenOffer(values: Partial<typeof tripOffer.$inferInsert> = {}) {
-  const team = await givenCommunity();
-  const driver = await givenMember(team.id);
+  const org = await givenCommunity();
+  const driver = await givenMember(org.id);
   const point = await givenMeetingPoint();
   const car = await givenVehicle(driver.id);
   const offer = await first(
     db
       .insert(tripOffer)
       .values({
-        communityId: team.id,
+        communityId: org.id,
         driverId: driver.id,
         vehicleId: car.id,
         direction: "outbound",
@@ -145,7 +145,7 @@ async function givenOffer(values: Partial<typeof tripOffer.$inferInsert> = {}) {
       })
       .returning(),
   );
-  return { team, point, offer };
+  return { org, point, offer };
 }
 
 async function givenNeed(
@@ -175,8 +175,8 @@ async function givenNeed(
 }
 
 async function givenPassengerForOffer() {
-  const { team, point, offer } = await givenOffer();
-  const { passenger, need } = await givenNeed(team.id, point.zoneId);
+  const { org, point, offer } = await givenOffer();
+  const { passenger, need } = await givenNeed(org.id, point.zoneId);
   return {
     offerId: offer.id,
     requestId: need.id,
@@ -205,11 +205,11 @@ const checkViolation = (constraint: string) => ({ cause: { code: "23514", constr
 const uniqueViolation = (constraint: string) => ({ cause: { code: "23505", constraint } });
 
 describe("core domain schema on a freshly migrated database", () => {
-  test("a passenger requests a seat on a driver's offer and the booking starts pending", async () => {
-    const { team, point, offer } = await givenOffer({
+  it("a passenger requests a seat on a driver's offer and the booking starts pending", async () => {
+    const { org, point, offer } = await givenOffer({
       note: "Salgo puntual de la puerta del parque.",
     });
-    const { passenger, need } = await givenNeed(team.id, point.zoneId);
+    const { passenger, need } = await givenNeed(org.id, point.zoneId);
 
     const booking = await requestSeat({
       offerId: offer.id,
@@ -224,7 +224,7 @@ describe("core domain schema on a freshly migrated database", () => {
 });
 
 describe("active seat bookings", () => {
-  test("rejects a second request from the same passenger while the first is pending", async () => {
+  it("rejects a second request from the same passenger while the first is pending", async () => {
     const seat = await givenPassengerForOffer();
     await requestSeat(seat);
 
@@ -233,7 +233,7 @@ describe("active seat bookings", () => {
     );
   });
 
-  test("lets the passenger request the offer again once the driver rejected the first request", async () => {
+  it("lets the passenger request the offer again once the driver rejected the first request", async () => {
     const seat = await givenPassengerForOffer();
     const earlier = await requestSeat(seat);
     await db.update(seatBooking).set({ status: "rejected" }).where(eq(seatBooking.id, earlier.id));
@@ -243,7 +243,7 @@ describe("active seat bookings", () => {
     expect(retry.status).toBe("pending");
   });
 
-  test("rejects a new request from a passenger the driver already accepted", async () => {
+  it("rejects a new request from a passenger the driver already accepted", async () => {
     const seat = await givenPassengerForOffer();
     const earlier = await requestSeat(seat);
     await db.update(seatBooking).set({ status: "accepted" }).where(eq(seatBooking.id, earlier.id));
@@ -255,31 +255,31 @@ describe("active seat bookings", () => {
 });
 
 describe("unique keys", () => {
-  test("rejects a second membership of the same person in the same community", async () => {
-    const team = await givenCommunity();
-    const person = await givenMember(team.id);
+  it("rejects a second membership of the same person in the same community", async () => {
+    const org = await givenCommunity();
+    const person = await givenMember(org.id);
 
     await expect(
       db.insert(communityMember).values({
-        communityId: team.id,
+        communityId: org.id,
         userId: person.id,
         verificationMethod: "email_domain",
       }),
     ).rejects.toMatchObject(uniqueViolation("community_member_community_id_user_id_unique"));
   });
 
-  test("rejects a second community with the same slug", async () => {
-    const team = await givenCommunity();
+  it("rejects a second community with the same slug", async () => {
+    const org = await givenCommunity();
 
-    await expect(givenCommunity({ slug: team.slug })).rejects.toMatchObject(
+    await expect(givenCommunity({ slug: org.slug })).rejects.toMatchObject(
       uniqueViolation("community_slug_unique"),
     );
   });
 
-  test("rejects registering a plate that another vehicle already has", async () => {
-    const team = await givenCommunity();
-    const owner = await givenMember(team.id);
-    const neighbour = await givenMember(team.id);
+  it("rejects registering a plate that another vehicle already has", async () => {
+    const org = await givenCommunity();
+    const owner = await givenMember(org.id);
+    const neighbour = await givenMember(org.id);
     const car = await givenVehicle(owner.id);
 
     await expect(givenVehicle(neighbour.id, { plate: car.plate })).rejects.toMatchObject(
@@ -288,8 +288,8 @@ describe("unique keys", () => {
   });
 });
 
-describe("seats on an offer", () => {
-  test("rejects taking a fourth seat on an offer with 3 of 3 seats taken", async () => {
+describe("seat and detour limits", () => {
+  it("rejects taking a fourth seat on an offer with 3 of 3 seats taken", async () => {
     const { offer } = await givenOffer({ seatsTotal: 3, seatsTaken: 3 });
 
     await expect(
@@ -300,28 +300,28 @@ describe("seats on an offer", () => {
     ).rejects.toMatchObject(checkViolation("trip_offer_seats_taken_check"));
   });
 
-  test.each([0, 7])("rejects an offer of %i seats", async (seatsTotal) => {
+  it.each([0, 7])("rejects an offer of %i seats", async (seatsTotal) => {
     await expect(givenOffer({ seatsTotal })).rejects.toMatchObject(
       checkViolation("trip_offer_seats_total_check"),
     );
   });
 
-  test.each([0, 7])("rejects a vehicle with %i passenger seats", async (seats) => {
-    const team = await givenCommunity();
-    const owner = await givenMember(team.id);
+  it.each([0, 7])("rejects a vehicle with %i passenger seats", async (seats) => {
+    const org = await givenCommunity();
+    const owner = await givenMember(org.id);
 
     await expect(givenVehicle(owner.id, { seats })).rejects.toMatchObject(
       checkViolation("vehicle_seats_check"),
     );
   });
 
-  test.each([3, 15])("rejects a maximum detour of %i minutes", async (maxDetourMinutes) => {
+  it.each([3, 15])("rejects a maximum detour of %i minutes", async (maxDetourMinutes) => {
     await expect(givenOffer({ maxDetourMinutes })).rejects.toMatchObject(
       checkViolation("trip_offer_max_detour_minutes_check"),
     );
   });
 
-  test("rejects releasing a seat on an offer with no seats taken", async () => {
+  it("rejects releasing a seat on an offer with no seats taken", async () => {
     const { offer } = await givenOffer({ seatsTotal: 3, seatsTaken: 0 });
 
     await expect(
@@ -339,7 +339,7 @@ describe("trip schedules", () => {
     { schedule: "neither a date nor weekdays", date: null, daysOfWeek: null },
   ];
 
-  test.each(ambiguousSchedules)("rejects an offer with $schedule", async ({ date, daysOfWeek }) => {
+  it.each(ambiguousSchedules)("rejects an offer with $schedule", async ({ date, daysOfWeek }) => {
     await expect(givenOffer({ date, daysOfWeek })).rejects.toMatchObject(
       checkViolation("trip_offer_schedule_check"),
     );
@@ -351,26 +351,26 @@ describe("trip schedules", () => {
     { days: "weekday 8", daysOfWeek: [1, 8] },
   ];
 
-  test.each(invalidWeekdays)("rejects an offer with $days", async ({ daysOfWeek }) => {
+  it.each(invalidWeekdays)("rejects an offer with $days", async ({ daysOfWeek }) => {
     await expect(givenOffer({ daysOfWeek })).rejects.toMatchObject(
       checkViolation("trip_offer_days_of_week_check"),
     );
   });
 
-  test.each(ambiguousSchedules)("rejects a need with $schedule", async ({ date, daysOfWeek }) => {
-    const team = await givenCommunity();
+  it.each(ambiguousSchedules)("rejects a need with $schedule", async ({ date, daysOfWeek }) => {
+    const org = await givenCommunity();
     const point = await givenMeetingPoint();
 
-    await expect(givenNeed(team.id, point.zoneId, { date, daysOfWeek })).rejects.toMatchObject(
+    await expect(givenNeed(org.id, point.zoneId, { date, daysOfWeek })).rejects.toMatchObject(
       checkViolation("trip_request_schedule_check"),
     );
   });
 
-  test.each(invalidWeekdays)("rejects a need with $days", async ({ daysOfWeek }) => {
-    const team = await givenCommunity();
+  it.each(invalidWeekdays)("rejects a need with $days", async ({ daysOfWeek }) => {
+    const org = await givenCommunity();
     const point = await givenMeetingPoint();
 
-    await expect(givenNeed(team.id, point.zoneId, { daysOfWeek })).rejects.toMatchObject(
+    await expect(givenNeed(org.id, point.zoneId, { daysOfWeek })).rejects.toMatchObject(
       checkViolation("trip_request_days_of_week_check"),
     );
   });
