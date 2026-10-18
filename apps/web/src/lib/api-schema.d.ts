@@ -1549,6 +1549,79 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/offers/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description El viaje fue cancelado por el conductor */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CancelOfferResponse"];
+                    };
+                };
+                /** @description No hay sesión iniciada (`unauthorized`) */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description No puedes gestionar este viaje (`driver_required`) */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description No encontramos este viaje (`offer_not_found`) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description El identificador no es válido (`validation_error`) */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/communities/{id}/match-runs": {
         parameters: {
             query?: never;
@@ -2559,6 +2632,7 @@ export interface components {
                 status: "pending" | "accepted" | "rejected" | "cancelled_by_passenger" | "cancelled_by_driver" | "completed" | "no_show";
             } | null;
             fuelEstimate: components["schemas"]["FuelEstimate"];
+            alternatives?: components["schemas"]["TripMatch"][];
         };
         MyTripsResponse: {
             trips: components["schemas"]["MyTrip"][];
@@ -2691,6 +2765,23 @@ export interface components {
                 /** @enum {string} */
                 status: "pending" | "accepted" | "rejected" | "cancelled_by_passenger" | "cancelled_by_driver" | "completed" | "no_show";
             };
+            lateCancelled: boolean;
+        };
+        CancelOfferResponse: {
+            offer: {
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                status: "active" | "paused" | "cancelled";
+            };
+            lateCancelled: boolean;
+            affectedBookings: {
+                /** Format: uuid */
+                bookingId: string;
+                passengerId: string | null;
+                /** @enum {string} */
+                status: "cancelled_by_driver";
+            }[];
         };
         MatchRunsResponse: {
             /** @enum {string} */

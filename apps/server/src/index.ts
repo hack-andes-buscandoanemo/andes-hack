@@ -3,9 +3,10 @@ import {
   arriveBookingRoute,
   boardBookingRoute,
   cancelBookingRoute,
-  createShareLinkRoute,
+  cancelOfferRoute,
   createCommunityOfferRoute,
   confirmProfilePhotoRoute,
+  createShareLinkRoute,
   createVehicleRoute,
   deleteMeRoute,
   deleteMyProfilePhotoRoute,
@@ -73,6 +74,7 @@ import { measureMyImpact } from "./my-impact";
 import { listMyTrips } from "./my-trips";
 import {
   acceptSeatRequest,
+  cancelOffer,
   getOfferDetail,
   listSeatRequests,
   rejectSeatRequest,
@@ -326,6 +328,7 @@ export function createApp(deps: AppDeps = {}) {
   openApiApp.use("/vehicles", requireSession(deps.getSession));
   openApiApp.use("/offers/:id/status", requireSession(deps.getSession));
   openApiApp.use("/offers/:id", requireSession(deps.getSession));
+  openApiApp.use("/offers/:id/cancel", requireSession(deps.getSession));
   openApiApp.use("/offers/:id/bookings", requireSession(deps.getSession));
   openApiApp.use("/me/chats", requireSession(deps.getSession));
   openApiApp.use("/offers/:id/messages", requireSession(deps.getSession));
@@ -1271,7 +1274,18 @@ export function createApp(deps: AppDeps = {}) {
 
   openApiApp.openapi(cancelBookingRoute, async (c) => {
     const { id: bookingId } = c.req.valid("param");
-    return c.json(await withdrawRequest(database, { bookingId, userId: c.get("user").id }), 200);
+    return c.json(
+      await withdrawRequest(database, { bookingId, userId: c.get("user").id, now: getNow() }),
+      200,
+    );
+  });
+
+  openApiApp.openapi(cancelOfferRoute, async (c) => {
+    const { id: offerId } = c.req.valid("param");
+    return c.json(
+      await cancelOffer(database, { offerId, userId: c.get("user").id, now: getNow() }),
+      200,
+    );
   });
 
   openApiApp.openapi(createShareLinkRoute, async (c) => {

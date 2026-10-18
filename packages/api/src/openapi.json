@@ -1206,6 +1206,12 @@
           },
           "fuelEstimate": {
             "$ref": "#/components/schemas/FuelEstimate"
+          },
+          "alternatives": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TripMatch"
+            }
           }
         },
         "required": [
@@ -1805,10 +1811,77 @@
               "id",
               "status"
             ]
+          },
+          "lateCancelled": {
+            "type": "boolean"
           }
         },
         "required": [
-          "booking"
+          "booking",
+          "lateCancelled"
+        ]
+      },
+      "CancelOfferResponse": {
+        "type": "object",
+        "properties": {
+          "offer": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "active",
+                  "paused",
+                  "cancelled"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "status"
+            ]
+          },
+          "lateCancelled": {
+            "type": "boolean"
+          },
+          "affectedBookings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "bookingId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "passengerId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "cancelled_by_driver"
+                  ]
+                }
+              },
+              "required": [
+                "bookingId",
+                "passengerId",
+                "status"
+              ]
+            }
+          }
+        },
+        "required": [
+          "offer",
+          "lateCancelled",
+          "affectedBookings"
         ]
       },
       "MatchRunsResponse": {
@@ -4362,6 +4435,76 @@
           },
           "409": {
             "description": "No se puede retirar esta solicitud (`booking_conflict`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "El identificador no es válido (`validation_error`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/offers/{id}/cancel": {
+      "post": {
+        "tags": [
+          "Ofertas"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "El viaje fue cancelado por el conductor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelOfferResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No hay sesión iniciada (`unauthorized`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No puedes gestionar este viaje (`driver_required`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontramos este viaje (`offer_not_found`)",
             "content": {
               "application/json": {
                 "schema": {

@@ -141,6 +141,7 @@ it("documents every error the offer detail, seat request and withdrawal routes r
     "422",
   ]);
   expect(codes("/bookings/{id}/cancel", "post")).toEqual(["200", "401", "404", "409", "422"]);
+  expect(codes("/offers/{id}/cancel", "post")).toEqual(["200", "401", "403", "404", "422"]);
 });
 
 it("publishes the travel preferences route with every error it returns", () => {
