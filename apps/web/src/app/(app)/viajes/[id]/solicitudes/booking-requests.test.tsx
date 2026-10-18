@@ -12,6 +12,8 @@ vi.mock("@/lib/communities-api", () => ({
   communitiesApi: { listOfferBookings, acceptBooking, rejectBooking },
 }));
 
+import { serverError } from "@/test/server-error";
+
 import BookingRequests from "./booking-requests";
 
 const OFFER_ID = "22222222-2222-4222-8222-222222222222";
@@ -83,5 +85,46 @@ describe("booking requests", () => {
     expect(rejectBooking).toHaveBeenCalledWith(BOOKING_ID);
     expect(await screen.findByText("Solicitud rechazada.")).toBeInTheDocument();
     expect(screen.queryByText("Lucía R. · Miembro verificado")).not.toBeInTheDocument();
+  });
+
+  it("displays 'Tu auto ya está lleno.' and disables acceptance when all seats are taken", async () => {
+    listOfferBookings.mockResolvedValue({
+      ...BOOKINGS,
+      seatsTaken: 3,
+      seatsTotal: 3,
+    });
+    render(<BookingRequests offerId={OFFER_ID} />);
+
+    expect(await screen.findByText("Tu auto ya está lleno.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Aceptar" })).toBeDisabled();
+  });
+
+  it("displays server error alert when accepting fails because car is full", async () => {
+    const user = userEvent.setup();
+    acceptBooking.mockRejectedValue(serverError(409, "Tu auto ya está lleno."));
+    render(<BookingRequests offerId={OFFER_ID} />);
+
+    await user.click(await screen.findByRole("button", { name: "Aceptar" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Tu auto ya está lleno.");
+  });
+
+  it("renders passenger message as escaped text without HTML parsing", async () => {
+    listOfferBookings.mockResolvedValue({
+      ...BOOKINGS,
+      bookings: [
+        {
+          ...BOOKINGS.bookings[0]!,
+          message: '<script>alert("xss")</script><b>Puntual</b>',
+        },
+      ],
+    });
+    const { container } = render(<BookingRequests offerId={OFFER_ID} />);
+
+    expect(
+      await screen.findByText('Mensaje: <script>alert("xss")</script><b>Puntual</b>'),
+    ).toBeInTheDocument();
+    expect(container.querySelector("script")).toBeNull();
+    expect(container.querySelector("b")).toBeNull();
   });
 });
