@@ -10,6 +10,7 @@ const trip = (overrides: Partial<MyTrip> & { id: string }): MyTrip => ({
   offerId: `offer-${overrides.id}`,
   role: "passenger",
   status: "accepted",
+  progress: null,
   direction: "outbound",
   date: null,
   daysOfWeek: [1, 3],

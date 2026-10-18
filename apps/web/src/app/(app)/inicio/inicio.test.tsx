@@ -18,6 +18,7 @@ const OUTBOUND: MyTrip = {
   offerId: "outward-offer",
   role: "passenger",
   status: "accepted",
+  progress: null,
   direction: "outbound",
   date: null,
   daysOfWeek: [1, 3],

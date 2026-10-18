@@ -39,6 +39,7 @@ const PASSENGER_TRIP = {
   offerId: OFFER_ID,
   role: "passenger" as const,
   status: "accepted" as const,
+  progress: null,
   direction: "outbound" as const,
   date: null,
   daysOfWeek: [1, 2, 3, 4, 5],

@@ -1450,6 +1450,7 @@
           "offerId",
           "role",
           "status",
+          "progress",
           "direction",
           "date",
           "daysOfWeek",
@@ -1626,6 +1627,9 @@
       "StartTripResponse": {
         "type": "object",
         "properties": {
+          "tripDate": {
+            "type": "string"
+          },
           "startedAt": {
             "type": "string",
             "format": "date-time"
@@ -1638,6 +1642,7 @@
           }
         },
         "required": [
+          "tripDate",
           "startedAt",
           "boarded",
           "message"
@@ -1653,17 +1658,8 @@
                 "type": "string",
                 "format": "uuid"
               },
-              "status": {
-                "type": "string",
-                "enum": [
-                  "pending",
-                  "accepted",
-                  "rejected",
-                  "cancelled_by_passenger",
-                  "cancelled_by_driver",
-                  "completed",
-                  "no_show"
-                ]
+              "tripDate": {
+                "type": "string"
               },
               "startedAt": {
                 "type": [
@@ -1678,13 +1674,25 @@
                   "null"
                 ],
                 "format": "date-time"
+              },
+              "outcome": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "completed",
+                  "no_show",
+                  null
+                ]
               }
             },
             "required": [
               "id",
-              "status",
+              "tripDate",
               "startedAt",
-              "arrivedAt"
+              "arrivedAt",
+              "outcome"
             ]
           },
           "message": {
@@ -4123,18 +4131,8 @@
               }
             }
           },
-          "403": {
-            "description": "Solo quien conduce puede iniciar el viaje (`driver_required`)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
           "404": {
-            "description": "El viaje no existe (`offer_not_found`)",
+            "description": "El viaje no existe o no es de la persona que conduce (`offer_not_found`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -4144,7 +4142,7 @@
             }
           },
           "409": {
-            "description": "El viaje no se puede iniciar (`trip_too_early`: antes de 30 minutos de la salida; `trip_not_today`; `trip_cancelled`)",
+            "description": "El viaje no se puede iniciar (`trip_too_early`: antes de 30 minutos de la salida; `trip_not_today`; `trip_cancelled`; `no_accepted_passengers`: no hay pasajeros aceptados para ese día)",
             "content": {
               "application/json": {
                 "schema": {
@@ -4214,7 +4212,7 @@
             }
           },
           "409": {
-            "description": "No se puede marcar el viaje (`booking_not_accepted`: la solicitud no está aceptada; `trip_too_early`; `trip_not_today`; `trip_cancelled`)",
+            "description": "No se puede marcar el viaje (`booking_not_accepted`: la solicitud no está aceptada; `booking_no_show`: el conductor registró que no se presentó; `trip_too_early`; `trip_not_today`; `trip_cancelled`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -4343,18 +4341,8 @@
               }
             }
           },
-          "403": {
-            "description": "Solo quien conduce puede marcar que alguien no se presentó (`driver_required`)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
           "404": {
-            "description": "La reserva no existe (`booking_not_found`)",
+            "description": "La reserva no existe o no es de un viaje de la persona (`booking_not_found`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -4364,7 +4352,7 @@
             }
           },
           "409": {
-            "description": "No se puede marcar (`no_show_too_early`: antes de 10 minutos de la hora de recogida; `booking_not_accepted`; `booking_already_started`)",
+            "description": "No se puede marcar (`no_show_too_early`: antes de 10 minutos de la hora de recogida; `trip_not_today`; `trip_cancelled`; `booking_not_accepted`; `booking_already_started`)",
             "content": {
               "application/json": {
                 "schema": {
