@@ -71,9 +71,12 @@ import {
   getLiveLocation,
   listLiveAlerts,
   liveOfferIds,
+  nearestZone,
   shareLiveLocation,
   stopLiveLocation,
 } from "./live-location";
+import { placeOf } from "./free-trips";
+import { osrmRoute, type RouteFinder } from "./lib/routing";
 import { latestMatchRuns, listProposals, runMatching } from "./match-runs";
 import {
   rateLimitMiddleware,
@@ -128,6 +131,8 @@ export type AppDeps = {
   otpRateLimit?: RateLimitCheck;
   sendEmail?: (options: SendEmailOptions) => Promise<unknown>;
   now?: () => Date;
+  // Draws the street route of a trip between two addresses; OSRM unless injected.
+  findRoute?: RouteFinder;
   statsRateLimit?: RateLimitCheck;
   statsCache?: StatsCache;
   // Limits who can try tokens on the public shared-trip view.
@@ -186,6 +191,7 @@ export function createApp(deps: AppDeps = {}) {
   const database = deps.db ?? defaultDb;
   const emailSender = deps.sendEmail ?? defaultSendEmail;
   const getNow = deps.now ?? (() => new Date());
+  const findRoute = deps.findRoute ?? osrmRoute;
   const getProfilePhotoStorage = async (): Promise<ProfilePhotoStorage> => {
     if (deps.profilePhotoStorage) return deps.profilePhotoStorage;
     if (
@@ -1049,6 +1055,12 @@ export function createApp(deps: AppDeps = {}) {
         direction: tripOffer.direction,
         originZoneId: tripOffer.originZoneId,
         originZoneName: zone.name,
+        originLat: tripOffer.originLat,
+        originLng: tripOffer.originLng,
+        originLabel: tripOffer.originLabel,
+        destLat: tripOffer.destLat,
+        destLng: tripOffer.destLng,
+        destLabel: tripOffer.destLabel,
         departureTime: tripOffer.departureTime,
         daysOfWeek: tripOffer.daysOfWeek,
         date: tripOffer.date,
@@ -1073,11 +1085,15 @@ export function createApp(deps: AppDeps = {}) {
 
     return c.json(
       {
-        offers: rows.map((row) => ({
-          ...row,
-          originZoneName: row.originZoneName ?? row.originZoneId,
-          live: live.has(row.id),
-        })),
+        offers: rows.map(
+          ({ originLat, originLng, originLabel, destLat, destLng, destLabel, ...row }) => ({
+            ...row,
+            originZoneName: originLabel ?? row.originZoneName ?? row.originZoneId,
+            origin: placeOf(originLat, originLng, originLabel),
+            destination: placeOf(destLat, destLng, destLabel),
+            live: live.has(row.id),
+          }),
+        ),
       },
       200,
     );
@@ -1141,10 +1157,31 @@ export function createApp(deps: AppDeps = {}) {
       );
     }
 
+    // Between two addresses the zone is only the nearest one (the offer still references
+    // it) and the streets are asked once, here, so searching never calls a routing service.
+    const street =
+      body.origin && body.destination ? await findRoute(body.origin, body.destination) : null;
+    const originZoneId = body.origin ? nearestZone(body.origin).id : (body.originZoneId as string);
+    const geometry =
+      body.origin && body.destination && street
+        ? {
+            originLat: body.origin.lat,
+            originLng: body.origin.lng,
+            originLabel: body.origin.label,
+            destLat: body.destination.lat,
+            destLng: body.destination.lng,
+            destLabel: body.destination.label,
+            routePath: street.path,
+            routeMinutes: street.minutes,
+            routeKm: street.km,
+            routeApproximate: street.approximate,
+          }
+        : {};
+
     const [zoneRow] = await database
       .select({ name: zone.name })
       .from(zone)
-      .where(eq(zone.id, body.originZoneId))
+      .where(eq(zone.id, originZoneId))
       .limit(1);
 
     const [created] = await database
@@ -1154,8 +1191,9 @@ export function createApp(deps: AppDeps = {}) {
         driverId: sessionUser.id,
         driverWasTeam: membership?.isTeam ?? false,
         vehicleId: car.id,
-        direction: body.direction,
-        originZoneId: body.originZoneId,
+        direction: body.direction ?? "outbound",
+        originZoneId,
+        ...geometry,
         departureTime: body.departureTime,
         daysOfWeek: body.daysOfWeek ?? null,
         date: body.date ?? null,
@@ -1179,7 +1217,9 @@ export function createApp(deps: AppDeps = {}) {
           vehicleId: created!.vehicleId,
           direction: created!.direction,
           originZoneId: created!.originZoneId,
-          originZoneName: zoneRow?.name ?? created!.originZoneId,
+          originZoneName: created!.originLabel ?? zoneRow?.name ?? created!.originZoneId,
+          origin: placeOf(created!.originLat, created!.originLng, created!.originLabel),
+          destination: placeOf(created!.destLat, created!.destLng, created!.destLabel),
           departureTime: created!.departureTime,
           daysOfWeek: created!.daysOfWeek,
           date: created!.date,
@@ -1500,6 +1540,8 @@ export function createApp(deps: AppDeps = {}) {
         vehicleId: updated!.vehicleId,
         direction: updated!.direction,
         originZoneId: updated!.originZoneId,
+        origin: placeOf(updated!.originLat, updated!.originLng, updated!.originLabel),
+        destination: placeOf(updated!.destLat, updated!.destLng, updated!.destLabel),
         departureTime: updated!.departureTime,
         daysOfWeek: updated!.daysOfWeek,
         date: updated!.date,

@@ -525,11 +525,24 @@ export const OfferStatusSchema = z.enum(["active", "paused", "cancelled"]);
 // happens outside the app.
 export const PaymentMethodSchema = z.enum(["yape", "cash"]);
 
+// A place picked on the map: where a trip starts or ends. The label is what the person read.
+export const PlaceSchema = z
+  .object({
+    lat: z.number().min(-90).max(90),
+    lng: z.number().min(-180).max(180),
+    label: z.string().trim().min(1, "Elige un lugar.").max(160),
+  })
+  .openapi("Place");
+
 export const CreateTripOfferBodySchema = z
   .object({
     vehicleId: z.string().uuid("Selecciona un vehículo."),
-    direction: TripDirectionSchema,
-    originZoneId: z.string().min(1, "Selecciona una zona."),
+    // The trip runs between two places chosen on the map...
+    origin: PlaceSchema.optional(),
+    destination: PlaceSchema.optional(),
+    // ...or, as before, between a zone and the community's headquarters.
+    direction: TripDirectionSchema.optional(),
+    originZoneId: z.string().min(1, "Selecciona una zona.").optional(),
     departureTime: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/, "Ingresa una hora de salida válida."),
     daysOfWeek: z.array(z.number().int().min(1).max(7)).min(1).nullable().optional(),
     date: z
@@ -560,6 +573,12 @@ export const CreateTripOfferBodySchema = z
     message: "Elige cómo se paga: Yape o efectivo.",
     path: ["paymentMethods"],
   })
+  .refine(
+    (data) =>
+      (Boolean(data.origin) && Boolean(data.destination)) ||
+      (Boolean(data.direction) && Boolean(data.originZoneId)),
+    { message: "Elige dónde sales y a dónde vas.", path: ["destination"] },
+  )
   .openapi("CreateTripOfferRequest");
 
 export const TripOfferSummarySchema = z
@@ -571,6 +590,9 @@ export const TripOfferSummarySchema = z
     direction: TripDirectionSchema,
     originZoneId: z.string(),
     originZoneName: z.string().optional(),
+    // The places the driver chose, null on the trips between a zone and the headquarters.
+    origin: PlaceSchema.nullable(),
+    destination: PlaceSchema.nullable(),
     departureTime: z.string(),
     daysOfWeek: z.array(z.number().int()).nullable(),
     date: z.string().nullable(),
@@ -694,6 +716,8 @@ export const InfeasibleReasonSchema = z.enum([
   "no_walkable_meeting_point",
   "outside_time_window",
   "detour_exceeded",
+  "too_far_from_route",
+  "wrong_direction",
 ]);
 
 const clockTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Ingresa una hora válida.");
@@ -711,13 +735,16 @@ export const LatLngSchema = z
 
 export const SearchTripsBodySchema = z
   .object({
-    direction: TripDirectionSchema,
+    direction: TripDirectionSchema.default("outbound"),
     // Left out when `location` is given: the server takes the zone nearest to the person.
     originZoneId: z.string().min(1, "Selecciona tu zona.").optional(),
     // Where the person is now, from the device. Only used to pick the zone; never stored.
     location: LatLngSchema.optional(),
     // Where the person is really going. Only used to rank and draw; never stored.
     destination: LatLngSchema.optional(),
+    // What the person read for each place, kept with their seat request.
+    locationLabel: z.string().trim().max(160).optional(),
+    destinationLabel: z.string().trim().max(160).optional(),
     windowStart: clockTime,
     windowEnd: clockTime,
     daysOfWeek: z
