@@ -148,7 +148,7 @@ export default function LiveTrip({
 
   if (role === "driver") {
     return (
-      <section className="space-y-3 rounded-2xl border bg-card p-5 text-sm shadow-sm">
+      <section className="space-y-3 surface p-5 text-sm">
         <h2 className="text-base font-semibold tracking-tight">Te Jalo en vivo</h2>
         <p className="text-muted-foreground">
           {sharing
@@ -203,9 +203,7 @@ export default function LiveTrip({
                               : [...current, option.value],
                           )
                         }
-                        className={`min-h-11 rounded-xl border px-5 text-sm font-medium shadow-xs transition-colors ${
-                          on ? "border-foreground bg-highlight font-semibold" : "bg-card"
-                        }`}
+                        className="choice-surface min-h-11 px-5 text-sm font-medium"
                       >
                         {option.label}
                       </button>
@@ -225,7 +223,7 @@ export default function LiveTrip({
 
   if (!active) {
     return role === "passenger" ? (
-      <p className="rounded-2xl border bg-card p-3 text-sm text-muted-foreground shadow-sm">
+      <p className="surface p-3 text-sm text-muted-foreground">
         El conductor aún no activó Te Jalo en vivo. Verás su auto aquí cuando salga.
       </p>
     ) : null;

@@ -10,7 +10,7 @@ export default function CommunityContext({
   destinationName: string;
 }) {
   return (
-    <p className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 text-sm shadow-xs">
+    <p className="surface flex items-center gap-3 px-4 py-3 text-sm">
       <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-highlight text-highlight-foreground">
         <HugeiconsIcon icon={UserGroupIcon} className="size-[1.125rem]" aria-hidden />
       </span>

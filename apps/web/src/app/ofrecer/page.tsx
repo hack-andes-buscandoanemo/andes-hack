@@ -235,7 +235,7 @@ export default function OfferPage() {
       />
 
       {!activeVehicle ? (
-        <section className="flex flex-col gap-4 rounded-2xl border bg-card p-5 shadow-sm">
+        <section className="flex flex-col gap-4 surface p-5">
           <h2 className="text-lg font-semibold tracking-tight">Tu vehículo</h2>
           <form
             noValidate
@@ -492,9 +492,7 @@ export default function OfferPage() {
                         type="button"
                         aria-pressed={selected}
                         onClick={() => field.handleChange(opt.value)}
-                        className={`flex min-h-12 items-center rounded-xl border px-4 text-left text-sm font-medium shadow-xs transition-colors ${
-                          selected ? "border-foreground bg-highlight font-semibold" : "bg-card"
-                        }`}
+                        className="choice-surface flex min-h-12 items-center px-4 text-left text-sm font-medium"
                       >
                         {opt.label}
                       </button>
@@ -563,9 +561,7 @@ export default function OfferPage() {
                                     : [...field.state.value, option.value],
                                 )
                               }
-                              className={`min-h-11 rounded-xl border px-5 text-sm font-medium shadow-xs transition-colors ${
-                                active ? "border-foreground bg-highlight font-semibold" : "bg-card"
-                              }`}
+                              className="choice-surface min-h-11 px-5 text-sm font-medium"
                             >
                               {option.label}
                             </button>

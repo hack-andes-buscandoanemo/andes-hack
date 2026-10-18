@@ -53,7 +53,7 @@ export default function DropOffSuggestion({
   }
 
   return (
-    <section className="space-y-2 rounded-2xl border bg-card p-5 text-sm shadow-sm">
+    <section className="space-y-2 surface p-5 text-sm">
       <h2 className="text-base font-semibold tracking-tight">¿Tu destino final es otro?</h2>
       <p className="text-muted-foreground">
         Dinos a dónde vas y te mostramos en qué calle bajarte para quedar lo más cerca posible.

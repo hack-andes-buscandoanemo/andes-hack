@@ -321,10 +321,7 @@ export default function Viajes() {
           </p>
         ) : null}
         {failed ? (
-          <div
-            role="alert"
-            className="flex flex-col gap-2 rounded-2xl border bg-card p-5 shadow-sm"
-          >
+          <div role="alert" className="flex flex-col gap-2 surface p-5">
             <p>No pudimos cargar tus viajes.</p>
             <Button type="button" variant="outline" onClick={() => setAttempt((n) => n + 1)}>
               Reintentar

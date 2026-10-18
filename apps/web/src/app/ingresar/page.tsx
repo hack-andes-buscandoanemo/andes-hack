@@ -181,9 +181,7 @@ export default function EnterPage() {
                   type="button"
                   onClick={() => handleSelectCommunity(item.id)}
                   aria-pressed={isSelected}
-                  className={`flex min-h-14 w-full items-center justify-between rounded-xl border px-4 py-3 text-left shadow-xs transition-colors hover:border-foreground/30 ${
-                    isSelected ? "border-foreground bg-highlight" : "bg-card"
-                  }`}
+                  className="choice-surface flex min-h-14 w-full items-center justify-between px-4 py-3 text-left"
                 >
                   <div className="flex flex-col">
                     <span className="font-semibold">{item.name}</span>

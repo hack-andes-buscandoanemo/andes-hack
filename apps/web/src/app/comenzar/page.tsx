@@ -179,9 +179,7 @@ export default function OnboardingPage() {
                         field.handleChange(option.value);
                         setUsualModeError(null);
                       }}
-                      className={`min-h-14 rounded-xl border px-4 py-3 text-left text-sm font-medium shadow-xs transition-colors ${
-                        selected ? "border-foreground bg-highlight font-semibold" : "bg-card"
-                      }`}
+                      className="choice-surface min-h-14 px-4 py-3 text-left text-sm font-medium"
                     >
                       {option.label}
                     </button>
@@ -211,9 +209,7 @@ export default function OnboardingPage() {
                       type="button"
                       aria-pressed={selected}
                       onClick={() => field.handleChange(option.value)}
-                      className={`min-h-14 rounded-xl border px-4 py-3 text-left text-sm font-medium shadow-xs transition-colors ${
-                        selected ? "border-foreground bg-highlight font-semibold" : "bg-card"
-                      }`}
+                      className="choice-surface min-h-14 px-4 py-3 text-left text-sm font-medium"
                     >
                       {option.label}
                     </button>

@@ -61,7 +61,7 @@ export default function Proposals({ communityId }: { communityId: string }) {
       {proposals.map((proposal) => (
         <article
           key={proposal.suggestionId}
-          className="flex flex-col gap-1.5 rounded-2xl border bg-card p-5 text-sm shadow-sm ring-2 ring-brand-yellow"
+          className="flex flex-col gap-1.5 surface p-5 text-sm ring-2 ring-brand-yellow"
         >
           <div className="flex items-center gap-3">
             <ProfileAvatar

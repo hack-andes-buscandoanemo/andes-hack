@@ -28,10 +28,7 @@ export default function TravelPreferences({ communityId, ...initial }: TravelPre
   }
 
   return (
-    <section
-      aria-labelledby="travel-preferences"
-      className="flex flex-col gap-3 rounded-2xl border bg-card p-5 shadow-sm"
-    >
+    <section aria-labelledby="travel-preferences" className="flex flex-col gap-3 surface p-5">
       <h2 id="travel-preferences" className="text-base font-semibold tracking-tight">
         Preferencias de viaje
       </h2>

@@ -11,7 +11,7 @@ import { kg } from "@/lib/format";
 
 function Card({ label, value }: { label: string; value: string }) {
   return (
-    <div data-card className="rounded-2xl border bg-card p-5 shadow-sm">
+    <div data-card className="surface p-5">
       <p className="text-sm text-muted-foreground">{label}</p>
       <p className="text-[1.75rem] leading-tight font-bold tracking-tight">{value}</p>
     </div>
@@ -30,7 +30,7 @@ function Row({ label, value }: { label: string; value: string }) {
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
   const id = `block-${title.replaceAll(" ", "-").toLowerCase()}`;
   return (
-    <section aria-labelledby={id} className="space-y-3 rounded-2xl border bg-card p-5 shadow-sm">
+    <section aria-labelledby={id} className="space-y-3 surface p-5">
       <h2 id={id} className="text-lg font-semibold tracking-tight">
         {title}
       </h2>
@@ -161,7 +161,7 @@ export default function Panel() {
     return (
       <Shell>
         {selector}
-        <div role="alert" className="space-y-3 rounded-2xl border bg-card p-5 shadow-sm">
+        <div role="alert" className="space-y-3 surface p-5">
           <p>No pudimos cargar el panel.</p>
           <Button type="button" onClick={() => setAttempt((count) => count + 1)}>
             Reintentar

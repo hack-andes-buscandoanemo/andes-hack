@@ -26,10 +26,7 @@ export default function MyImpact({ communityId }: { communityId: string }) {
   }, [communityId]);
 
   return (
-    <section
-      aria-labelledby="my-impact"
-      className="flex flex-col gap-2 rounded-2xl border bg-card p-5 shadow-sm"
-    >
+    <section aria-labelledby="my-impact" className="flex flex-col gap-2 surface p-5">
       <h2 id="my-impact" className="text-base font-semibold tracking-tight">
         Mi impacto
       </h2>

@@ -143,7 +143,7 @@ export default function PlacePicker({
       {options.length > 0 ? (
         <ul
           aria-label={`Resultados de ${label.toLowerCase()}`}
-          className="flex flex-col divide-y overflow-hidden rounded-xl border bg-card shadow-sm"
+          className="surface flex flex-col divide-y overflow-hidden shadow-sm"
         >
           {options.map((option) => (
             <li key={`${option.lat},${option.lng}`}>

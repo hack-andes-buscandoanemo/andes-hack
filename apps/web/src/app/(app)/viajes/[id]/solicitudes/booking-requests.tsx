@@ -161,7 +161,7 @@ export default function BookingRequests({ offerId }: { offerId: string }) {
         {result.bookings.map((booking) => (
           <li
             key={booking.id}
-            className={`space-y-3 rounded-2xl border bg-card p-5 text-sm shadow-sm ${booking.recommended ? "ring-2 ring-brand-yellow" : ""}`}
+            className={`space-y-3 surface p-5 text-sm ${booking.recommended ? "ring-2 ring-brand-yellow" : ""}`}
           >
             <div className="flex items-center gap-3">
               <ProfileAvatar

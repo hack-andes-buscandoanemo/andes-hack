@@ -39,10 +39,7 @@ export default function EditProfile({
   }
 
   return (
-    <section
-      aria-labelledby="edit-profile"
-      className="flex flex-col gap-3 rounded-2xl border bg-card p-5 shadow-sm"
-    >
+    <section aria-labelledby="edit-profile" className="flex flex-col gap-3 surface p-5">
       <h2 id="edit-profile" className="text-base font-semibold tracking-tight">
         Editar perfil
       </h2>

@@ -34,9 +34,7 @@ export default function TripCard({
   const from = outbound ? match.originZoneName : match.destinationName;
   const to = outbound ? match.destinationName : match.originZoneName;
   return (
-    <li
-      className={`flex flex-col gap-4 rounded-2xl border bg-card p-5 shadow-sm ${best ? "ring-2 ring-brand-yellow" : ""}`}
-    >
+    <li className={`flex flex-col gap-4 surface p-5 ${best ? "ring-2 ring-brand-yellow" : ""}`}>
       <div className="flex items-center gap-3">
         <ProfileAvatar
           name={match.driverName}

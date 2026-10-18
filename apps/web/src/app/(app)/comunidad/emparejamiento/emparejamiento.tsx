@@ -60,7 +60,7 @@ export default function Emparejamiento({ communityId }: { communityId: string })
         </p>
       </header>
       <form
-        className="flex flex-col gap-3 rounded-2xl border bg-card p-5 shadow-sm"
+        className="flex flex-col gap-3 surface p-5"
         onSubmit={(event) => {
           event.preventDefault();
           void run();
@@ -124,10 +124,7 @@ export default function Emparejamiento({ communityId }: { communityId: string })
           ) : (
             <ul aria-labelledby="suggestions" className="flex flex-col gap-2">
               {result.suggestions.map((suggestion) => (
-                <li
-                  key={suggestion.id}
-                  className="flex flex-col gap-0.5 rounded-2xl border bg-card p-3 text-sm shadow-sm"
-                >
+                <li key={suggestion.id} className="flex flex-col gap-0.5 surface p-3 text-sm">
                   <p className="font-bold">{`${suggestion.passengerName} → viaje de ${suggestion.driverName}`}</p>
                   <p>{suggestion.meetingPointName}</p>
                   <p className="text-muted-foreground">
