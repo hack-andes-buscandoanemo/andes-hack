@@ -967,6 +967,7 @@ describe("POST /bookings/{id}/cancel (US-014)", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
       booking: { id: pending.id, status: "cancelled_by_passenger" },
+      lateCancelled: false,
     });
     const detail = (await (await requestAs(lucia, `/offers/${offer.id}`)).json()) as {
       booking: unknown;
@@ -991,27 +992,73 @@ describe("POST /bookings/{id}/cancel (US-014)", () => {
     expect(detail.booking.status).toBe("pending");
   });
 
-  it("answers the same when the request is withdrawn twice, and keeps an accepted seat", async () => {
+  it("answers the same when the request is withdrawn twice, and releases an accepted seat atomically (US-022)", async () => {
     const alfa = await createCommunity("comunidad-alfa");
     const driver = await createMember(alfa.id, "u-mateo", "Mateo");
     const lucia = await createMember(alfa.id, "u-lucia", "Lucía");
     const rosa = await createMember(alfa.id, "u-rosa", "Rosa");
-    const offer = await seedOffer(alfa.id, driver.id);
+    const offer = await seedOffer(alfa.id, driver.id, 2);
     const pending = await bookSeat(offer, lucia.id, "pending");
     const accepted = await bookSeat(offer, rosa.id, "accepted");
+    await testDb.update(tripOffer).set({ seatsTaken: 1 }).where(eq(tripOffer.id, offer.id));
 
     await withdraw(lucia, pending.id);
     const again = await withdraw(lucia, pending.id);
-    const refused = await withdraw(rosa, accepted.id);
 
     expect(again.status).toBe(200);
     expect(await again.json()).toEqual({
       booking: { id: pending.id, status: "cancelled_by_passenger" },
+      lateCancelled: false,
     });
-    expect(refused.status).toBe(409);
-    expect(((await refused.json()) as { details: unknown }).details).toEqual({
-      code: "not_withdrawable",
+
+    const cancelled = await withdraw(rosa, accepted.id);
+    expect(cancelled.status).toBe(200);
+    expect(await cancelled.json()).toMatchObject({
+      booking: { id: accepted.id, status: "cancelled_by_passenger" },
     });
+
+    const [updatedOffer] = await testDb
+      .select({ seatsTaken: tripOffer.seatsTaken })
+      .from(tripOffer)
+      .where(eq(tripOffer.id, offer.id));
+    expect(updatedOffer?.seatsTaken).toBe(0);
+
+    const cancelledAgain = await withdraw(rosa, accepted.id);
+    expect(cancelledAgain.status).toBe(200);
+    const [stillZero] = await testDb
+      .select({ seatsTaken: tripOffer.seatsTaken })
+      .from(tripOffer)
+      .where(eq(tripOffer.id, offer.id));
+    expect(stillZero?.seatsTaken).toBe(0);
+  });
+
+  it("marks a cancellation made less than 60 minutes before pickup (US-022)", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const rosa = await createMember(alfa.id, "u-rosa", "Rosa");
+    const offer = await seedOffer(alfa.id, driver.id, 2);
+    const accepted = await bookSeat(offer, rosa.id, "accepted");
+
+    // 06:40 in America/Lima (UTC-5) is 11:40 UTC -> 49 minutes before pickup (less than 60 min)
+    const appWithLateClock = createApp({
+      db: testDb as never,
+      getSession: (async () => ({
+        user: { id: rosa.id, email: "rosa@alfa.pe" },
+        session: {},
+      })) as never,
+      rateLimit: async () => ({ success: true, reset: 0 }),
+      now: () => new Date("2026-10-19T11:40:00Z"),
+    });
+
+    const res = await appWithLateClock.request(`/bookings/${accepted.id}/cancel`, {
+      method: "POST",
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      booking: { id: string; status: string };
+      lateCancelled: boolean;
+    };
+    expect(body.lateCancelled).toBe(true);
   });
 });
 
