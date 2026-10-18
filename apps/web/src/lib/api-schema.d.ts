@@ -1866,8 +1866,6 @@ export interface components {
             /** Format: uuid */
             offerId: string;
             driverName: string;
-            /** Format: uri */
-            driverPhotoUrl: string | null;
             originZoneName: string;
             destinationName: string;
             /** @enum {string} */
@@ -1906,8 +1904,6 @@ export interface components {
             /** @enum {string} */
             status: "active" | "paused" | "cancelled";
             driverName: string;
-            /** Format: uri */
-            driverPhotoUrl: string | null;
             communityName: string;
             originZoneName: string;
             destinationName: string;
@@ -1924,7 +1920,6 @@ export interface components {
             } | null;
             note: string | null;
             isOwn: boolean;
-            hasOpenNeed: boolean;
             match: {
                 meetingPointName: string;
                 pickupAt: string;
@@ -2098,8 +2093,6 @@ export interface components {
             /** Format: uuid */
             offerId: string;
             driverName: string;
-            /** Format: uri */
-            driverPhotoUrl: string | null;
             /** @enum {string} */
             direction: "outbound" | "return";
             date: string;
