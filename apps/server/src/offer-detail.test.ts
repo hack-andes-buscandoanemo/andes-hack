@@ -414,6 +414,36 @@ describe("Solo mujeres trips (US-014)", () => {
     expect(await res.json()).toMatchObject({ details: { code: "no_longer_compatible" } });
   });
 
+  it("refuses a seat with a man driver to a woman who searched with Solo mujeres", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const mateo = await createMember(alfa.id, "u-mateo", "Mateo");
+    const offer = await seedOffer(alfa.id, mateo.id);
+    await seedMeetingPoint();
+    const lucia = await createMember(alfa.id, "u-lucia", "Lucía", { identifiesAsWoman: true });
+    await requestAs(lucia, `/communities/${alfa.id}/search`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        direction: "outbound",
+        originZoneId: "san-borja",
+        windowStart: "07:30",
+        windowEnd: "08:00",
+        daysOfWeek: [1, 2, 3],
+        fallbackMode: "taxi_app",
+        womenOnly: true,
+      }),
+    });
+
+    const res = await requestAs(lucia, `/offers/${offer.id}/bookings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    });
+
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ details: { code: "no_longer_compatible" } });
+  });
+
   it("lets a passenger who identifies as a woman request the same trip", async () => {
     const { alfa, offer } = await womenOnlyOffer();
     const lucia = await createMember(alfa.id, "u-lucia", "Lucía", { identifiesAsWoman: true });
