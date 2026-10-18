@@ -434,4 +434,18 @@ describe("search page /buscar (US-013)", () => {
     expect(screen.getByText("Elige al menos un día.")).toBeInTheDocument();
     expect(searchTrips).not.toHaveBeenCalled();
   });
+
+  it("does not send a second search while one is in progress", async () => {
+    searchTrips.mockReturnValue(new Promise(() => {}));
+    const user = userEvent.setup();
+    render(<BuscarPage />);
+    await pickSanBorja(user);
+    const button = screen.getByRole("button", { name: "Buscar coincidencias" });
+
+    await user.click(button);
+    await user.click(button);
+
+    expect(searchTrips).toHaveBeenCalledTimes(1);
+    expect(button).toBeDisabled();
+  });
 });

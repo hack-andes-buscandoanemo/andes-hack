@@ -83,7 +83,7 @@ export default function SearchPage() {
   }
 
   async function handleSearch(range = { start: windowStart, end: windowEnd }) {
-    if (!membership) return;
+    if (!membership || searching) return;
     if (!zoneId) {
       setError("Selecciona tu zona.");
       return;
@@ -123,6 +123,7 @@ export default function SearchPage() {
   }
 
   function widenWindow() {
+    if (searching) return;
     const range = { start: shiftClock(windowStart, -15), end: shiftClock(windowEnd, 15) };
     setWindowStart(range.start);
     setWindowEnd(range.end);
@@ -317,7 +318,7 @@ export default function SearchPage() {
           ))}
         </select>
       </label>
-      <Button type="button" onClick={() => handleSearch()}>
+      <Button type="button" disabled={searching} onClick={() => handleSearch()}>
         Buscar coincidencias
       </Button>
       {error ? (
