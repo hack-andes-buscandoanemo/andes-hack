@@ -9,6 +9,7 @@ import {
   listCommunitiesRoute,
   listCommunityOffersRoute,
   listCommunityZonesRoute,
+  listMyTripsRoute,
   listVehiclesRoute,
   OPENAPI_DOCUMENT_CONFIG,
   requestSeatRoute,
@@ -39,6 +40,7 @@ import {
   type RateLimitCheck,
   type SessionResolver,
 } from "./middleware";
+import { listMyTrips } from "./my-trips";
 import { getOfferDetail, requestSeat, withdrawRequest } from "./offer-detail";
 import { searchTrips } from "./search";
 import { ApiError } from "./utils/api-response";
@@ -242,6 +244,7 @@ export function createApp(deps: AppDeps = {}) {
   openApiApp.use("/offers/:id/bookings", requireSession(deps.getSession));
   openApiApp.use("/bookings/:id/cancel", requireSession(deps.getSession));
   openApiApp.use("/me", requireSession(deps.getSession));
+  openApiApp.use("/me/trips", requireSession(deps.getSession));
 
   openApiApp.openapi(healthRoute, (c) => {
     return c.json({ status: "ok" as const });
@@ -514,6 +517,11 @@ export function createApp(deps: AppDeps = {}) {
       },
       200,
     );
+  });
+
+  openApiApp.openapi(listMyTripsRoute, async (c) => {
+    const { role, scope } = c.req.valid("query");
+    return c.json(await listMyTrips(database, { userId: c.get("user").id, role, scope }), 200);
   });
 
   openApiApp.openapi(updateMembershipRoute, async (c) => {
