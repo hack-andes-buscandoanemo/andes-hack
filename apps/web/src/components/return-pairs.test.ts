@@ -22,6 +22,7 @@ const trip = (overrides: Partial<MyTrip> & { id: string }): MyTrip => ({
   seatsFree: null,
   pendingRequests: null,
   acceptedPassengers: null,
+  fuelEstimate: null,
   passengerRequest: {
     communityId: COMMUNITY_ID,
     originZoneId: "san-borja",

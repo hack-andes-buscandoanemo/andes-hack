@@ -46,6 +46,7 @@ const DETAIL = {
     walkMinutes: 14,
   },
   booking: null,
+  fuelEstimate: { tripSoles: 9.84, perOccupantSoles: 2.46, occupants: 4 },
 };
 
 beforeEach(() => {
@@ -75,6 +76,34 @@ describe("trip detail /viajes/{id} (US-014)", () => {
     expect(screen.getByText("Puedes cancelar cuando quieras")).toBeTruthy();
     expect(screen.getByText("Estación San Borja Sur (Línea 1)")).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/ABC123/);
+  });
+
+  it("shows the fuel of the leg and each occupant's share as a reference, never as a fare (US-034)", async () => {
+    render(<TripDetailPage />);
+
+    const fuel = await screen.findByRole("region", { name: "Combustible estimado" });
+    expect(within(fuel).getByText("Combustible estimado del tramo: S/ 9,84")).toBeTruthy();
+    expect(within(fuel).getByText("Por ocupante (incluido el conductor): S/ 2,46")).toBeTruthy();
+    expect(within(fuel).getByText("Calculado para 4 ocupantes.")).toBeTruthy();
+    expect(
+      within(fuel).getByText(
+        "Referencial. Te Jalo no cobra ni procesa pagos; cualquier aporte es voluntario y nunca mayor al costo.",
+      ),
+    ).toBeTruthy();
+    expect(within(fuel).getByRole("link", { name: "De dónde sale esta cifra" })).toHaveAttribute(
+      "href",
+      "/datos#impacto",
+    );
+    expect(document.body.textContent).not.toMatch(/pagar|saldo|deuda|Métodos de pago/i);
+  });
+
+  it("says when the fuel of the leg could not be estimated", async () => {
+    getOfferDetail.mockResolvedValue({ ...DETAIL, fuelEstimate: null });
+    render(<TripDetailPage />);
+
+    const fuel = await screen.findByRole("region", { name: "Combustible estimado" });
+    expect(within(fuel).getByText("No pudimos estimar el combustible de este tramo.")).toBeTruthy();
+    expect(screen.queryByText(/S\/ /)).toBeNull();
   });
 
   it("shows the date of a one-off trip instead of recurring days", async () => {

@@ -585,6 +585,19 @@ export const SearchTripsBodySchema = z
   })
   .openapi("SearchTripsRequest");
 
+// The fuel of the leg and each occupant's share, to talk about a voluntary contribution
+// (US-034). Te Jalo never charges. Null when the leg's distance is unknown.
+export const FuelEstimateSchema = z
+  .object({
+    tripSoles: z.number(),
+    // Rounded down to the céntimo: the shares added up never exceed the trip.
+    perOccupantSoles: z.number(),
+    // The driver, the accepted passengers, and the person looking when not yet aboard.
+    occupants: z.number().int().min(1),
+  })
+  .nullable()
+  .openapi("FuelEstimate");
+
 // Never carries plates, emails or exact locations: only what the result card shows.
 export const TripMatchSchema = z
   .object({
@@ -600,6 +613,7 @@ export const TripMatchSchema = z
     arrivalAt: z.string(),
     detourMinutes: z.number().int(),
     walkMinutes: z.number().int(),
+    fuelEstimate: FuelEstimateSchema,
   })
   .openapi("TripMatch");
 
@@ -705,6 +719,7 @@ export const OfferDetailSchema = z
       .nullable(),
     // The person's own active request on this trip, if any.
     booking: z.object({ id: z.string().uuid(), status: BookingStatusSchema }).nullable(),
+    fuelEstimate: FuelEstimateSchema,
   })
   .openapi("OfferDetail");
 
@@ -777,6 +792,7 @@ export const MyTripSchema = z
         returnWindow: z.object({ start: z.string(), end: z.string() }).nullable(),
       })
       .optional(),
+    fuelEstimate: FuelEstimateSchema,
   })
   .openapi("MyTrip");
 
@@ -1030,6 +1046,7 @@ export const MatchProposalSchema = z
     pickupAt: z.string(),
     arrivalAt: z.string(),
     walkMinutes: z.number().int(),
+    fuelEstimate: FuelEstimateSchema,
   })
   .openapi("MatchProposal");
 
