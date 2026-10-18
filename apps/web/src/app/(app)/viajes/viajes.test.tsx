@@ -5,9 +5,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const listMyTrips = vi.fn();
 const updateOfferStatus = vi.fn();
 let tab: string | null = null;
+let roleParam: string | null = null;
 
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => ({ get: (key: string) => (key === "tab" ? tab : null) }),
+  useSearchParams: () => ({
+    get: (key: string) => (key === "tab" ? tab : key === "role" ? roleParam : null),
+  }),
 }));
 vi.mock("@/lib/communities-api", () => ({
   communitiesApi: {
@@ -56,6 +59,7 @@ const DRIVER_TRIP = {
 
 beforeEach(() => {
   tab = null;
+  roleParam = null;
   listMyTrips.mockReset().mockResolvedValue({ trips: [PASSENGER_TRIP] });
   updateOfferStatus.mockReset();
 });
@@ -205,5 +209,46 @@ describe("Viajes", () => {
     expect(within(card).getByText("Martes 20 de octubre")).toBeInTheDocument();
     expect(within(card).getByText("Centro Empresarial Real → La Molina")).toBeInTheDocument();
     expect(within(card).queryByText(/Placa/)).not.toBeInTheDocument();
+  });
+
+  it("opens on Como conductor when the person has no trips as passenger but does as driver", async () => {
+    listMyTrips.mockImplementation(async (role: string) => ({
+      trips: role === "driver" ? [DRIVER_TRIP] : [],
+    }));
+
+    render(<Viajes />);
+
+    expect(await screen.findByText("Activo")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Como conductor" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("stays on Como pasajero when the link asks for it, even with no passenger trips", async () => {
+    roleParam = "pasajero";
+    listMyTrips.mockImplementation(async (role: string) => ({
+      trips: role === "driver" ? [DRIVER_TRIP] : [],
+    }));
+
+    render(<Viajes />);
+
+    expect(
+      await screen.findByText("Aún no tienes viajes. Busca uno o publica el que ya haces."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Como pasajero" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("opens on Como conductor when the link asks for it", async () => {
+    roleParam = "conductor";
+
+    render(<Viajes />);
+
+    await screen.findByRole("listitem");
+    expect(listMyTrips).toHaveBeenCalledWith("driver", "upcoming");
+    expect(listMyTrips).not.toHaveBeenCalledWith("passenger", "upcoming");
   });
 });

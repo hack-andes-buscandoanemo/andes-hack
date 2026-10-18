@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import EmptyState from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
@@ -77,7 +77,12 @@ function TripCard({ trip, onToggle }: { trip: MyTrip; onToggle: (trip: MyTrip) =
 export default function Viajes() {
   const searchParams = useSearchParams();
   const [trips, setTrips] = useState<MyTrip[] | null>(null);
-  const [role, setRole] = useState<"passenger" | "driver">("passenger");
+  const roleParam = searchParams?.get("role");
+  const linkedRole =
+    roleParam === "conductor" ? "driver" : roleParam === "pasajero" ? "passenger" : null;
+  const [role, setRole] = useState<"passenger" | "driver">(linkedRole ?? "passenger");
+  // The smart default (driver view when only that has trips) applies once, before the person chooses.
+  const decided = useRef(linkedRole !== null);
   const [scope, setScope] = useState<"upcoming" | "past">(
     searchParams?.get("tab") === "historial" ? "past" : "upcoming",
   );
@@ -89,14 +94,22 @@ export default function Viajes() {
     let active = true;
     setFailed(false);
     setTrips(null);
-    communitiesApi
-      .listMyTrips(role, scope)
-      .then((response) => {
-        if (active) setTrips(response.trips);
-      })
-      .catch(() => {
-        if (active) setFailed(true);
-      });
+    (async () => {
+      const response = await communitiesApi.listMyTrips(role, scope);
+      if (!decided.current && role === "passenger" && scope === "upcoming") {
+        decided.current = true;
+        if (response.trips.length === 0) {
+          const asDriver = await communitiesApi.listMyTrips("driver", scope);
+          if (asDriver.trips.length > 0) {
+            if (active) setRole("driver");
+            return;
+          }
+        }
+      }
+      if (active) setTrips(response.trips);
+    })().catch(() => {
+      if (active) setFailed(true);
+    });
     return () => {
       active = false;
     };
@@ -133,7 +146,10 @@ export default function Viajes() {
             role="tab"
             aria-selected={scope === value}
             variant={scope === value ? "default" : "outline"}
-            onClick={() => setScope(value)}
+            onClick={() => {
+              decided.current = true;
+              setScope(value);
+            }}
           >
             {label}
           </Button>
@@ -152,7 +168,10 @@ export default function Viajes() {
             size="sm"
             aria-pressed={role === value}
             variant={role === value ? "secondary" : "outline"}
-            onClick={() => setRole(value)}
+            onClick={() => {
+              decided.current = true;
+              setRole(value);
+            }}
           >
             {label}
           </Button>
