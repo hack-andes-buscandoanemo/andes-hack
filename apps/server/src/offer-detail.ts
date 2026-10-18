@@ -1,14 +1,16 @@
 import type { db as defaultDb } from "@andes-hack/db";
 import { user as userTable } from "@andes-hack/db/schema/auth";
 import { community, communityMember } from "@andes-hack/db/schema/community";
-import { zone } from "@andes-hack/db/schema/places";
+import { matchRun, matchSuggestion } from "@andes-hack/db/schema/matching";
+import { meetingPoint, zone } from "@andes-hack/db/schema/places";
 import { seatBooking, tripOffer, tripRequest } from "@andes-hack/db/schema/trips";
 import { vehicle } from "@andes-hack/db/schema/vehicle";
 import { places } from "@andes-hack/matching";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { fuelEstimateFor, occupantsSharingFuel } from "./fuel-estimate";
 import { destinationOf, matchOfferForNeed } from "./search";
+import { getCommunityProfilePhotos, type ProfilePhotoStorageResolver } from "./profile-photos";
 import { canSeePlate, displayName, seatsFree } from "./trip-rules";
 import { ApiError } from "./utils/api-response";
 
@@ -56,7 +58,10 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
   }
 
   const [membership] = await database
-    .select({ identifiesAsWoman: communityMember.identifiesAsWoman })
+    .select({
+      identifiesAsWoman: communityMember.identifiesAsWoman,
+      isTeam: communityMember.isTeam,
+    })
     .from(communityMember)
     .where(
       and(
@@ -74,11 +79,15 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
     .select({
       id: seatBooking.id,
       passengerId: seatBooking.passengerId,
+      requestId: seatBooking.requestId,
       status: seatBooking.status,
     })
     .from(seatBooking)
     .where(
-      and(eq(seatBooking.offerId, row.id), inArray(seatBooking.status, ["pending", "accepted"])),
+      and(
+        eq(seatBooking.offerId, row.id),
+        inArray(seatBooking.status, ["pending", "accepted", "rejected"]),
+      ),
     );
   const isOwn = row.driverId === input.userId;
   const mine = bookings.find((booking) => booking.passengerId === input.userId);
@@ -140,6 +149,7 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
         : null,
     note: row.note,
     isOwn,
+    hasOpenNeed: Boolean(need),
     match: match && {
       meetingPointName:
         places.meetingPoints.find((point) => point.id === match.meetingPointId)?.name ??
@@ -157,21 +167,54 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
       occupants: occupantsSharingFuel(acceptedCount, isOwn || mine?.status === "accepted"),
     }),
   };
-  return { detail, need, match };
+  return {
+    detail,
+    need,
+    match,
+    communityId: row.communityId,
+    driverId: row.driverId,
+    passengerIsTeam: membership.isTeam,
+  };
 }
 
 export async function getOfferDetail(
   database: Database,
   input: { offerId: string; userId: string },
+  storageForPhotos?: ProfilePhotoStorageResolver,
 ) {
-  return (await loadOfferDetail(database, input)).detail;
+  const result = await loadOfferDetail(database, input);
+  const photoUrls = result.driverId
+    ? await getCommunityProfilePhotos(database, storageForPhotos, result.communityId, [
+        result.driverId,
+      ])
+    : new Map<string, string>();
+  return {
+    ...result.detail,
+    driverPhotoUrl: result.driverId ? (photoUrls.get(result.driverId) ?? null) : null,
+  };
 }
 
 export async function requestSeat(
   database: Database,
   input: { offerId: string; userId: string; message?: string },
 ) {
-  const { detail, match, need } = await loadOfferDetail(database, input);
+  const { detail, match, need, passengerIsTeam } = await loadOfferDetail(database, input);
+  const [rejected] = await database
+    .select({ id: seatBooking.id })
+    .from(seatBooking)
+    .where(
+      and(
+        eq(seatBooking.offerId, input.offerId),
+        eq(seatBooking.passengerId, input.userId),
+        eq(seatBooking.status, "rejected"),
+      ),
+    )
+    .limit(1);
+  if (rejected) {
+    throw new ApiError(409, "El conductor no pudo aceptar tu solicitud.", {
+      code: "previously_rejected",
+    });
+  }
   const alreadyRequested = new ApiError(409, "Ya solicitaste un asiento en este viaje.", {
     code: "already_requested",
   });
@@ -205,6 +248,7 @@ export async function requestSeat(
       offerId: input.offerId,
       requestId: need.id,
       passengerId: input.userId,
+      passengerWasTeam: passengerIsTeam,
       meetingPointId: match.meetingPointId,
       pickupAt: match.pickupAt,
       detourMinutes: match.detourMinutes,
@@ -256,4 +300,182 @@ export async function withdrawRequest(
     .where(and(eq(seatBooking.id, mine.id), eq(seatBooking.status, "pending")))
     .returning({ id: seatBooking.id, status: seatBooking.status });
   return { booking: booking ?? { id: mine.id, status: "cancelled_by_passenger" as const } };
+}
+export async function acceptSeatRequest(
+  database: Database,
+  input: { bookingId: string; userId: string },
+) {
+  const [booking] = await database
+    .select({
+      offerId: seatBooking.offerId,
+      status: seatBooking.status,
+      driverId: tripOffer.driverId,
+    })
+    .from(seatBooking)
+    .innerJoin(tripOffer, eq(seatBooking.offerId, tripOffer.id))
+    .where(eq(seatBooking.id, input.bookingId))
+    .limit(1);
+  if (!booking) {
+    throw new ApiError(404, "Esta solicitud ya no está disponible.", { code: "booking_not_found" });
+  }
+  if (booking.driverId !== input.userId) {
+    throw new ApiError(403, "No puedes gestionar esta solicitud.", { code: "driver_required" });
+  }
+  if (booking.status !== "pending") {
+    throw new ApiError(409, "Esta solicitud ya no está disponible.", { code: "not_pending" });
+  }
+
+  const result = await database.execute(sql`
+    WITH candidate AS MATERIALIZED (
+      SELECT id, offer_id
+      FROM seat_booking
+      WHERE id = ${input.bookingId} AND status = 'pending'
+      FOR UPDATE
+    ), reserved AS (
+      UPDATE trip_offer
+      SET seats_taken = seats_taken + 1
+      WHERE id = (SELECT offer_id FROM candidate) AND seats_taken < seats_total
+      RETURNING id
+    ), accepted AS (
+      UPDATE seat_booking
+      SET status = 'accepted', decided_at = now()
+      WHERE id = (SELECT id FROM candidate) AND status = 'pending'
+        AND EXISTS (SELECT 1 FROM reserved)
+      RETURNING id, status
+    )
+    SELECT id, status FROM accepted
+  `);
+  const accepted = result.rows[0] as { id: string; status: string } | undefined;
+  if (accepted) return { booking: { id: accepted.id, status: "accepted" as const } };
+
+  const [current] = await database
+    .select({ status: seatBooking.status })
+    .from(seatBooking)
+    .where(eq(seatBooking.id, input.bookingId))
+    .limit(1);
+  if (current?.status !== "pending") {
+    throw new ApiError(409, "Esta solicitud ya no está disponible.", { code: "not_pending" });
+  }
+  throw new ApiError(409, "Tu auto ya está lleno.", { code: "no_seats" });
+}
+
+export async function listSeatRequests(
+  database: Database,
+  input: { offerId: string; userId: string },
+  storageForPhotos?: ProfilePhotoStorageResolver,
+) {
+  const [offer] = await database
+    .select({
+      id: tripOffer.id,
+      communityId: tripOffer.communityId,
+      driverId: tripOffer.driverId,
+      seatsTaken: tripOffer.seatsTaken,
+      seatsTotal: tripOffer.seatsTotal,
+    })
+    .from(tripOffer)
+    .where(eq(tripOffer.id, input.offerId))
+    .limit(1);
+  if (!offer) throw new ApiError(404, "No encontramos este viaje.", { code: "offer_not_found" });
+  if (offer.driverId !== input.userId) {
+    throw new ApiError(403, "No puedes gestionar las solicitudes de este viaje.", {
+      code: "driver_required",
+    });
+  }
+
+  const requests = await database
+    .select({
+      id: seatBooking.id,
+      passengerId: seatBooking.passengerId,
+      requestId: seatBooking.requestId,
+      passengerName: communityMember.alias,
+      accountName: userTable.name,
+      status: seatBooking.status,
+      meetingPointName: meetingPoint.name,
+      pickupAt: seatBooking.pickupAt,
+      detourMinutes: seatBooking.detourMinutes,
+      message: seatBooking.message,
+      fallbackMode: tripRequest.fallbackMode,
+    })
+    .from(seatBooking)
+    .innerJoin(tripOffer, eq(seatBooking.offerId, tripOffer.id))
+    .innerJoin(
+      communityMember,
+      and(
+        eq(communityMember.userId, seatBooking.passengerId),
+        eq(communityMember.communityId, tripOffer.communityId),
+      ),
+    )
+    .innerJoin(userTable, eq(userTable.id, seatBooking.passengerId))
+    .innerJoin(tripRequest, eq(tripRequest.id, seatBooking.requestId))
+    .innerJoin(meetingPoint, eq(meetingPoint.id, seatBooking.meetingPointId))
+    .where(
+      and(eq(seatBooking.offerId, offer.id), inArray(seatBooking.status, ["pending", "accepted"])),
+    )
+    .orderBy(asc(seatBooking.createdAt));
+
+  const recommendations = await database
+    .select({ requestId: matchSuggestion.requestId })
+    .from(matchSuggestion)
+    .innerJoin(matchRun, eq(matchRun.id, matchSuggestion.runId))
+    .where(
+      and(
+        eq(matchSuggestion.offerId, offer.id),
+        eq(matchRun.algorithm, "optimizer"),
+        inArray(matchSuggestion.status, ["proposed", "accepted"]),
+      ),
+    );
+  const recommendedRequestIds = new Set(recommendations.map(({ requestId }) => requestId));
+
+  const photoUrls = await getCommunityProfilePhotos(
+    database,
+    storageForPhotos,
+    offer.communityId,
+    requests.map((request) => request.passengerId).filter((id): id is string => Boolean(id)),
+  );
+  return {
+    offerId: offer.id,
+    seatsTaken: offer.seatsTaken,
+    seatsTotal: offer.seatsTotal,
+    bookings: requests.map(
+      ({ accountName, fallbackMode, pickupAt, passengerId, requestId, ...booking }) => ({
+        ...booking,
+        passengerName: booking.passengerName ?? accountName,
+        passengerPhotoUrl: passengerId ? (photoUrls.get(passengerId) ?? null) : null,
+        pickupAt: pickupAt.slice(0, 5),
+        avoidsCar: fallbackMode === "drive_alone" || fallbackMode === "taxi_app",
+        recommended: recommendedRequestIds.has(requestId),
+      }),
+    ),
+  };
+}
+
+export async function rejectSeatRequest(
+  database: Database,
+  input: { bookingId: string; userId: string },
+) {
+  const [booking] = await database
+    .select({ id: seatBooking.id, status: seatBooking.status, driverId: tripOffer.driverId })
+    .from(seatBooking)
+    .innerJoin(tripOffer, eq(seatBooking.offerId, tripOffer.id))
+    .where(eq(seatBooking.id, input.bookingId))
+    .limit(1);
+  if (!booking) {
+    throw new ApiError(404, "Esta solicitud ya no está disponible.", { code: "booking_not_found" });
+  }
+  if (booking.driverId !== input.userId) {
+    throw new ApiError(403, "No puedes gestionar esta solicitud.", { code: "driver_required" });
+  }
+  if (booking.status !== "pending") {
+    throw new ApiError(409, "Esta solicitud ya no está disponible.", { code: "not_pending" });
+  }
+
+  const [rejected] = await database
+    .update(seatBooking)
+    .set({ status: "rejected", decidedAt: new Date() })
+    .where(and(eq(seatBooking.id, booking.id), eq(seatBooking.status, "pending")))
+    .returning({ id: seatBooking.id, status: seatBooking.status });
+  if (!rejected) {
+    throw new ApiError(409, "Esta solicitud ya no está disponible.", { code: "not_pending" });
+  }
+  return { booking: rejected };
 }

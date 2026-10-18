@@ -16,6 +16,7 @@ import type { z } from "zod";
 
 import { fuelEstimateFor, occupantsSharingFuel } from "./fuel-estimate";
 import { logEvent } from "./lib/logger";
+import { getCommunityProfilePhotos, type ProfilePhotoStorageResolver } from "./profile-photos";
 import { displayName, seatsFree } from "./trip-rules";
 import { ApiError } from "./utils/api-response";
 
@@ -50,6 +51,7 @@ export async function loadOfferRoutes(
   const rows = await database
     .select({
       id: tripOffer.id,
+      driverId: tripOffer.driverId,
       direction: tripOffer.direction,
       originZoneId: tripOffer.originZoneId,
       originZoneName: zone.name,
@@ -198,6 +200,7 @@ export async function matchOfferForNeed(database: Database, input: MatchOfferInp
 export async function searchTrips(
   database: Database,
   input: { communityId: string; userId: string; body: SearchBody },
+  storageForPhotos?: ProfilePhotoStorageResolver,
 ) {
   const { communityId, userId, body } = input;
   const [destinationRow] = await database
@@ -287,6 +290,12 @@ export async function searchTrips(
 
   const byId = new Map(rows.map((row) => [row.id, row]));
   const meetingPointNames = new Map(places.meetingPoints.map((point) => [point.id, point.name]));
+  const photoUrls = await getCommunityProfilePhotos(
+    database,
+    storageForPhotos,
+    communityId,
+    rows.flatMap((row) => (row.driverId ? [row.driverId] : [])),
+  );
 
   // For the coverage panel (US-030, US-031): only the outcome, never who searched or from where.
   logEvent("search.completed", { communityId, hadResults });
@@ -300,6 +309,7 @@ export async function searchTrips(
       return {
         offerId: match.offerId,
         driverName: displayName(offer.driverName, offer.accountName),
+        driverPhotoUrl: offer.driverId ? (photoUrls.get(offer.driverId) ?? null) : null,
         originZoneName: offer.originZoneName,
         destinationName: destination.name,
         direction: offer.direction,

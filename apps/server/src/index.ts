@@ -1,26 +1,37 @@
 import {
+  acceptBookingRoute,
   cancelBookingRoute,
   createCommunityOfferRoute,
+  confirmProfilePhotoRoute,
   createVehicleRoute,
+  deleteMeRoute,
+  deleteMyProfilePhotoRoute,
   getMeRoute,
+  getMyProfilePhotoRoute,
   getOfferDetailRoute,
   healthRoute,
   joinCommunityRoute,
   latestMatchRunsRoute,
+  listOfferBookingsRoute,
   listCommunitiesRoute,
   listCommunityOffersRoute,
   listCommunityZonesRoute,
+  listMyChatsRoute,
   listMyTripsRoute,
   listProposalsRoute,
   listVehiclesRoute,
   OPENAPI_DOCUMENT_CONFIG,
   requestSeatRoute,
   runMatchingRoute,
+  profilePhotoUploadRoute,
+  rejectBookingRoute,
   searchTripsRoute,
   updateMembershipRoute,
   updateOfferStatusRoute,
   updateTravelPreferencesRoute,
   verifyEmailCommunityRoute,
+  tripMessagesRoute,
+  sendTripMessageRoute,
 } from "@andes-hack/api";
 import { auth as defaultAuth, createAuth, setVerificationOtpSender } from "@andes-hack/auth";
 import { db as defaultDb } from "@andes-hack/db";
@@ -48,10 +59,28 @@ import {
   type SessionResolver,
 } from "./middleware";
 import { listMyTrips } from "./my-trips";
-import { getOfferDetail, requestSeat, withdrawRequest } from "./offer-detail";
+import {
+  acceptSeatRequest,
+  getOfferDetail,
+  listSeatRequests,
+  rejectSeatRequest,
+  requestSeat,
+  withdrawRequest,
+} from "./offer-detail";
 import { createPublicStatsRoutes, type StatsCache } from "./public-stats";
 import { searchTrips } from "./search";
+import { getTripMessages, listMyChats, sendTripMessage } from "./chat";
 import { ApiError } from "./utils/api-response";
+import { deletePersonalData } from "./privacy";
+import {
+  getMyCommunityProfilePhoto,
+  isProfilePhotoKey,
+  matchesImageType,
+  PROFILE_PHOTO_INVALID_MESSAGE,
+  PROFILE_PHOTO_MAX_BYTES,
+  profilePhotoKey,
+  type ProfilePhotoStorage,
+} from "./profile-photos";
 import { errorHandler, validationHook } from "./utils/error-handler";
 import { createWaitlistRoutes } from "./waitlist";
 
@@ -75,6 +104,7 @@ export type AppDeps = {
   statsCache?: StatsCache;
   // Keeps two admins from matching the same journey at once; Redis unless injected.
   journeyLock?: JourneyLock;
+  profilePhotoStorage?: ProfilePhotoStorage;
 };
 
 async function sha256Hex(value: string): Promise<string> {
@@ -126,6 +156,20 @@ export function createApp(deps: AppDeps = {}) {
   const database = deps.db ?? defaultDb;
   const emailSender = deps.sendEmail ?? defaultSendEmail;
   const getNow = deps.now ?? (() => new Date());
+  const getProfilePhotoStorage = async (): Promise<ProfilePhotoStorage> => {
+    if (deps.profilePhotoStorage) return deps.profilePhotoStorage;
+    if (
+      !env.R2_ACCOUNT_ID ||
+      !env.R2_ACCESS_KEY_ID ||
+      !env.R2_SECRET_ACCESS_KEY ||
+      !env.R2_BUCKET_NAME
+    ) {
+      throw new ApiError(503, "La carga de fotos no está disponible.", {
+        code: "photo_storage_unavailable",
+      });
+    }
+    return import("./lib/storage");
+  };
   const authInstance =
     deps.db || deps.sendEmail
       ? createAuth({
@@ -262,9 +306,19 @@ export function createApp(deps: AppDeps = {}) {
   openApiApp.use("/offers/:id/status", requireSession(deps.getSession));
   openApiApp.use("/offers/:id", requireSession(deps.getSession));
   openApiApp.use("/offers/:id/bookings", requireSession(deps.getSession));
-  openApiApp.use("/bookings/:id/cancel", requireSession(deps.getSession));
-  openApiApp.use("/me", requireSession(deps.getSession));
+  openApiApp.use("/me/chats", requireSession(deps.getSession));
+  openApiApp.use("/offers/:id/messages", requireSession(deps.getSession));
   openApiApp.use("/me/trips", requireSession(deps.getSession));
+  openApiApp.use("/bookings/:id/cancel", requireSession(deps.getSession));
+  openApiApp.use("/bookings/:id/accept", requireSession(deps.getSession));
+  openApiApp.use("/bookings/:id/reject", requireSession(deps.getSession));
+  openApiApp.use("/me", requireSession(deps.getSession));
+  const requirePhotoMember = requireOnboardedMember(
+    (c) => c.req.header("x-community-id") ?? "",
+    checkOnboarded,
+  );
+  openApiApp.use("/me/profile-photo", requireSession(deps.getSession), requirePhotoMember);
+  openApiApp.use("/me/profile-photo/*", requireSession(deps.getSession), requirePhotoMember);
 
   openApiApp.openapi(healthRoute, (c) => {
     return c.json({ status: "ok" as const });
@@ -491,6 +545,14 @@ export function createApp(deps: AppDeps = {}) {
 
   openApiApp.openapi(getMeRoute, async (c) => {
     const sessionUser = c.get("user");
+    const [account] = await database
+      .select({ id: userTable.id })
+      .from(userTable)
+      .where(eq(userTable.id, sessionUser.id))
+      .limit(1);
+    if (!account) {
+      throw new ApiError(404, "No encontramos esta cuenta.", { code: "account_not_found" });
+    }
     const rows = await database
       .select({
         id: communityMember.id,
@@ -544,6 +606,110 @@ export function createApp(deps: AppDeps = {}) {
   openApiApp.openapi(listMyTripsRoute, async (c) => {
     const { role, scope } = c.req.valid("query");
     return c.json(await listMyTrips(database, { userId: c.get("user").id, role, scope }), 200);
+  });
+
+  openApiApp.openapi(deleteMeRoute, async (c) => {
+    const userId = c.get("user").id;
+    const [account] = await database
+      .select({ image: userTable.image })
+      .from(userTable)
+      .where(eq(userTable.id, userId))
+      .limit(1);
+    if (!account) {
+      throw new ApiError(404, "No encontramos esta cuenta.", { code: "account_not_found" });
+    }
+    if (account.image && isProfilePhotoKey(account.image, userId)) {
+      const storage = await getProfilePhotoStorage();
+      await storage.deleteFile(account.image);
+    }
+    return c.json(await deletePersonalData(database, userId, getNow()), 200);
+  });
+
+  openApiApp.openapi(profilePhotoUploadRoute, async (c) => {
+    const { contentType } = c.req.valid("json");
+    const extension =
+      contentType === "image/jpeg" ? "jpg" : contentType === "image/png" ? "png" : "webp";
+    const key = profilePhotoKey(c.get("user").id, crypto.randomUUID(), extension);
+    const storage = await getProfilePhotoStorage();
+    return c.json(
+      {
+        uploadUrl: await storage.getUploadUrl(key, { expiresIn: 300, contentType }),
+        key,
+        expiresIn: 300,
+      },
+      200,
+    );
+  });
+
+  openApiApp.openapi(confirmProfilePhotoRoute, async (c) => {
+    const userId = c.get("user").id;
+    const { key } = c.req.valid("json");
+    if (!isProfilePhotoKey(key, userId)) {
+      throw new ApiError(400, PROFILE_PHOTO_INVALID_MESSAGE, { code: "invalid_profile_photo" });
+    }
+    const storage = await getProfilePhotoStorage();
+    const contentType = key.endsWith(".jpg")
+      ? "image/jpeg"
+      : key.endsWith(".png")
+        ? "image/png"
+        : "image/webp";
+    const metadata = await storage.getFileMetadata(key);
+    const discardInvalidPhoto = async (): Promise<never> => {
+      await storage.deleteFile(key).catch(() => undefined);
+      throw new ApiError(400, PROFILE_PHOTO_INVALID_MESSAGE, { code: "invalid_profile_photo" });
+    };
+    if (
+      !metadata ||
+      metadata.contentType !== contentType ||
+      !metadata.contentLength ||
+      metadata.contentLength > PROFILE_PHOTO_MAX_BYTES
+    ) {
+      return discardInvalidPhoto();
+    }
+    const bytes = await storage.downloadFileAsBuffer(key);
+    if (bytes.byteLength !== metadata.contentLength || !matchesImageType(contentType, bytes)) {
+      return discardInvalidPhoto();
+    }
+
+    const photoUrl = await storage.getDownloadUrl(key, { expiresIn: 300 });
+    const [account] = await database
+      .select({ image: userTable.image })
+      .from(userTable)
+      .where(eq(userTable.id, userId))
+      .limit(1);
+    if (!account) {
+      throw new ApiError(404, "No encontramos esta cuenta.", { code: "account_not_found" });
+    }
+    await database.update(userTable).set({ image: key }).where(eq(userTable.id, userId));
+    if (account.image && isProfilePhotoKey(account.image, userId) && account.image !== key) {
+      await storage.deleteFile(account.image);
+    }
+    return c.json({ photoUrl }, 200);
+  });
+
+  openApiApp.openapi(getMyProfilePhotoRoute, async (c) => {
+    const photoUrl = await getMyCommunityProfilePhoto(
+      database,
+      getProfilePhotoStorage,
+      c.req.header("x-community-id") ?? "",
+      c.get("user").id,
+    );
+    return c.json({ photoUrl }, 200);
+  });
+
+  openApiApp.openapi(deleteMyProfilePhotoRoute, async (c) => {
+    const userId = c.get("user").id;
+    const [account] = await database
+      .select({ image: userTable.image })
+      .from(userTable)
+      .where(eq(userTable.id, userId))
+      .limit(1);
+    if (account?.image && isProfilePhotoKey(account.image, userId)) {
+      const storage = await getProfilePhotoStorage();
+      await storage.deleteFile(account.image);
+    }
+    await database.update(userTable).set({ image: null }).where(eq(userTable.id, userId));
+    return c.json({ message: "Foto eliminada." }, 200);
   });
 
   openApiApp.openapi(updateMembershipRoute, async (c) => {
@@ -878,7 +1044,10 @@ export function createApp(deps: AppDeps = {}) {
     }
 
     const [membership] = await database
-      .select({ identifiesAsWoman: communityMember.identifiesAsWoman })
+      .select({
+        identifiesAsWoman: communityMember.identifiesAsWoman,
+        isTeam: communityMember.isTeam,
+      })
       .from(communityMember)
       .where(
         and(
@@ -907,6 +1076,7 @@ export function createApp(deps: AppDeps = {}) {
       .values({
         communityId,
         driverId: sessionUser.id,
+        driverWasTeam: membership?.isTeam ?? false,
         vehicleId: car.id,
         direction: body.direction,
         originZoneId: body.originZoneId,
@@ -952,20 +1122,79 @@ export function createApp(deps: AppDeps = {}) {
     const { id: communityId } = c.req.valid("param");
     const body = c.req.valid("json");
     return c.json(
-      await searchTrips(database, { communityId, userId: c.get("user").id, body }),
+      await searchTrips(
+        database,
+        { communityId, userId: c.get("user").id, body },
+        getProfilePhotoStorage,
+      ),
       200,
     );
   });
 
   openApiApp.openapi(getOfferDetailRoute, async (c) => {
     const { id: offerId } = c.req.valid("param");
-    return c.json(await getOfferDetail(database, { offerId, userId: c.get("user").id }), 200);
+    return c.json(
+      await getOfferDetail(database, { offerId, userId: c.get("user").id }, getProfilePhotoStorage),
+      200,
+    );
   });
 
   openApiApp.openapi(requestSeatRoute, async (c) => {
     const { id: offerId } = c.req.valid("param");
     const { message } = c.req.valid("json");
     return c.json(await requestSeat(database, { offerId, userId: c.get("user").id, message }), 201);
+  });
+
+  openApiApp.openapi(acceptBookingRoute, async (c) => {
+    const { id: bookingId } = c.req.valid("param");
+    return c.json(await acceptSeatRequest(database, { bookingId, userId: c.get("user").id }), 200);
+  });
+
+  openApiApp.openapi(rejectBookingRoute, async (c) => {
+    const { id: bookingId } = c.req.valid("param");
+    return c.json(await rejectSeatRequest(database, { bookingId, userId: c.get("user").id }), 200);
+  });
+
+  openApiApp.openapi(listOfferBookingsRoute, async (c) => {
+    const { id: offerId } = c.req.valid("param");
+    return c.json(
+      await listSeatRequests(
+        database,
+        { offerId, userId: c.get("user").id },
+        getProfilePhotoStorage,
+      ),
+      200,
+    );
+  });
+
+  openApiApp.openapi(listMyChatsRoute, async (c) => {
+    return c.json(await listMyChats(database, c.get("user").id, getProfilePhotoStorage), 200);
+  });
+
+  openApiApp.openapi(tripMessagesRoute, async (c) => {
+    const { id: offerId } = c.req.valid("param");
+    const { after } = c.req.valid("query");
+    return c.json(
+      await getTripMessages(
+        database,
+        { offerId, userId: c.get("user").id, after },
+        getProfilePhotoStorage,
+      ),
+      200,
+    );
+  });
+
+  openApiApp.openapi(sendTripMessageRoute, async (c) => {
+    const { id: offerId } = c.req.valid("param");
+    const { kind, body } = c.req.valid("json");
+    return c.json(
+      await sendTripMessage(
+        database,
+        { offerId, userId: c.get("user").id, kind, body },
+        getProfilePhotoStorage,
+      ),
+      201,
+    );
   });
 
   openApiApp.openapi(cancelBookingRoute, async (c) => {
@@ -1002,7 +1231,11 @@ export function createApp(deps: AppDeps = {}) {
     const { id: communityId } = c.req.valid("param");
     const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Lima" }).format(getNow());
     return c.json(
-      await listProposals(database, { communityId, userId: c.get("user").id, today }),
+      await listProposals(
+        database,
+        { communityId, userId: c.get("user").id, today },
+        getProfilePhotoStorage,
+      ),
       200,
     );
   });
