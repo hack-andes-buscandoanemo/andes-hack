@@ -20,6 +20,10 @@ export type RequestSeatResponse = components["schemas"]["RequestSeatResponse"];
 export type MyTrip = components["schemas"]["MyTrip"];
 export type MyTripsResponse = components["schemas"]["MyTripsResponse"];
 export type CancelBookingResponse = components["schemas"]["CancelBookingResponse"];
+export type RunMatchingRequest = components["schemas"]["RunMatchingRequest"];
+export type MatchRunsResponse = components["schemas"]["MatchRunsResponse"];
+export type MatchSuggestion = components["schemas"]["MatchSuggestion"];
+export type MatchProposal = components["schemas"]["MatchProposal"];
 
 export type PublicStats = components["schemas"]["PublicStats"];
 
@@ -144,5 +148,24 @@ export const communitiesApi = {
       `/bookings/${bookingId}/cancel` as "/bookings/{id}/cancel",
     );
     return response.data;
+  },
+  async runMatching(communityId: string, payload: RunMatchingRequest): Promise<MatchRunsResponse> {
+    const response = await httpClient.post(
+      `/communities/${communityId}/match-runs` as "/communities/{id}/match-runs",
+      payload,
+    );
+    return response.data;
+  },
+  async latestMatchRuns(communityId: string): Promise<MatchRunsResponse> {
+    const response = await httpClient.get(
+      `/communities/${communityId}/match-runs/latest` as "/communities/{id}/match-runs/latest",
+    );
+    return response.data;
+  },
+  async listProposals(communityId: string): Promise<MatchProposal[]> {
+    const response = await httpClient.get(
+      `/communities/${communityId}/proposals` as "/communities/{id}/proposals",
+    );
+    return response.data.proposals;
   },
 };

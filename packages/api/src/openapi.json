@@ -1328,6 +1328,234 @@
           "booking"
         ]
       },
+      "MatchRunsResponse": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": [
+              "outbound",
+              "return"
+            ]
+          },
+          "date": {
+            "type": "string"
+          },
+          "optimizer": {
+            "$ref": "#/components/schemas/MatchRunSummary"
+          },
+          "firstComeFirstServed": {
+            "$ref": "#/components/schemas/MatchRunSummary"
+          },
+          "suggestions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MatchSuggestion"
+            }
+          }
+        },
+        "required": [
+          "direction",
+          "date",
+          "optimizer",
+          "firstComeFirstServed",
+          "suggestions"
+        ]
+      },
+      "MatchRunSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "carTripsAvoided": {
+            "type": "integer"
+          },
+          "passengersMatched": {
+            "type": "integer"
+          },
+          "detourMinutes": {
+            "type": "integer"
+          },
+          "walkMinutes": {
+            "type": "integer"
+          },
+          "unassigned": {
+            "type": "integer"
+          },
+          "offers": {
+            "type": "integer"
+          },
+          "requests": {
+            "type": "integer"
+          },
+          "durationMs": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "carTripsAvoided",
+          "passengersMatched",
+          "detourMinutes",
+          "walkMinutes",
+          "unassigned",
+          "offers",
+          "requests",
+          "durationMs",
+          "createdAt"
+        ]
+      },
+      "MatchSuggestion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "offerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "driverName": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "passengerName": {
+            "type": "string"
+          },
+          "meetingPointName": {
+            "type": "string"
+          },
+          "pickupAt": {
+            "type": "string"
+          },
+          "arrivalAt": {
+            "type": "string"
+          },
+          "detourMinutes": {
+            "type": "integer"
+          },
+          "walkMinutes": {
+            "type": "integer"
+          },
+          "avoidsCarTrip": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "proposed",
+              "accepted",
+              "rejected"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "offerId",
+          "driverName",
+          "requestId",
+          "passengerName",
+          "meetingPointName",
+          "pickupAt",
+          "arrivalAt",
+          "detourMinutes",
+          "walkMinutes",
+          "avoidsCarTrip",
+          "status"
+        ]
+      },
+      "RunMatchingRequest": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": [
+              "outbound",
+              "return"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          }
+        },
+        "required": [
+          "direction",
+          "date"
+        ]
+      },
+      "MatchProposalsResponse": {
+        "type": "object",
+        "properties": {
+          "proposals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MatchProposal"
+            }
+          }
+        },
+        "required": [
+          "proposals"
+        ]
+      },
+      "MatchProposal": {
+        "type": "object",
+        "properties": {
+          "suggestionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "offerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "driverName": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "outbound",
+              "return"
+            ]
+          },
+          "date": {
+            "type": "string"
+          },
+          "meetingPointName": {
+            "type": "string"
+          },
+          "pickupAt": {
+            "type": "string"
+          },
+          "arrivalAt": {
+            "type": "string"
+          },
+          "walkMinutes": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "suggestionId",
+          "offerId",
+          "driverName",
+          "direction",
+          "date",
+          "meetingPointName",
+          "pickupAt",
+          "arrivalAt",
+          "walkMinutes"
+        ]
+      },
       "WaitlistEntryResponse": {
         "type": "object",
         "properties": {
@@ -1521,6 +1749,60 @@
               "individuals"
             ]
           },
+          "comparison": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "date": {
+                "type": "string"
+              },
+              "direction": {
+                "type": "string",
+                "enum": [
+                  "outbound",
+                  "return"
+                ]
+              },
+              "optimizer": {
+                "type": "object",
+                "properties": {
+                  "carTripsAvoided": {
+                    "type": "integer"
+                  },
+                  "passengersMatched": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "carTripsAvoided",
+                  "passengersMatched"
+                ]
+              },
+              "firstComeFirstServed": {
+                "type": "object",
+                "properties": {
+                  "carTripsAvoided": {
+                    "type": "integer"
+                  },
+                  "passengersMatched": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "carTripsAvoided",
+                  "passengersMatched"
+                ]
+              }
+            },
+            "required": [
+              "date",
+              "direction",
+              "optimizer",
+              "firstComeFirstServed"
+            ]
+          },
           "districts": {
             "type": "array",
             "items": {
@@ -1618,9 +1900,147 @@
           "updatedAt",
           "activity",
           "waitlist",
+          "comparison",
           "districts",
           "people",
           "vehicleImpact"
+        ]
+      },
+      "DataSourcesResponse": {
+        "type": "object",
+        "properties": {
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DataSource"
+            }
+          }
+        },
+        "required": [
+          "sources"
+        ]
+      },
+      "DataSource": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "topic": {
+                "type": "string",
+                "enum": [
+                  "tiempos",
+                  "impacto",
+                  "contexto"
+                ]
+              },
+              "label": {
+                "type": "string"
+              },
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "unit": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "dato"
+                ]
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "required": [
+              "id",
+              "topic",
+              "label",
+              "value",
+              "unit",
+              "source",
+              "date",
+              "kind",
+              "url"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "topic": {
+                "type": "string",
+                "enum": [
+                  "tiempos",
+                  "impacto",
+                  "contexto"
+                ]
+              },
+              "label": {
+                "type": "string"
+              },
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "unit": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "estimado"
+                ]
+              },
+              "url": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "id",
+              "topic",
+              "label",
+              "value",
+              "unit",
+              "source",
+              "date",
+              "kind",
+              "url"
+            ]
+          }
         ]
       }
     },
@@ -2348,6 +2768,225 @@
         }
       }
     },
+    "/communities/{id}/match-runs": {
+      "post": {
+        "tags": [
+          "Emparejamiento"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunMatchingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Las dos corridas guardadas, optimizador y primero en llegar, con las asignaciones recomendadas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchRunsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No hay sesión iniciada (`unauthorized`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro (`community_membership_required`) o no es administrador (`admin_required`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "La comunidad no existe (`community_not_found`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ya hay un emparejamiento en curso para esta jornada (`match_run_in_progress`), no hay ofertas ni necesidades (`no_journey_inputs`) o la sede no se puede usar (`unknown_destination`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Los datos enviados no son válidos (`validation_error`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/communities/{id}/match-runs/latest": {
+      "get": {
+        "tags": [
+          "Emparejamiento"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "La última jornada emparejada, con ambas corridas y sus recomendaciones",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchRunsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No hay sesión iniciada (`unauthorized`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro (`community_membership_required`) o no es administrador (`admin_required`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "La comunidad no existe (`community_not_found`) o nunca se ejecutó el emparejamiento (`no_match_runs`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "El identificador no es válido (`validation_error`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/communities/{id}/proposals": {
+      "get": {
+        "tags": [
+          "Emparejamiento"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Los viajes recomendados a la persona en los que todavía no solicitó asiento, el más próximo primero",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchProposalsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No hay sesión iniciada (`unauthorized`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro de la comunidad (`community_membership_required`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "El identificador no es válido (`validation_error`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/public/waitlist": {
       "post": {
         "tags": [
@@ -2467,6 +3106,25 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/data-sources": {
+      "get": {
+        "tags": [
+          "Público"
+        ],
+        "responses": {
+          "200": {
+            "description": "Cada constante de los tiempos y del impacto, con su tipo, fuente y fecha",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataSourcesResponse"
                 }
               }
             }

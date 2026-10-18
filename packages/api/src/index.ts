@@ -851,6 +851,154 @@ export const searchTripsRoute = createRoute({
   },
 });
 
+// A real calendar day: "2026-02-30" has the shape but not the day.
+const isCalendarDate = (date: string) => {
+  const parsed = new Date(`${date}T12:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date;
+};
+
+// A journey: one direction on one date. Both strategies run on the same offers and needs.
+export const RunMatchingBodySchema = z
+  .object({
+    direction: TripDirectionSchema,
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Ingresa una fecha válida.")
+      .refine(isCalendarDate, "Ingresa una fecha válida."),
+  })
+  .openapi("RunMatchingRequest");
+
+export const MatchRunSummarySchema = z
+  .object({
+    id: z.string().uuid(),
+    carTripsAvoided: z.number().int(),
+    passengersMatched: z.number().int(),
+    // Every driver's together, against the trips with the passengers they had already accepted.
+    detourMinutes: z.number().int(),
+    walkMinutes: z.number().int(),
+    // Needs that got no seat.
+    unassigned: z.number().int(),
+    offers: z.number().int(),
+    requests: z.number().int(),
+    durationMs: z.number().int(),
+    createdAt: z.string(),
+  })
+  .openapi("MatchRunSummary");
+
+export const MatchSuggestionStatusSchema = z.enum(["proposed", "accepted", "rejected"]);
+
+// A recommendation: the driver still decides whether to accept the passenger.
+export const MatchSuggestionSchema = z
+  .object({
+    id: z.string().uuid(),
+    offerId: z.string().uuid(),
+    driverName: z.string(),
+    requestId: z.string().uuid(),
+    passengerName: z.string(),
+    meetingPointName: z.string(),
+    pickupAt: z.string(),
+    arrivalAt: z.string(),
+    detourMinutes: z.number().int(),
+    walkMinutes: z.number().int(),
+    avoidsCarTrip: z.boolean(),
+    status: MatchSuggestionStatusSchema,
+  })
+  .openapi("MatchSuggestion");
+
+export const MatchRunsResponseSchema = z
+  .object({
+    direction: TripDirectionSchema,
+    date: z.string(),
+    optimizer: MatchRunSummarySchema,
+    firstComeFirstServed: MatchRunSummarySchema,
+    // The optimizer's recommendations; the baseline's are kept only for the comparison.
+    suggestions: z.array(MatchSuggestionSchema),
+  })
+  .openapi("MatchRunsResponse");
+
+export const runMatchingRoute = createRoute({
+  method: "post",
+  path: "/communities/{id}/match-runs",
+  tags: ["Emparejamiento"],
+  request: {
+    params: JoinCommunityParamsSchema,
+    body: { content: { "application/json": { schema: RunMatchingBodySchema } } },
+  },
+  responses: {
+    201: {
+      description:
+        "Las dos corridas guardadas, optimizador y primero en llegar, con las asignaciones recomendadas",
+      content: { "application/json": { schema: MatchRunsResponseSchema } },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    403: apiErrorResponse(
+      "No es miembro (`community_membership_required`) o no es administrador (`admin_required`)",
+    ),
+    404: apiErrorResponse("La comunidad no existe (`community_not_found`)"),
+    409: apiErrorResponse(
+      "Ya hay un emparejamiento en curso para esta jornada (`match_run_in_progress`), no hay ofertas ni necesidades (`no_journey_inputs`) o la sede no se puede usar (`unknown_destination`)",
+    ),
+    422: apiErrorResponse("Los datos enviados no son válidos (`validation_error`)"),
+  },
+});
+
+export const latestMatchRunsRoute = createRoute({
+  method: "get",
+  path: "/communities/{id}/match-runs/latest",
+  tags: ["Emparejamiento"],
+  request: { params: JoinCommunityParamsSchema },
+  responses: {
+    200: {
+      description: "La última jornada emparejada, con ambas corridas y sus recomendaciones",
+      content: { "application/json": { schema: MatchRunsResponseSchema } },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    403: apiErrorResponse(
+      "No es miembro (`community_membership_required`) o no es administrador (`admin_required`)",
+    ),
+    404: apiErrorResponse(
+      "La comunidad no existe (`community_not_found`) o nunca se ejecutó el emparejamiento (`no_match_runs`)",
+    ),
+    422: apiErrorResponse("El identificador no es válido (`validation_error`)"),
+  },
+});
+
+// What Inicio shows a passenger the engine seated but who has not asked for the seat yet.
+export const MatchProposalSchema = z
+  .object({
+    suggestionId: z.string().uuid(),
+    offerId: z.string().uuid(),
+    driverName: z.string(),
+    direction: TripDirectionSchema,
+    date: z.string(),
+    meetingPointName: z.string(),
+    pickupAt: z.string(),
+    arrivalAt: z.string(),
+    walkMinutes: z.number().int(),
+  })
+  .openapi("MatchProposal");
+
+export const MatchProposalsResponseSchema = z
+  .object({ proposals: z.array(MatchProposalSchema) })
+  .openapi("MatchProposalsResponse");
+
+export const listProposalsRoute = createRoute({
+  method: "get",
+  path: "/communities/{id}/proposals",
+  tags: ["Emparejamiento"],
+  request: { params: JoinCommunityParamsSchema },
+  responses: {
+    200: {
+      description:
+        "Los viajes recomendados a la persona en los que todavía no solicitó asiento, el más próximo primero",
+      content: { "application/json": { schema: MatchProposalsResponseSchema } },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    403: apiErrorResponse("No es miembro de la comunidad (`community_membership_required`)"),
+    422: apiErrorResponse("El identificador no es válido (`validation_error`)"),
+  },
+});
+
 const waitlistContact = {
   institution: z.string().trim().min(1).max(120),
   email: z.email().max(254),
@@ -943,6 +1091,11 @@ const CarTripsAvoidedSchema = z.object({
   co2Kg: z.number(),
 });
 
+const PublicStrategyCountsSchema = z.object({
+  carTripsAvoided: z.number().int(),
+  passengersMatched: z.number().int(),
+});
+
 export const PublicStatsSchema = z
   .object({
     community: z.object({ name: z.string(), isDemo: z.boolean() }),
@@ -958,6 +1111,14 @@ export const PublicStatsSchema = z
       completedTrips: z.number().int(),
     }),
     waitlist: z.object({ institutions: z.number().int(), individuals: z.number().int() }),
+    comparison: z
+      .object({
+        date: z.string(),
+        direction: z.enum(["outbound", "return"]),
+        optimizer: PublicStrategyCountsSchema,
+        firstComeFirstServed: PublicStrategyCountsSchema,
+      })
+      .nullable(),
     // People who travel from each district; null stands for "menos de 10" (k ≥ 10, US-029).
     districts: z.array(z.object({ district: z.string(), people: z.number().int().nullable() })),
     people: z.object({ transported: z.number().int(), fromPublicTransport: z.number().int() }),
@@ -985,6 +1146,48 @@ export const publicStatsRoute = createRoute({
   },
 });
 
+const dataSourceFields = {
+  id: z.string(),
+  topic: z.enum(["tiempos", "impacto", "contexto"]),
+  label: z.string(),
+  // A rule rather than a number, like the interpolation, is written as text.
+  value: z.union([z.number(), z.string()]),
+  unit: z.string(),
+  source: z.string(),
+  // The day the team consulted the source, not the day it was published.
+  date: z.iso.date(),
+};
+
+// `dato` has a source anyone can check at `url`; `estimado` is an assumption of the team.
+export const DataSourceSchema = z
+  .discriminatedUnion("kind", [
+    z.object({ ...dataSourceFields, kind: z.literal("dato"), url: z.url() }),
+    z.object({ ...dataSourceFields, kind: z.literal("estimado"), url: z.null() }),
+  ])
+  .openapi("DataSource");
+
+export const DataSourcesResponseSchema = z
+  .object({
+    sources: z.array(DataSourceSchema),
+  })
+  .openapi("DataSourcesResponse");
+
+export const dataSourcesRoute = createRoute({
+  method: "get",
+  path: "/public/data-sources",
+  tags: ["Público"],
+  responses: {
+    200: {
+      description: "Cada constante de los tiempos y del impacto, con su tipo, fuente y fecha",
+      content: {
+        "application/json": {
+          schema: DataSourcesResponseSchema,
+        },
+      },
+    },
+  },
+});
+
 export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   healthRoute,
   listCommunitiesRoute,
@@ -1003,9 +1206,13 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   listMyTripsRoute,
   requestSeatRoute,
   cancelBookingRoute,
+  runMatchingRoute,
+  latestMatchRunsRoute,
+  listProposalsRoute,
   joinWaitlistRoute,
   waitlistSummaryRoute,
   publicStatsRoute,
+  dataSourcesRoute,
 ];
 
 export function createOpenApiDocument(routes: readonly RouteConfig[] = registeredOpenApiRoutes) {

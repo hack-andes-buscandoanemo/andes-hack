@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import EmptyState from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
+import { reasonOf } from "@/lib/api-error";
 import { communitiesApi, type OfferDetail } from "@/lib/communities-api";
 
 import { clockLabel, dateLabel, daysLabel } from "../../buscar/schedule";
@@ -17,12 +18,6 @@ function initialsOf(name: string) {
     .slice(0, 2)
     .map((word) => word[0]!.toUpperCase())
     .join("");
-}
-
-// The server answers in Spanish ("Ya solicitaste un asiento en este viaje."); fall back when it does not.
-function reasonOf(failure: unknown, fallback: string) {
-  const reason = isAxiosError(failure) ? failure.response?.data?.error : undefined;
-  return typeof reason === "string" ? reason : fallback;
 }
 
 export default function TripDetailPage() {

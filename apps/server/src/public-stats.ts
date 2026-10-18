@@ -7,7 +7,12 @@ import { OpenAPIHono, type z } from "@hono/zod-openapi";
 import { and, count, eq, isNull, or } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 
-import { loadCommunityActivity, loadDistrictBreakdown } from "./community-activity";
+import {
+  loadCommunityActivity,
+  loadDistrictBreakdown,
+  loadPublicComparison,
+} from "./community-activity";
+import { logEvent } from "./lib/logger";
 import { ApiError } from "./utils/api-response";
 import { errorHandler, validationHook } from "./utils/error-handler";
 import { waitlistTotals } from "./waitlist";
@@ -72,7 +77,10 @@ export function createPublicStatsRoutes(deps: PublicStatsDeps = {}) {
 
     const { slug } = c.req.valid("param");
     const cacheKey = `andes-hack:public-stats:${slug}`;
-    const cached = await cache.get(cacheKey);
+    const cached = await cache.get(cacheKey).catch(() => {
+      logEvent("public_stats_cache_unavailable", { operation: "get" });
+      return null;
+    });
     if (cached) return c.json(cached as PublicStats, 200);
 
     const db = await getDb();
@@ -121,6 +129,7 @@ export function createPublicStatsRoutes(deps: PublicStatsDeps = {}) {
         completedTrips,
       },
       waitlist: await waitlistTotals(db),
+      comparison: await loadPublicComparison(db, org.id),
       districts: await loadDistrictBreakdown(db, org.id),
       people: {
         transported: impact.peopleTransported,
@@ -133,7 +142,9 @@ export function createPublicStatsRoutes(deps: PublicStatsDeps = {}) {
         net: impact.netCarTripsAvoided,
       },
     };
-    await cache.set(cacheKey, stats, CACHE_TTL_SECONDS);
+    await cache.set(cacheKey, stats, CACHE_TTL_SECONDS).catch(() => {
+      logEvent("public_stats_cache_unavailable", { operation: "set" });
+    });
     return c.json(stats, 200);
   });
 
