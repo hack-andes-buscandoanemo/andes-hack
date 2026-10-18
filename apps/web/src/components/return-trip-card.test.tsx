@@ -7,7 +7,7 @@ import type { MyTrip } from "@/lib/communities-api";
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
-import ReturnTripCard from "./return-trip-card";
+import ReturnTripCard, { commonCalendar } from "./return-trip-card";
 
 const TRIP: MyTrip = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -111,5 +111,31 @@ describe("return coordination card", () => {
     expect(params.get("windowStart")).toBe("18:00");
     expect(params.get("windowEnd")).toBe("18:30");
     expect(params.get("fallbackMode")).toBe("public_transport");
+  });
+});
+
+describe("commonCalendar", () => {
+  it("keeps the weekdays every calendar shares", () => {
+    expect(
+      commonCalendar({ date: null, daysOfWeek: [1, 2, 3] }, { date: null, daysOfWeek: [2, 3, 4] }),
+    ).toEqual({ date: null, days: [2, 3] });
+  });
+
+  it("accepts a one-off date that falls on a shared weekday", () => {
+    expect(
+      commonCalendar({ date: "2026-10-19", daysOfWeek: null }, { date: null, daysOfWeek: [1] }),
+    ).toEqual({ date: "2026-10-19", days: [] });
+  });
+
+  it("rejects a date outside the weekdays or a different date", () => {
+    expect(
+      commonCalendar({ date: "2026-10-19", daysOfWeek: null }, { date: null, daysOfWeek: [2] }),
+    ).toBeNull();
+    expect(
+      commonCalendar(
+        { date: "2026-10-19", daysOfWeek: null },
+        { date: "2026-10-20", daysOfWeek: null },
+      ),
+    ).toBeNull();
   });
 });

@@ -1,0 +1,1 @@
+ALTER TABLE "trip_request" ADD COLUMN "women_only" boolean DEFAULT false NOT NULL;

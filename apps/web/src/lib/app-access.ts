@@ -6,6 +6,8 @@ type Membership = {
   role: "member" | "admin";
   consentAt: string | null;
   usualMode: string | null;
+  identifiesAsWoman: boolean;
+  womenOnly: boolean;
 };
 
 export type AppAccess =
@@ -16,6 +18,8 @@ export type AppAccess =
       communityId?: string;
       communityName?: string;
       role?: "member" | "admin";
+      // The person's own "Solo mujeres" settings; only their profile shows them.
+      preferences?: { communityId: string; identifiesAsWoman: boolean; womenOnly: boolean };
     };
 
 async function fetchMemberships(headers: Headers, serverUrl: string) {
@@ -61,5 +65,10 @@ export async function resolveAppAccess({
     communityId: membership.communityId,
     communityName: membership.communityName,
     role: membership.role,
+    preferences: {
+      communityId: membership.communityId,
+      identifiesAsWoman: membership.identifiesAsWoman,
+      womenOnly: membership.womenOnly,
+    },
   };
 }

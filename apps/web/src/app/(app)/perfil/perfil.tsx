@@ -6,14 +6,18 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 
+import TravelPreferences, { type TravelPreferencesProps } from "./travel-preferences";
+
 export default function Perfil({
   name,
   email,
   role = "member",
+  preferences,
 }: {
   name: string;
   email: string;
   role?: "member" | "admin";
+  preferences?: TravelPreferencesProps;
 }) {
   const router = useRouter();
 
@@ -30,6 +34,7 @@ export default function Perfil({
       >
         Historial de viajes
       </Link>
+      {preferences ? <TravelPreferences {...preferences} /> : null}
       {role === "admin" ? (
         <section
           aria-labelledby="admin-community"

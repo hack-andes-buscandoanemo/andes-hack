@@ -7,6 +7,23 @@ import { dateLabel, daysLabel } from "@/app/(app)/buscar/schedule";
 import { Button } from "@/components/ui/button";
 import type { MyTrip } from "@/lib/communities-api";
 
+// The date or weekdays two calendars share, or null when they never meet.
+export function commonCalendar(...calendars: Pick<MyTrip, "date" | "daysOfWeek">[]) {
+  const date = calendars.find((calendar) => calendar.date)?.date ?? null;
+  if (date) {
+    const day = new Date(`${date}T12:00:00Z`).getUTCDay() || 7;
+    return calendars.every((calendar) =>
+      calendar.date ? calendar.date === date : calendar.daysOfWeek?.includes(day),
+    )
+      ? { date, days: [] }
+      : null;
+  }
+  const days = calendars[0]?.daysOfWeek?.filter((day) =>
+    calendars.every((calendar) => calendar.daysOfWeek?.includes(day)),
+  );
+  return days?.length ? { date: null, days } : null;
+}
+
 export default function ReturnTripCard({ trip }: { trip: MyTrip }) {
   const router = useRouter();
   const context = trip.passengerRequest;
@@ -20,22 +37,9 @@ export default function ReturnTripCard({ trip }: { trip: MyTrip }) {
     trip.direction !== "outbound"
   )
     return null;
-  const days = context.daysOfWeek?.filter((day) => trip.daysOfWeek?.includes(day)) ?? [];
-  const date = context.date ?? trip.date;
-  if (context.date && trip.date && context.date !== trip.date) return null;
-  if (
-    context.date &&
-    trip.daysOfWeek &&
-    !trip.daysOfWeek.includes(new Date(`${context.date}T12:00:00Z`).getUTCDay() || 7)
-  )
-    return null;
-  if (
-    trip.date &&
-    context.daysOfWeek &&
-    !context.daysOfWeek.includes(new Date(`${trip.date}T12:00:00Z`).getUTCDay() || 7)
-  )
-    return null;
-  if (!date && days.length === 0) return null;
+  const calendar = commonCalendar(trip, context);
+  if (!calendar) return null;
+  const { date, days } = calendar;
 
   return (
     <section aria-label="¿Y el regreso?" className="space-y-3 rounded-2xl border bg-card p-4">
@@ -66,7 +70,6 @@ export default function ReturnTripCard({ trip }: { trip: MyTrip }) {
             <label className="text-sm">
               Desde
               <input
-                aria-label="Desde"
                 type="time"
                 required
                 value={start}
@@ -77,7 +80,6 @@ export default function ReturnTripCard({ trip }: { trip: MyTrip }) {
             <label className="text-sm">
               Hasta
               <input
-                aria-label="Hasta"
                 type="time"
                 required
                 value={end}
