@@ -6,6 +6,8 @@ export type JoinCommunityResponse = components["schemas"]["JoinCommunityResponse
 export type MeResponse = components["schemas"]["MeResponse"];
 export type MembershipSummary = components["schemas"]["MembershipSummary"];
 export type UpdateMembershipRequest = components["schemas"]["UpdateMembershipRequest"];
+export type TravelPreferences = components["schemas"]["TravelPreferences"];
+export type TravelPreferencesResponse = components["schemas"]["TravelPreferencesResponse"];
 export type VehicleSummary = components["schemas"]["VehicleSummary"];
 export type CreateVehicleRequest = components["schemas"]["CreateVehicleRequest"];
 export type ZoneSummary = components["schemas"]["ZoneSummary"];
@@ -69,6 +71,16 @@ export const communitiesApi = {
   ): Promise<MembershipSummary> {
     const response = await httpClient.patch(
       `/communities/${communityId}/membership` as "/communities/{id}/membership",
+      payload,
+    );
+    return response.data;
+  },
+  async updateTravelPreferences(
+    communityId: string,
+    payload: TravelPreferences,
+  ): Promise<TravelPreferencesResponse> {
+    const response = await httpClient.put(
+      `/communities/${communityId}/preferences` as "/communities/{id}/preferences",
       payload,
     );
     return response.data;

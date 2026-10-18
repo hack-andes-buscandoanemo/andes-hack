@@ -21,6 +21,8 @@ const readyMembership = {
   role: "admin",
   consentAt: "2026-10-01T10:00:00Z",
   usualMode: "drive_alone",
+  identifiesAsWoman: true,
+  womenOnly: false,
 };
 
 beforeEach(() => {
@@ -61,7 +63,7 @@ describe("app route protection", () => {
     expect(await access()).toEqual({ redirectTo: "/comenzar" });
   });
 
-  it("lets onboarded members in and exposes their community and role", async () => {
+  it("lets onboarded members in and exposes their community, role and travel preferences", async () => {
     fetchMock.mockReturnValue(meResponse({ user: ana, memberships: [readyMembership] }));
 
     expect(await access()).toEqual({
@@ -69,6 +71,7 @@ describe("app route protection", () => {
       communityId: "c-1",
       communityName: "Universidad Nacional",
       role: "admin",
+      preferences: { communityId: "c-1", identifiesAsWoman: true, womenOnly: false },
     });
     expect(fetchMock.mock.calls[0]![0]).toBe("https://api.test/me");
     expect(new Headers(fetchMock.mock.calls[0]![1].headers).get("cookie")).toBe("s=1");
