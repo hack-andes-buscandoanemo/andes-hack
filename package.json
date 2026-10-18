@@ -39,6 +39,7 @@
     "db:generate": "turbo -F @andes-hack/db db:generate",
     "db:migrate": "turbo -F @andes-hack/db db:migrate",
     "db:seed": "turbo -F @andes-hack/db db:seed",
+    "db:seed:mock": "turbo -F @andes-hack/db db:seed:mock",
     "openapi:generate": "bun run --filter @andes-hack/api openapi:generate",
     "openapi:verify": "bun run --filter @andes-hack/api openapi:verify",
     "test": "bun run --filter web test && bun run --filter server test && bun run --filter @andes-hack/api test && bun run --filter @andes-hack/db test && bun run --filter @andes-hack/matching test",
