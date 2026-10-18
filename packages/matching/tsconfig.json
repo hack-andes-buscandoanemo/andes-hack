@@ -1,0 +1,8 @@
+{
+  "extends": "@andes-hack/config/tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist"
+  },
+  "include": ["src/**/*", "scripts/**/*"]
+}

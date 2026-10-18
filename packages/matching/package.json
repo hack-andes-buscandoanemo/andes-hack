@@ -1,0 +1,22 @@
+{
+  "name": "@andes-hack/matching",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "matrix:build": "bun scripts/build-travel-matrix.ts",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@andes-hack/config": "workspace:*",
+    "typescript": "^6.0.3",
+    "vitest": "catalog:"
+  }
+}
