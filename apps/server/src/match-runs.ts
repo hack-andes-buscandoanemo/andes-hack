@@ -12,13 +12,13 @@ import {
   places,
   type StrategyReport,
 } from "@andes-hack/matching";
-import { and, desc, eq, inArray, isNull, notExists, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, notExists, notInArray, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { z } from "zod";
 
 import type { JourneyLock } from "./lib/journey-lock";
 import { logEvent } from "./lib/logger";
-import { destinationOf, loadOfferRoutes } from "./search";
+import { destinationOf, loadOfferRoutes, toRideRequest } from "./search";
 import { ApiError } from "./utils/api-response";
 
 type Database = typeof defaultDb;
@@ -72,7 +72,7 @@ async function loadJourney(
       eq(table.date, date),
       and(isNull(table.date), sql`${isoWeekday(date)} = ANY(${table.daysOfWeek})`),
     );
-  const { rows: offers, routes } = await loadOfferRoutes(database, {
+  const { routes } = await loadOfferRoutes(database, {
     communityId,
     destination: input.destination,
     where: and(
@@ -93,12 +93,9 @@ async function loadJourney(
       windowEnd: tripRequest.windowEnd,
       maxWalkMinutes: tripRequest.maxWalkMinutes,
       fallbackMode: tripRequest.fallbackMode,
-      passengerName: communityMember.alias,
-      accountName: userTable.name,
       passengerIsWoman: communityMember.identifiesAsWoman,
     })
     .from(tripRequest)
-    .innerJoin(userTable, eq(tripRequest.passengerId, userTable.id))
     .innerJoin(
       communityMember,
       and(
@@ -126,22 +123,20 @@ async function loadJourney(
 
   const requests: DayRequest[] = needs.map((need) => ({
     id: need.id,
-    passengerId: need.passengerId!,
-    communityId,
-    direction,
-    originZoneId: need.originZoneId,
-    windowStart: need.windowStart.slice(0, 5),
-    windowEnd: need.windowEnd.slice(0, 5),
     // Every need is pinned to the journey's date; the offer's schedule still has to cover it.
-    date,
-    daysOfWeek: null,
-    maxWalkMinutes: need.maxWalkMinutes,
-    // ponytail: the saved need does not store the "Solo mujeres" preference; the offer's own flag still applies.
-    womenOnly: false,
-    passengerIsWoman: need.passengerIsWoman,
+    ...toRideRequest(
+      { ...need, direction, date, daysOfWeek: null },
+      {
+        userId: need.passengerId!,
+        communityId,
+        // ponytail: the saved need does not store the "Solo mujeres" preference; the offer's own flag still applies.
+        womenOnly: false,
+        passengerIsWoman: need.passengerIsWoman,
+      },
+    ),
     fallbackMode: need.fallbackMode,
   }));
-  return { offers, routes, needs, requests };
+  return { routes, requests };
 }
 
 const journeyKey = ({ communityId, direction, date }: Journey & { communityId: string }) =>
@@ -232,23 +227,14 @@ async function describeJourney(
   };
 }
 
-// The optimizer's recommendations for one person that are still open: no run replaced
-// them, and the person has no active request on that trip yet.
+// The optimizer's recommendations for one person that are still open: the day is not
+// over, no run replaced them, the need is still open and the person has not asked for a
+// seat in that direction yet (the trip they asked for may be another one).
 export async function listProposals(
   database: Database,
-  input: { communityId: string; userId: string },
+  input: { communityId: string; userId: string; today: string },
 ) {
-  const { communityId, userId } = input;
-  const [membership] = await database
-    .select({ id: communityMember.id })
-    .from(communityMember)
-    .where(and(eq(communityMember.communityId, communityId), eq(communityMember.userId, userId)))
-    .limit(1);
-  if (!membership) {
-    throw new ApiError(403, "No perteneces a esta comunidad.", {
-      code: "community_membership_required",
-    });
-  }
+  const { communityId, userId, today } = input;
   const driverMember = alias(communityMember, "driver_member");
   const driverAccount = alias(userTable, "driver_account");
   const rows = await database
@@ -267,6 +253,7 @@ export async function listProposals(
     .from(matchSuggestion)
     .innerJoin(matchRun, eq(matchSuggestion.runId, matchRun.id))
     .innerJoin(tripOffer, eq(matchSuggestion.offerId, tripOffer.id))
+    .innerJoin(tripRequest, eq(matchSuggestion.requestId, tripRequest.id))
     .leftJoin(driverAccount, eq(tripOffer.driverId, driverAccount.id))
     .leftJoin(
       driverMember,
@@ -279,16 +266,25 @@ export async function listProposals(
       and(
         eq(matchRun.communityId, communityId),
         eq(matchRun.algorithm, "optimizer"),
+        gte(matchRun.date, today),
         eq(matchSuggestion.passengerId, userId),
         eq(matchSuggestion.status, "proposed"),
         eq(tripOffer.status, "active"),
+        eq(tripRequest.status, "open"),
         notExists(
           database
             .select({ id: seatBooking.id })
             .from(seatBooking)
+            .innerJoin(
+              tripOffer,
+              and(
+                eq(seatBooking.offerId, tripOffer.id),
+                eq(tripOffer.communityId, communityId),
+                eq(tripOffer.direction, matchRun.direction),
+              ),
+            )
             .where(
               and(
-                eq(seatBooking.offerId, matchSuggestion.offerId),
                 eq(seatBooking.passengerId, userId),
                 inArray(seatBooking.status, ["pending", "accepted"]),
               ),
@@ -329,7 +325,8 @@ export async function latestMatchRuns(
       code: "no_match_runs",
     });
   }
-  // The baseline saved right before it, on the same journey.
+  // The baseline saved right before it, on the same journey; the runs are written baseline
+  // first, so an optimizer run without one means someone deleted it by hand.
   const [firstComeFirstServed] = await database
     .select()
     .from(matchRun)
@@ -343,7 +340,12 @@ export async function latestMatchRuns(
     )
     .orderBy(desc(matchRun.createdAt))
     .limit(1);
-  return describeJourney(database, { optimizer, firstComeFirstServed: firstComeFirstServed! });
+  if (!firstComeFirstServed) {
+    throw new ApiError(404, "Todavía no se ejecutó ningún emparejamiento.", {
+      code: "no_match_runs",
+    });
+  }
+  return describeJourney(database, { optimizer, firstComeFirstServed });
 }
 
 export async function runMatching(
@@ -355,7 +357,8 @@ export async function runMatching(
   const destination = destinationOf(org);
 
   const key = journeyKey({ communityId, ...body });
-  if (!(await lock.acquire(key))) {
+  const token = await lock.acquire(key);
+  if (token === null) {
     throw new ApiError(409, "Ya hay un emparejamiento en curso para esta jornada.", {
       code: "match_run_in_progress",
     });
@@ -371,23 +374,6 @@ export async function runMatching(
       { date: body.date, offers: journey.routes, requests: journey.requests },
       model,
     );
-
-    // Earlier recommendations for this journey give way; a seat the driver already accepted stays.
-    const earlierRuns = database
-      .select({ id: matchRun.id })
-      .from(matchRun)
-      .where(
-        and(
-          eq(matchRun.communityId, communityId),
-          eq(matchRun.direction, body.direction),
-          eq(matchRun.date, body.date),
-        ),
-      );
-    await database
-      .delete(matchSuggestion)
-      .where(
-        and(inArray(matchSuggestion.runId, earlierRuns), eq(matchSuggestion.status, "proposed")),
-      );
 
     const save = async (algorithm: "fcfs" | "optimizer", report: StrategyReport) => {
       const [run] = await database
@@ -423,8 +409,30 @@ export async function runMatching(
       }
       return run!;
     };
+    // The Neon HTTP driver has no transactions, so the writes are ordered to fail safe: the
+    // baseline first, then the plan the panel reads; only then do earlier recommendations
+    // for this journey give way. A seat the driver already accepted stays.
     const fcfs = await save("fcfs", comparison.firstComeFirstServed);
     const optimizer = await save("optimizer", comparison.optimizer);
+    const earlierRuns = database
+      .select({ id: matchRun.id })
+      .from(matchRun)
+      .where(
+        and(
+          eq(matchRun.communityId, communityId),
+          eq(matchRun.direction, body.direction),
+          eq(matchRun.date, body.date),
+          notInArray(matchRun.id, [fcfs.id, optimizer.id]),
+        ),
+      );
+    await database
+      .delete(matchSuggestion)
+      .where(
+        and(
+          inArray(matchSuggestion.runId, earlierRuns),
+          notInArray(matchSuggestion.status, ["accepted"]),
+        ),
+      );
 
     logEvent("match_run.completed", {
       communityId,
@@ -437,6 +445,6 @@ export async function runMatching(
 
     return describeJourney(database, { optimizer, firstComeFirstServed: fcfs });
   } finally {
-    await lock.release(key);
+    await lock.release(key, token);
   }
 }

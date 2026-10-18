@@ -247,7 +247,11 @@ export function createApp(deps: AppDeps = {}) {
   );
   openApiApp.use("/communities/:id/match-runs", requireSession(deps.getSession));
   openApiApp.use("/communities/:id/match-runs/latest", requireSession(deps.getSession));
-  openApiApp.use("/communities/:id/proposals", requireSession(deps.getSession));
+  openApiApp.use(
+    "/communities/:id/proposals",
+    requireSession(deps.getSession),
+    requireOnboardedMember((c) => c.req.param("id") ?? "", checkOnboarded),
+  );
   openApiApp.use("/vehicles", requireSession(deps.getSession));
   openApiApp.use("/offers/:id/status", requireSession(deps.getSession));
   openApiApp.use("/offers/:id", requireSession(deps.getSession));
@@ -937,7 +941,11 @@ export function createApp(deps: AppDeps = {}) {
 
   openApiApp.openapi(listProposalsRoute, async (c) => {
     const { id: communityId } = c.req.valid("param");
-    return c.json(await listProposals(database, { communityId, userId: c.get("user").id }), 200);
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Lima" }).format(getNow());
+    return c.json(
+      await listProposals(database, { communityId, userId: c.get("user").id, today }),
+      200,
+    );
   });
 
   openApiApp.openapi(updateOfferStatusRoute, async (c) => {

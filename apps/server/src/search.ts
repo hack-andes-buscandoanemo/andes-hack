@@ -156,7 +156,7 @@ type MatchOfferInput = {
 };
 
 // The single place that turns a need into the engine's request (stored times may carry seconds).
-function toRideRequest(
+export function toRideRequest(
   need: NeedFields,
   who: { userId: string; communityId: string; womenOnly: boolean; passengerIsWoman: boolean },
 ): RideRequest {

@@ -21,6 +21,8 @@ import { seatBooking, tripOffer, tripRequest } from "@andes-hack/db/schema/trips
 import { vehicle } from "@andes-hack/db/schema/vehicle";
 import { createTestDb } from "@andes-hack/db/test-db";
 
+import { eq } from "drizzle-orm";
+
 import { type AppDeps, createApp } from "./index";
 
 let testDb: Awaited<ReturnType<typeof createTestDb>>["db"];
@@ -161,16 +163,17 @@ async function seedNeed(
   return need!;
 }
 
-// The lock at the system boundary: Redis in production, a set here.
-function memoryLock(held = new Set<string>()): NonNullable<AppDeps["journeyLock"]> {
+// The lock at the system boundary: Redis in production, a map here.
+function memoryLock(held = new Map<string, string>()): NonNullable<AppDeps["journeyLock"]> {
   return {
     acquire: async (key) => {
-      if (held.has(key)) return false;
-      held.add(key);
-      return true;
+      if (held.has(key)) return null;
+      const token = crypto.randomUUID();
+      held.set(key, token);
+      return token;
     },
-    release: async (key) => {
-      held.delete(key);
+    release: async (key, token) => {
+      if (held.get(key) === token) held.delete(key);
     },
   };
 }
@@ -288,7 +291,7 @@ describe("POST /communities/{id}/match-runs (US-019)", () => {
     const admin = await createMember(alfa.id, "u-admin", "Admin", { role: "admin" });
     const driver = await createMember(alfa.id, "u-mateo", "Mateo");
     await seedOffer(alfa.id, driver.id);
-    const held = new Set([`match-run:${alfa.id}:outbound:${MONDAY}`]);
+    const held = new Map([[`match-run:${alfa.id}:outbound:${MONDAY}`, "someone-else"]]);
 
     const res = await runMatching(admin, alfa.id, undefined, { journeyLock: memoryLock(held) });
 
@@ -366,8 +369,13 @@ describe("POST /communities/{id}/match-runs (US-019)", () => {
     const admin = await createMember(alfa.id, "u-admin", "Admin", { role: "admin" });
 
     const res = await runMatching(admin, alfa.id, { direction: "sideways", date: "mañana" });
+    const noSuchDay = await runMatching(admin, alfa.id, {
+      direction: "outbound",
+      date: "2026-02-30",
+    });
 
     expect(res.status).toBe(422);
+    expect(noSuchDay.status).toBe(422);
   });
 });
 
@@ -414,6 +422,37 @@ describe("GET /communities/{id}/proposals (US-019)", () => {
     });
     expect(requested.status).toBe(201);
     expect(await proposalsFor(lucia, alfa.id)).toEqual({ proposals: [] });
+  });
+
+  it("drops a proposal once its day has passed or the need is no longer open", async () => {
+    const alfa = await createCommunity();
+    const admin = await createMember(alfa.id, "u-admin", "Admin", { role: "admin" });
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const lucia = await createMember(alfa.id, "u-lucia", "Lucía");
+    const rosa = await createMember(alfa.id, "u-rosa", "Rosa");
+    await seedOffer(alfa.id, driver.id);
+    await seedNeed(alfa.id, lucia.id);
+    const rosaNeed = await seedNeed(alfa.id, rosa.id);
+    await runMatching(admin, alfa.id);
+    await testDb
+      .update(tripRequest)
+      .set({ status: "cancelled" })
+      .where(eq(tripRequest.id, rosaNeed.id));
+
+    const onTheDay = await (
+      await appAs(lucia, { now: () => new Date("2026-10-19T12:00:00-05:00") }).request(
+        `/communities/${alfa.id}/proposals`,
+      )
+    ).json();
+    const dayAfter = await (
+      await appAs(lucia, { now: () => new Date("2026-10-20T06:00:00-05:00") }).request(
+        `/communities/${alfa.id}/proposals`,
+      )
+    ).json();
+
+    expect((onTheDay as { proposals: unknown[] }).proposals).toHaveLength(1);
+    expect(dayAfter).toEqual({ proposals: [] });
+    expect(await proposalsFor(rosa, alfa.id)).toEqual({ proposals: [] });
   });
 });
 

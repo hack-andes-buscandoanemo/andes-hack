@@ -850,11 +850,20 @@ export const searchTripsRoute = createRoute({
   },
 });
 
+// A real calendar day: "2026-02-30" has the shape but not the day.
+const isCalendarDate = (date: string) => {
+  const parsed = new Date(`${date}T12:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date;
+};
+
 // A journey: one direction on one date. Both strategies run on the same offers and needs.
 export const RunMatchingBodySchema = z
   .object({
     direction: TripDirectionSchema,
-    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Ingresa una fecha válida."),
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Ingresa una fecha válida.")
+      .refine(isCalendarDate, "Ingresa una fecha válida."),
   })
   .openapi("RunMatchingRequest");
 
