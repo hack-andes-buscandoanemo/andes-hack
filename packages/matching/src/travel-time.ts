@@ -13,6 +13,8 @@ export interface PlacePoint {
 export interface FreeFlowMatrix {
   ids: readonly string[];
   minutes: readonly (readonly (number | null)[])[];
+  // Street kilometres of the same pairs. Left out, every distance is an estimate.
+  km?: readonly (readonly (number | null)[])[];
 }
 
 export interface TravelTimeData {
@@ -33,8 +35,15 @@ export interface WalkableMeetingPoint {
   walkMinutes: number;
 }
 
+export interface Distance {
+  km: number;
+  kind: SourceKind;
+}
+
 export interface TravelTimeModel {
   minutes(fromId: string, toId: string, departAt: Date): TravelTime;
+  // Street kilometres by car between two places (the fuel estimate, US-034).
+  distanceKm(fromId: string, toId: string): Distance;
   // Always an estimate: there is no walking matrix.
   walkMinutes(zoneId: string, meetingPointId: string): number;
   // Meeting points of any zone within the walk, nearest first.
@@ -111,6 +120,13 @@ export function createTravelTimeModel(data: TravelTimeData = limaData): TravelTi
     return data.matrix.minutes[from]?.[to] ?? null;
   }
 
+  function matrixKm(fromId: string, toId: string) {
+    const from = index.get(fromId);
+    const to = index.get(toId);
+    if (from === undefined || to === undefined) return null;
+    return data.matrix.km?.[from]?.[to] ?? null;
+  }
+
   // The straight line, stretched to street length.
   function streetKm(fromId: string, toId: string) {
     return haversineKm(place(fromId), place(toId)) * sources.circuityFactor.value;
@@ -134,6 +150,12 @@ export function createTravelTimeModel(data: TravelTimeData = limaData): TravelTi
         return { minutes: estimate * factor.value, kind: "estimado" };
       }
       return { minutes: freeFlow * factor.value, kind: factor.kind };
+    },
+
+    distanceKm(fromId, toId) {
+      const km = matrixKm(fromId, toId);
+      if (km === null) return { km: streetKm(fromId, toId), kind: "estimado" };
+      return { km, kind: "dato" };
     },
 
     walkMinutes,
