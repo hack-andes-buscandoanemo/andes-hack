@@ -182,6 +182,38 @@ describe("seats of a day assigned to maximise the car trips avoided", () => {
     ]);
   });
 
+  describe("when Pedro, who would drive, and two bus riders cannot share the car", () => {
+    // Carlos accepts 6 min. Pedro at the plaza costs him 3 × 1.72 = 5.2; María and José at
+    // the municipalidad, 2 × 1.72 = 3.4 together. With 9 min from the plaza to the
+    // municipalidad, Pedro and either of them would cost 6 × 1.72 = 10.3.
+    const farPlaza = modelWith({
+      ...freeFlow,
+      "la-molina-plaza-de-armas>san-borja-municipalidad": 9,
+    });
+    const day = {
+      date: monday,
+      offers: [offer({ seatsTotal: 2, maxDetourMinutes: 6 })],
+      requests: [
+        request("pedro", { originZoneId: "la-molina" }),
+        request("maria", { fallbackMode: "public_transport" }),
+        request("jose", { fallbackMode: "public_transport" }),
+      ],
+    };
+    const seated = (plan: { assignments: { passengerId: string }[] }) =>
+      plan.assignments.map(({ passengerId }) => passengerId);
+
+    it("takes Pedro, to avoid a car trip", () => {
+      expect(seated(optimizeDay(day, farPlaza))).toEqual(["pedro"]);
+    });
+
+    it("takes the two bus riders when the priority is the passengers seated", () => {
+      expect(seated(optimizeDay(day, farPlaza, { priority: "passengers" }))).toEqual([
+        "maria",
+        "jose",
+      ]);
+    });
+  });
+
   it("reports each passenger's times on the final route, after everyone is seated", () => {
     // Pedro costs Carlos 2 min and is seated first, picked up at 7:00 + 6 × 1.72 = 7:10.
     // Sofía, 3 min alone, goes before him at the plaza: 7:00 + 1 × 1.72 = 7:02, which

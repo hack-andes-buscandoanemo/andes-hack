@@ -33,7 +33,13 @@ export interface DayInstance {
   requests: readonly DayRequest[];
 }
 
+// What comes first. Seating first whoever would drive can leave without a seat someone who
+// today rides the bus and looks for safety; "passengers" seats as many people as possible
+// and only then counts the car trips avoided.
+export type Priority = "car_trips_avoided" | "passengers";
+
 export interface OptimizeOptions {
+  priority?: Priority;
   // How long the local search may run; the plan it has by then is returned.
   timeBudgetMs?: number;
 }
@@ -104,10 +110,11 @@ const plus = (a: Objective, b: Objective, sign = 1): Objective => ({
 });
 
 // Positive when `a` is the better plan.
-function compare(a: Objective, b: Objective) {
+function compare(a: Objective, b: Objective, priority: Priority) {
+  const carTrips = a.carTripsAvoided - b.carTripsAvoided;
+  const passengers = a.passengersMatched - b.passengersMatched;
   return (
-    a.carTripsAvoided - b.carTripsAvoided ||
-    a.passengersMatched - b.passengersMatched ||
+    (priority === "passengers" ? passengers || carTrips : carTrips || passengers) ||
     b.detourMinutes - a.detourMinutes ||
     b.walkMinutes - a.walkMinutes
   );
@@ -127,18 +134,18 @@ const regret = ({ matches }: Candidate) =>
 
 const descending = (a: number, b: number) => (a === b ? 0 : a > b ? -1 : 1);
 
-// Who is seated next: whoever would otherwise make the trip by car, then whoever has the
-// most to lose by waiting, then whoever costs the driver the fewest minutes.
-function seatsFirst(a: Candidate, b: Candidate) {
-  return (
-    descending(
-      Number(avoidsCarTrip(a.request.fallbackMode)),
-      Number(avoidsCarTrip(b.request.fallbackMode)),
-    ) ||
-    descending(regret(a), regret(b)) ||
-    a.matches[0]!.detourMinutes - b.matches[0]!.detourMinutes
-  );
-}
+// Who is seated next: whoever would otherwise make the trip by car, unless passengers come
+// first, then whoever has the most to lose by waiting, then whoever costs the driver the
+// fewest minutes.
+const seatsFirst = (priority: Priority) => (a: Candidate, b: Candidate) =>
+  (priority === "car_trips_avoided"
+    ? descending(
+        Number(avoidsCarTrip(a.request.fallbackMode)),
+        Number(avoidsCarTrip(b.request.fallbackMode)),
+      )
+    : 0) ||
+  descending(regret(a), regret(b)) ||
+  a.matches[0]!.detourMinutes - b.matches[0]!.detourMinutes;
 
 export function optimizeDay(
   instance: DayInstance,
@@ -146,7 +153,8 @@ export function optimizeDay(
   options: OptimizeOptions = {},
 ): DayPlan {
   const { date } = instance;
-  const deadline = performance.now() + (options.timeBudgetMs ?? 1000);
+  const { priority = "car_trips_avoided", timeBudgetMs = 1000 } = options;
+  const deadline = performance.now() + timeBudgetMs;
   const accepted = new Map(
     instance.offers.map((offer) => [offer.id, timeRoute(offer, date, model).minutes]),
   );
@@ -248,7 +256,7 @@ export function optimizeDay(
       .map((request) => ({ request, matches: matches.get(request)! }))
       .filter((candidate) => candidate.matches.length > 0);
     // Stable, so a full tie goes to whoever asked first.
-    const next = candidates.toSorted(seatsFirst)[0];
+    const next = candidates.toSorted(seatsFirst(priority))[0];
     if (!next) break;
     const best = next.matches[0]!;
     cars.set(best.offerId, seat(cars.get(best.offerId)!, next.request, best));
@@ -323,7 +331,7 @@ export function optimizeDay(
         (sum, current) => plus(plus(sum, current.score), cars.get(current.route.id)!.score, -1),
         total,
       );
-      if (compare(next, total) > 0) {
+      if (compare(next, total, priority) > 0) {
         for (const current of changed) {
           cars.set(current.route.id, current);
           for (const rider of cars.get(current.route.id)!.riders)
