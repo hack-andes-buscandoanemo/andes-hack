@@ -109,11 +109,11 @@ afterEach(() => {
 
 async function setupPlaces(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText("Dónde estás"), "San Borja");
-  await user.click(screen.getAllByRole("button", { name: "Buscar" })[0]!);
+  await user.click(screen.getAllByRole("button", { name: "Buscar lugar" })[0]!);
   await user.click(await screen.findByRole("button", { name: "San Borja, Lima" }));
 
   await user.type(screen.getByLabelText("A dónde vas"), "Centro Empresarial Real");
-  await user.click(screen.getAllByRole("button", { name: "Buscar" })[0]!);
+  await user.click(screen.getAllByRole("button", { name: "Buscar lugar" })[0]!);
   await user.click(await screen.findByRole("button", { name: "Centro Empresarial Real, Lima" }));
 }
 
@@ -125,6 +125,18 @@ async function searchFromSanBorja() {
 }
 
 describe("search page /buscar (US-013)", () => {
+  it("distinguishes looking up a place from searching for trips", async () => {
+    const user = userEvent.setup();
+    render(<BuscarPage />);
+
+    await user.type(screen.getByLabelText("Dónde estás"), "San Borja");
+    await user.click(screen.getAllByRole("button", { name: "Buscar lugar" })[0]!);
+
+    expect(await screen.findByRole("button", { name: "San Borja, Lima" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Buscar coincidencias" })).toBeInTheDocument();
+    expect(searchTrips).not.toHaveBeenCalled();
+  });
+
   it("lists the matches with the engine's factors instead of a percentage", async () => {
     searchTrips.mockResolvedValue({
       requestId: "33333333-3333-4333-8333-333333333333",
