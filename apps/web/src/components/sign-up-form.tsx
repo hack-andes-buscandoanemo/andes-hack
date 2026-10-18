@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import z from "zod";
 
+import { trackEvent } from "@/lib/analytics";
 import { authClient } from "@/lib/auth-client";
 
 import AuthField from "./auth-field";
@@ -29,7 +30,10 @@ export default function SignUpForm() {
       setFormError(null);
       await authClient.signUp.email(value, {
         // ponytail: US-011 will route to community selection instead of Inicio.
-        onSuccess: () => router.push("/inicio"),
+        onSuccess: () => {
+          trackEvent("Registro completado");
+          router.push("/inicio");
+        },
         onError: ({ error }) =>
           setFormError(
             error.code?.startsWith("USER_ALREADY_EXISTS")

@@ -12,6 +12,7 @@ import { FuelShareLine } from "@/components/fuel-estimate";
 import { LiveBadge, TripPrice } from "@/components/trip-price";
 import ProfileAvatar from "@/components/profile-avatar";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { trackEvent } from "@/lib/analytics";
 import type { TripMatch } from "@/lib/communities-api";
 
 import { clockLabel } from "./schedule";
@@ -117,6 +118,7 @@ export default function TripCard({
       ) : null}
       <Link
         href={`/viajes/${match.offerId}` as Route}
+        onNavigate={() => trackEvent("Viaje seleccionado")}
         className={buttonVariants({ variant: best ? "default" : "outline", className: "w-full" })}
       >
         Ver viaje

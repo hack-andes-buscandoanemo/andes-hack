@@ -7,6 +7,7 @@ import { FUEL_NOTE, FuelShareLine } from "@/components/fuel-estimate";
 import ProfileAvatar from "@/components/profile-avatar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { reasonOf } from "@/lib/api-error";
+import { trackEvent } from "@/lib/analytics";
 import { communitiesApi, type MatchProposal } from "@/lib/communities-api";
 
 import { clockLabel, dateLabel } from "../buscar/schedule";
@@ -40,6 +41,7 @@ export default function Proposals({ communityId }: { communityId: string }) {
     setErrors((current) => ({ ...current, [proposal.suggestionId]: "" }));
     try {
       await communitiesApi.requestSeat(proposal.offerId);
+      trackEvent("Solicitud de asiento enviada");
       setSent((current) => new Set(current).add(proposal.suggestionId));
     } catch (failure) {
       setErrors((current) => ({

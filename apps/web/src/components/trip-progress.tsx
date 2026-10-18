@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { reasonOf } from "@/lib/api-error";
+import { trackEvent } from "@/lib/analytics";
 import { communitiesApi, type MyTrip } from "@/lib/communities-api";
 
 const ARRIVED_MESSAGE = "Llegada confirmada. ¡Gracias por compartir el viaje!";
@@ -81,6 +82,7 @@ export default function TripProgress({ trip }: { trip: MyTrip }) {
               if (!startOpen(trip, now)) return;
               void run(async () => {
                 const { boarded } = await communitiesApi.startTrip(trip.offerId);
+                trackEvent("Viaje iniciado");
                 setStarted(boarded > 0);
               });
             }}
