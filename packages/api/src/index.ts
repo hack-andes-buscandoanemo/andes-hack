@@ -377,6 +377,12 @@ export const updateMembershipRoute = createRoute({
         },
       },
     },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    403: apiErrorResponse("No es miembro de la comunidad (`community_membership_required`)"),
+    404: apiErrorResponse("La comunidad no existe (`community_not_found`)"),
+    422: apiErrorResponse(
+      "Datos no válidos (`validation_error`), o una edición del perfil sin consentimiento previo (`consent_required`)",
+    ),
   },
 });
 
