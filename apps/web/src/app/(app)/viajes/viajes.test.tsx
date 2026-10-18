@@ -34,6 +34,8 @@ const PASSENGER_TRIP = {
   destinationName: "Centro Empresarial Real",
   meetingPointName: "Estación San Borja Sur (Línea 1)",
   driver: { alias: "Carlos Q.", plate: "ABC123" },
+  seatsTotal: null,
+  seatsFree: null,
   pendingRequests: null,
   acceptedPassengers: null,
 };
@@ -46,6 +48,8 @@ const DRIVER_TRIP = {
   time: "07:00:00",
   meetingPointName: null,
   driver: null,
+  seatsTotal: 3,
+  seatsFree: 2,
   pendingRequests: 2,
   acceptedPassengers: ["Lucía R."],
 };
@@ -128,6 +132,7 @@ describe("Viajes", () => {
     const card = await screen.findByRole("listitem");
     expect(listMyTrips).toHaveBeenLastCalledWith("driver", "upcoming");
     expect(within(card).getByText("Activo")).toBeInTheDocument();
+    expect(within(card).getByText("2 de 3 asientos libres")).toBeInTheDocument();
     expect(within(card).getByText("2 solicitudes pendientes")).toBeInTheDocument();
     expect(within(card).getByText("Pasajeros: Lucía R.")).toBeInTheDocument();
     expect(within(card).queryByText(/Placa/)).not.toBeInTheDocument();

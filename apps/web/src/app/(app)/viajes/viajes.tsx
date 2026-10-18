@@ -49,6 +49,9 @@ function TripCard({ trip, onToggle }: { trip: MyTrip; onToggle: (trip: MyTrip) =
           {trip.driver.plate ? <span className="ml-3">{`Placa: ${trip.driver.plate}`}</span> : null}
         </p>
       ) : null}
+      {trip.seatsTotal !== null && trip.seatsFree !== null ? (
+        <p className="text-sm">{`${trip.seatsFree} de ${trip.seatsTotal} asientos libres`}</p>
+      ) : null}
       {trip.pendingRequests !== null ? (
         <p className="text-sm">
           {trip.pendingRequests === 1
