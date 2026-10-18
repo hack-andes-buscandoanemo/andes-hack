@@ -1,5 +1,8 @@
 export * from "./auth";
-export * from "./task";
+export * from "./community";
+export * from "./places";
+export * from "./trips";
+export * from "./vehicle";
 
 // <better-fullstack:recipe-schema-exports sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855>
 
