@@ -92,6 +92,13 @@
       "when": 1792318773799,
       "tag": "0012_aspiring_charles_xavier",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792321285971,
+      "tag": "0013_regular_power_pack",
+      "breakpoints": true
     }
   ]
 }

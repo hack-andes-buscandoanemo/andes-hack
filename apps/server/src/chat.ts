@@ -61,7 +61,7 @@ async function loadConversation(database: Database, offerId: string, userId: str
       passengerId: seatBooking.passengerId,
       passengerAlias: communityMember.alias,
       passengerAccountName: userTable.name,
-      meetingPointName: meetingPoint.name,
+      meetingPointName: sql<string>`coalesce(${seatBooking.pickupLabel}, ${meetingPoint.name})`,
       status: seatBooking.status,
     })
     .from(seatBooking)
@@ -73,7 +73,7 @@ async function loadConversation(database: Database, offerId: string, userId: str
       ),
     )
     .innerJoin(userTable, eq(userTable.id, seatBooking.passengerId))
-    .innerJoin(meetingPoint, eq(meetingPoint.id, seatBooking.meetingPointId))
+    .leftJoin(meetingPoint, eq(meetingPoint.id, seatBooking.meetingPointId))
     .where(
       and(
         eq(seatBooking.offerId, offer.id),
@@ -136,15 +136,15 @@ export async function listMyChats(
       communityId: tripOffer.communityId,
       driverId: tripOffer.driverId,
       communityName: community.name,
-      originZoneName: zone.name,
-      destinationName: community.destinationName,
+      originZoneName: sql<string>`coalesce(${tripOffer.originLabel}, ${zone.name})`,
+      destinationName: sql<string>`coalesce(${tripOffer.destLabel}, ${community.destinationName})`,
       direction: tripOffer.direction,
       departureTime: tripOffer.departureTime,
       date: tripOffer.date,
       daysOfWeek: tripOffer.daysOfWeek,
       driverName: communityMember.alias,
       driverAccountName: userTable.name,
-      meetingPointName: meetingPoint.name,
+      meetingPointName: sql<string>`coalesce(${seatBooking.pickupLabel}, ${meetingPoint.name})`,
     })
     .from(seatBooking)
     .innerJoin(tripOffer, eq(seatBooking.offerId, tripOffer.id))
@@ -158,7 +158,7 @@ export async function listMyChats(
         eq(communityMember.communityId, tripOffer.communityId),
       ),
     )
-    .innerJoin(meetingPoint, eq(meetingPoint.id, seatBooking.meetingPointId))
+    .leftJoin(meetingPoint, eq(meetingPoint.id, seatBooking.meetingPointId))
     .where(
       and(
         eq(seatBooking.passengerId, userId),

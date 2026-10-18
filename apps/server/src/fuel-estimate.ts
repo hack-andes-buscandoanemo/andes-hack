@@ -42,6 +42,22 @@ export interface FuelLeg {
   occupants: number;
 }
 
+// The estimate of an offer: from its own street route when it runs between two addresses,
+// from its zone and the headquarters otherwise.
+export function fuelEstimateForOffer(
+  offer: { direction: "outbound" | "return"; originZoneId: string; routeKm: number | null },
+  destinationId: string,
+  occupants: number,
+): FuelCostEstimate | null {
+  if (offer.routeKm) return estimateFuelCost({ distanceKm: offer.routeKm, occupants });
+  return fuelEstimateFor({
+    direction: offer.direction,
+    originZoneId: offer.originZoneId,
+    destinationId,
+    occupants,
+  });
+}
+
 // Null when the engine does not know the zone, so the screen says it could not estimate
 // instead of failing the whole response.
 export function fuelEstimateFor(leg: FuelLeg): FuelCostEstimate | null {

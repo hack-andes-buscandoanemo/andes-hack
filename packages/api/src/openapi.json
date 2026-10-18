@@ -667,6 +667,12 @@
           "originZoneName": {
             "type": "string"
           },
+          "origin": {
+            "$ref": "#/components/schemas/Place"
+          },
+          "destination": {
+            "$ref": "#/components/schemas/Place"
+          },
           "departureTime": {
             "type": "string"
           },
@@ -738,6 +744,8 @@
           "vehicleId",
           "direction",
           "originZoneId",
+          "origin",
+          "destination",
           "departureTime",
           "daysOfWeek",
           "date",
@@ -750,6 +758,34 @@
           "paymentMethods",
           "live",
           "status"
+        ]
+      },
+      "Place": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lng": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          }
+        },
+        "required": [
+          "lat",
+          "lng",
+          "label"
         ]
       },
       "CreateTripOfferResponse": {
@@ -773,6 +809,12 @@
           "vehicleId": {
             "type": "string",
             "format": "uuid"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/Place"
+          },
+          "destination": {
+            "$ref": "#/components/schemas/Place"
           },
           "direction": {
             "type": "string",
@@ -869,8 +911,6 @@
         },
         "required": [
           "vehicleId",
-          "direction",
-          "originZoneId",
           "departureTime",
           "seatsTotal",
           "maxDetourMinutes"
@@ -924,6 +964,8 @@
               "no_walkable_meeting_point",
               "outside_time_window",
               "detour_exceeded",
+              "too_far_from_route",
+              "wrong_direction",
               null
             ]
           }
@@ -1134,7 +1176,8 @@
             "enum": [
               "outbound",
               "return"
-            ]
+            ],
+            "default": "outbound"
           },
           "originZoneId": {
             "type": "string",
@@ -1145,6 +1188,14 @@
           },
           "destination": {
             "$ref": "#/components/schemas/LatLng"
+          },
+          "locationLabel": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "destinationLabel": {
+            "type": "string",
+            "maxLength": 160
           },
           "windowStart": {
             "type": "string",
@@ -1195,7 +1246,6 @@
           }
         },
         "required": [
-          "direction",
           "windowStart",
           "windowEnd",
           "fallbackMode"

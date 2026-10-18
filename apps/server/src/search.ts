@@ -13,10 +13,11 @@ import {
   type OfferRoute,
   type RideRequest,
 } from "@andes-hack/matching";
-import { and, asc, eq, inArray, ne, type SQL } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, ne, type SQL } from "drizzle-orm";
 import type { z } from "zod";
 
 import { fuelEstimateFor, occupantsSharingFuel } from "./fuel-estimate";
+import { searchFreeTrips } from "./free-trips";
 import { liveOfferIds, nearestZone } from "./live-location";
 import { logEvent } from "./lib/logger";
 import { getCommunityProfilePhotos, type ProfilePhotoStorageResolver } from "./profile-photos";
@@ -102,7 +103,9 @@ export async function loadOfferRoutes(
         eq(communityMember.communityId, tripOffer.communityId),
       ),
     )
-    .where(where);
+    // The trips between two addresses have their own matching (free-trips.ts); this engine
+    // only knows the zones and the community's headquarters.
+    .where(and(where, isNull(tripOffer.destLat)));
 
   // Accepted passengers hold seats and their windows still bind the driver.
   // ponytail: ordered by pickup time then arrival of the booking; the stop position is not stored (US-014 may add it).
@@ -162,11 +165,19 @@ export async function loadOfferRoutes(
     rejectedPassengerIds: (rejectedByOffer.get(row.id) ?? []).flatMap(
       (booking) => booking.passengerId ?? [],
     ),
-    passengers: (acceptedByOffer.get(row.id) ?? []).map((booking) => ({
-      meetingPointId: booking.meetingPointId,
-      windowStart: booking.windowStart.slice(0, 5),
-      windowEnd: booking.windowEnd.slice(0, 5),
-    })),
+    // A passenger who boarded between two addresses has no meeting point; those trips never
+    // reach this engine.
+    passengers: (acceptedByOffer.get(row.id) ?? []).flatMap((booking) =>
+      booking.meetingPointId
+        ? [
+            {
+              meetingPointId: booking.meetingPointId,
+              windowStart: booking.windowStart.slice(0, 5),
+              windowEnd: booking.windowEnd.slice(0, 5),
+            },
+          ]
+        : [],
+    ),
   }));
   return { rows, routes, acceptedByOffer };
 }
@@ -230,6 +241,23 @@ export async function searchTrips(
   storageForPhotos?: ProfilePhotoStorageResolver,
 ) {
   const { communityId, userId, body: submitted } = input;
+  // From a place and a destination chosen on the map: no zones, no headquarters.
+  if (submitted.location && submitted.destination) {
+    return searchFreeTrips(
+      database,
+      {
+        communityId,
+        userId,
+        now: input.now,
+        body: {
+          ...submitted,
+          location: submitted.location,
+          destination: submitted.destination,
+        },
+      },
+      storageForPhotos,
+    );
+  }
   // From the device's location the zone is the nearest one; the coordinates are not kept.
   const originZoneId = submitted.originZoneId ?? nearestZone(submitted.location!).id;
   const body = { ...submitted, originZoneId };

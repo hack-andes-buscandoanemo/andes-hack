@@ -12,6 +12,8 @@ export const REASON_MESSAGES: Record<Reason, string> = {
   women_only: "No hay viajes Solo mujeres que coincidan con tu búsqueda",
   previously_rejected: "No encontramos más viajes disponibles para este recorrido.",
   different_community: "No encontramos viajes compatibles",
+  too_far_from_route: "Ninguna ruta pasa lo bastante cerca de tu origen y tu destino",
+  wrong_direction: "Los viajes que pasan cerca van en sentido contrario al tuyo",
 };
 
 type FallbackMode = "drive_alone" | "taxi_app" | "public_transport" | "picked_up" | "other";

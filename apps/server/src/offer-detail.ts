@@ -14,7 +14,8 @@ import {
 } from "@andes-hack/matching";
 import { and, asc, desc, eq, inArray, ne, sql } from "drizzle-orm";
 
-import { fuelEstimateFor, occupantsSharingFuel } from "./fuel-estimate";
+import { fuelEstimateFor, fuelEstimateForOffer, occupantsSharingFuel } from "./fuel-estimate";
+import { freeRouteMap, isFreeOffer, matchFreeForNeed, nearLabel, stopsOfMatch } from "./free-trips";
 import { liveOfferIds } from "./live-location";
 import {
   destinationOf,
@@ -38,11 +39,11 @@ function mapStops(
   bookings: {
     passengerId: string | null;
     status: string;
-    meetingPointId: string;
+    meetingPointId: string | null;
     pickupAt: string;
   }[],
   userId: string,
-  match: { meetingPointId: string; pickupAt: string } | null,
+  match: { meetingPointId: string | null; pickupAt: string } | null,
 ) {
   const own = bookings.find(
     (booking) =>
@@ -58,6 +59,7 @@ function mapStops(
   ].toSorted((a, b) => a.pickupAt.slice(0, 5).localeCompare(b.pickupAt.slice(0, 5)));
   const byPoint = new Map<string, boolean>();
   for (const stop of stops) {
+    if (!stop.meetingPointId) continue;
     byPoint.set(stop.meetingPointId, (byPoint.get(stop.meetingPointId) ?? false) || stop.mine);
   }
   return [...byPoint].map(([meetingPointId, mine]) => ({ meetingPointId, mine }));
@@ -73,12 +75,23 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
       destinationName: community.destinationName,
       originZoneId: tripOffer.originZoneId,
       originZoneName: zone.name,
+      originLat: tripOffer.originLat,
+      originLng: tripOffer.originLng,
+      originLabel: tripOffer.originLabel,
+      destLat: tripOffer.destLat,
+      destLng: tripOffer.destLng,
+      destLabel: tripOffer.destLabel,
+      routePath: tripOffer.routePath,
+      routeMinutes: tripOffer.routeMinutes,
+      routeKm: tripOffer.routeKm,
+      routeApproximate: tripOffer.routeApproximate,
       status: tripOffer.status,
       direction: tripOffer.direction,
       departureTime: tripOffer.departureTime,
       date: tripOffer.date,
       daysOfWeek: tripOffer.daysOfWeek,
       seatsTotal: tripOffer.seatsTotal,
+      womenOnly: tripOffer.womenOnly,
       note: tripOffer.note,
       priceCents: tripOffer.priceCents,
       paymentMethods: tripOffer.paymentMethods,
@@ -131,6 +144,9 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
       requestId: seatBooking.requestId,
       status: seatBooking.status,
       meetingPointId: seatBooking.meetingPointId,
+      pickupLat: seatBooking.pickupLat,
+      pickupLng: seatBooking.pickupLng,
+      pickupLabel: seatBooking.pickupLabel,
       pickupAt: seatBooking.pickupAt,
       passengerAlias: communityMember.alias,
       passengerAccountName: userTable.name,
@@ -202,16 +218,36 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
     )
     .orderBy(desc(tripRequest.createdAt))
     .limit(1);
-  const match = need
-    ? await matchOfferForNeed(database, {
-        offerId: row.id,
-        communityId: row.communityId,
-        userId: input.userId,
-        passengerIsWoman: membership.identifiesAsWoman,
-        destination,
-        need,
-      })
-    : null;
+  const free = isFreeOffer(row);
+  // Between two addresses the match is how close the route passes to the person's two points;
+  // between zones it is the engine's, as before.
+  const freeMatch =
+    free && need ? matchFreeForNeed(row, acceptedCount, need, membership.identifiesAsWoman) : null;
+  const zoneMatch =
+    !free && need
+      ? await matchOfferForNeed(database, {
+          offerId: row.id,
+          communityId: row.communityId,
+          userId: input.userId,
+          passengerIsWoman: membership.identifiesAsWoman,
+          destination,
+          need,
+        })
+      : null;
+  const match = freeMatch
+    ? {
+        meetingPointId: null as string | null,
+        pickupAt: freeMatch.pickupAt,
+        arrivalAt: freeMatch.arrivalAt,
+        detourMinutes: 0,
+        walkMinutes: freeMatch.walkMinutes,
+        free: freeMatch,
+      }
+    : zoneMatch && {
+        ...zoneMatch,
+        meetingPointId: zoneMatch.meetingPointId as string | null,
+        free: null,
+      };
 
   const detail = {
     offerId: row.id,
@@ -219,8 +255,8 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
     driverName: displayName(row.driverAlias, row.accountName),
     reportTargets,
     communityName: row.communityName,
-    originZoneName: row.originZoneName,
-    destinationName: destination.name,
+    originZoneName: row.originLabel ?? row.originZoneName,
+    destinationName: row.destLabel ?? destination.name,
     direction: row.direction,
     departureTime: row.departureTime,
     date: row.date,
@@ -246,30 +282,74 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
     isOwn,
     hasOpenNeed: Boolean(need),
     match: match && {
-      meetingPointName:
-        places.meetingPoints.find((point) => point.id === match.meetingPointId)?.name ??
-        match.meetingPointId,
+      meetingPointName: match.free
+        ? nearLabel(need?.originLabel, "tu ubicación")
+        : (places.meetingPoints.find((point) => point.id === match.meetingPointId)?.name ??
+          match.meetingPointId ??
+          ""),
       pickupAt: match.pickupAt,
       arrivalAt: match.arrivalAt,
       detourMinutes: match.detourMinutes,
       walkMinutes: match.walkMinutes,
     },
     booking: mine ? { id: mine.id, status: mine.status } : null,
-    fuelEstimate: fuelEstimateFor({
-      direction: row.direction,
-      originZoneId: row.originZoneId,
-      destinationId: destination.id,
-      occupants: occupantsSharingFuel(acceptedCount, isOwn || mine?.status === "accepted"),
-    }),
+    fuelEstimate: fuelEstimateForOffer(
+      row,
+      destination.id,
+      occupantsSharingFuel(acceptedCount, isOwn || mine?.status === "accepted"),
+    ),
     priceCents: row.priceCents,
     paymentMethods: row.paymentMethods,
     live,
-    routeMap: routeMapFor({
-      direction: row.direction,
-      originZoneId: row.originZoneId,
-      destinationId: destination.id,
-      stops: mapStops(bookings, input.userId, match),
-    }),
+    routeMap: free
+      ? freeRouteMap(
+          row,
+          [
+            ...bookings
+              .filter(
+                (booking) =>
+                  booking.status === "accepted" &&
+                  booking.passengerId !== input.userId &&
+                  booking.pickupLat !== null &&
+                  booking.pickupLng !== null,
+              )
+              .map((booking) => ({
+                lat: booking.pickupLat!,
+                lng: booking.pickupLng!,
+                label: booking.pickupLabel ?? "Recogida",
+                at: booking.pickupAt,
+                mine: false,
+              })),
+            // The person's own stop: from their request if they made one, else from their need.
+            ...(mine && mine.pickupLat !== null && mine.pickupLng !== null
+              ? [
+                  {
+                    lat: mine.pickupLat,
+                    lng: mine.pickupLng,
+                    label: mine.pickupLabel ?? "Tu recogida",
+                    at: mine.pickupAt,
+                    mine: true,
+                  },
+                ]
+              : match?.free
+                ? [
+                    {
+                      lat: match.free.pickup.lat,
+                      lng: match.free.pickup.lng,
+                      label: nearLabel(need?.originLabel, "tu ubicación"),
+                      at: match.pickupAt,
+                      mine: true,
+                    },
+                  ]
+                : []),
+          ].toSorted((a, b) => a.at.slice(0, 5).localeCompare(b.at.slice(0, 5))),
+        )
+      : routeMapFor({
+          direction: row.direction,
+          originZoneId: row.originZoneId,
+          destinationId: destination.id,
+          stops: mapStops(bookings, input.userId, match),
+        }),
     alternatives: undefined as TripMatch[] | undefined,
   };
 
@@ -285,7 +365,9 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
         )[0]
       : undefined);
 
-  if (mine?.status === "cancelled_by_driver" && needRow) {
+  // The alternatives after a driver cancels come from the zone engine, which only knows the
+  // trips between a zone and the headquarters.
+  if (!free && mine?.status === "cancelled_by_driver" && needRow) {
     const {
       rows: altRows,
       routes: altRoutes,
@@ -440,6 +522,10 @@ export async function requestSeat(
       passengerId: input.userId,
       passengerWasTeam: passengerIsTeam,
       meetingPointId: match.meetingPointId,
+      // Between two addresses the person boards and gets off at the nearest points of the route.
+      ...(match.free
+        ? stopsOfMatch(match.free, { origin: need.originLabel, destination: need.destLabel })
+        : {}),
       pickupAt: match.pickupAt,
       detourMinutes: match.detourMinutes,
       walkMinutes: match.walkMinutes,
@@ -456,8 +542,9 @@ export async function requestSeat(
       id: booking!.id,
       status: booking!.status,
       message: booking!.message,
-      meetingPointName: places.meetingPoints.find((point) => point.id === match.meetingPointId)!
-        .name,
+      meetingPointName: match.free
+        ? nearLabel(need.originLabel, "tu ubicación")
+        : places.meetingPoints.find((point) => point.id === match.meetingPointId)!.name,
       pickupAt: match.pickupAt,
       arrivalAt: match.arrivalAt,
       detourMinutes: match.detourMinutes,
@@ -674,7 +761,7 @@ export async function listSeatRequests(
       passengerName: communityMember.alias,
       accountName: userTable.name,
       status: seatBooking.status,
-      meetingPointName: meetingPoint.name,
+      meetingPointName: sql<string>`coalesce(${seatBooking.pickupLabel}, ${meetingPoint.name})`,
       pickupAt: seatBooking.pickupAt,
       detourMinutes: seatBooking.detourMinutes,
       message: seatBooking.message,
@@ -691,7 +778,7 @@ export async function listSeatRequests(
     )
     .innerJoin(userTable, eq(userTable.id, seatBooking.passengerId))
     .innerJoin(tripRequest, eq(tripRequest.id, seatBooking.requestId))
-    .innerJoin(meetingPoint, eq(meetingPoint.id, seatBooking.meetingPointId))
+    .leftJoin(meetingPoint, eq(meetingPoint.id, seatBooking.meetingPointId))
     .where(
       and(eq(seatBooking.offerId, offer.id), inArray(seatBooking.status, ["pending", "accepted"])),
     )

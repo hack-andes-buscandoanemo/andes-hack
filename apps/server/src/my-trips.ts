@@ -8,7 +8,7 @@ import { places } from "@andes-hack/matching";
 import { and, desc, eq, inArray, ne } from "drizzle-orm";
 
 import { currentDay, isUnderway, loadDays, progressOf } from "./trip-days";
-import { acceptedCountByOffer, fuelEstimateFor, occupantsSharingFuel } from "./fuel-estimate";
+import { acceptedCountByOffer, fuelEstimateForOffer, occupantsSharingFuel } from "./fuel-estimate";
 import { destinationOf } from "./search";
 import {
   BOOKING,
@@ -73,8 +73,12 @@ async function passengerTrips(database: Database, userId: string, scope: TripSco
       daysOfWeek: tripOffer.daysOfWeek,
       pickupAt: seatBooking.pickupAt,
       meetingPointId: seatBooking.meetingPointId,
+      pickupLabel: seatBooking.pickupLabel,
       originZoneId: tripOffer.originZoneId,
       originZoneName: zone.name,
+      originLabel: tripOffer.originLabel,
+      destLabel: tripOffer.destLabel,
+      routeKm: tripOffer.routeKm,
       destinationName: community.destinationName,
       driverAlias: communityMember.alias,
       accountName: userTable.name,
@@ -153,11 +157,13 @@ async function passengerTrips(database: Database, userId: string, scope: TripSco
       date: view.date,
       daysOfWeek: row.daysOfWeek,
       time: row.pickupAt,
-      originZoneName: row.originZoneName,
-      destinationName: destination.name,
+      originZoneName: row.originLabel ?? row.originZoneName,
+      destinationName: row.destLabel ?? destination.name,
       meetingPointName:
+        row.pickupLabel ??
         places.meetingPoints.find((point) => point.id === row.meetingPointId)?.name ??
-        row.meetingPointId,
+        row.meetingPointId ??
+        "",
       // The other person is revealed only once the request is accepted.
       driver:
         row.derived === BOOKING.accepted
@@ -176,16 +182,12 @@ async function passengerTrips(database: Database, userId: string, scope: TripSco
         row,
         returnNeedByPlace.get(`${row.communityId}:${row.requestOriginZoneId}`),
       ),
-      fuelEstimate: fuelEstimateFor({
-        direction: row.direction,
-        originZoneId: row.originZoneId,
-        destinationId: destination.id,
+      fuelEstimate: fuelEstimateForOffer(
+        row,
+        destination.id,
         // An accepted passenger is already among those counted aboard.
-        occupants: occupantsSharingFuel(
-          acceptedCount.get(row.offerId) ?? 0,
-          row.status === BOOKING.accepted,
-        ),
-      }),
+        occupantsSharingFuel(acceptedCount.get(row.offerId) ?? 0, row.status === BOOKING.accepted),
+      ),
     };
   };
   return rows.flatMap((booking) => {
@@ -235,6 +237,9 @@ async function driverTrips(database: Database, userId: string, scope: TripScope,
       seatsTotal: tripOffer.seatsTotal,
       originZoneId: tripOffer.originZoneId,
       originZoneName: zone.name,
+      originLabel: tripOffer.originLabel,
+      destLabel: tripOffer.destLabel,
+      routeKm: tripOffer.routeKm,
       destinationName: community.destinationName,
     })
     .from(tripOffer)
@@ -303,8 +308,8 @@ async function driverTrips(database: Database, userId: string, scope: TripScope,
         date: offer.date,
         daysOfWeek: offer.daysOfWeek,
         time: offer.departureTime,
-        originZoneName: offer.originZoneName,
-        destinationName: destination.name,
+        originZoneName: offer.originLabel ?? offer.originZoneName,
+        destinationName: offer.destLabel ?? destination.name,
         meetingPointName: null,
         driver: null,
         seatsTotal: offer.seatsTotal,
@@ -314,12 +319,11 @@ async function driverTrips(database: Database, userId: string, scope: TripScope,
         acceptedPassengers: accepted.map((booking) =>
           displayName(booking.alias, booking.accountName),
         ),
-        fuelEstimate: fuelEstimateFor({
-          direction: offer.direction,
-          originZoneId: offer.originZoneId,
-          destinationId: destination.id,
-          occupants: occupantsSharingFuel(accepted.length, true),
-        }),
+        fuelEstimate: fuelEstimateForOffer(
+          offer,
+          destination.id,
+          occupantsSharingFuel(accepted.length, true),
+        ),
       };
     })
     .filter(

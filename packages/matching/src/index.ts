@@ -1,3 +1,4 @@
+export * from "./free-match";
 export * from "./fuel-cost";
 export * from "./geo";
 export * from "./insertion";

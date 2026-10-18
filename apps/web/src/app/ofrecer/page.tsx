@@ -1,15 +1,12 @@
 "use client";
 
-import {
-  CreateTripOfferBodySchema,
-  CreateVehicleBodySchema,
-  type TripDirectionSchema,
-} from "@andes-hack/api";
+import { CreateTripOfferBodySchema, CreateVehicleBodySchema } from "@andes-hack/api";
 import { useForm } from "@tanstack/react-form";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import type z from "zod";
 
+import PlacePicker from "@/components/place-picker";
+import RouteMap from "@/components/route-map";
 import { paymentMethodOptions } from "@/components/trip-price";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,10 +16,9 @@ import {
   type MembershipSummary,
   type PaymentMethod,
   type VehicleSummary,
-  type ZoneSummary,
 } from "@/lib/communities-api";
+import type { Place } from "@/lib/geo";
 
-type TripDirection = z.infer<typeof TripDirectionSchema>;
 type ScheduleMode = "recurring" | "single";
 
 const WEEKDAYS: Array<{ iso: number; label: string }> = [
@@ -52,7 +48,10 @@ export default function OfferPage() {
   const router = useRouter();
   const [membership, setMembership] = useState<MembershipSummary | null>(null);
   const [vehicles, setVehicles] = useState<VehicleSummary[]>([]);
-  const [zones, setZones] = useState<ZoneSummary[]>([]);
+  // Where the trip starts and where it ends, chosen on the map; the street route between
+  // them is drawn when the trip is published.
+  const [origin, setOrigin] = useState<Place | null>(null);
+  const [destination, setDestination] = useState<Place | null>(null);
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>("recurring");
   const [vehicleError, setVehicleError] = useState<string | null>(null);
   const [offerError, setOfferError] = useState<string | null>(null);
@@ -96,8 +95,6 @@ export default function OfferPage() {
   const offerForm = useForm({
     defaultValues: {
       vehicleId: "",
-      direction: "outbound" as TripDirection,
-      originZoneId: "",
       departureTime: "07:30",
       daysOfWeek: [] as number[],
       date: "",
@@ -127,10 +124,15 @@ export default function OfferPage() {
         return;
       }
 
+      if (!origin || !destination) {
+        setOfferError("Elige dónde sales y a dónde vas.");
+        return;
+      }
+
       const payload = {
         vehicleId: value.vehicleId || selectedVehicle?.id || "",
-        direction: value.direction,
-        originZoneId: value.originZoneId || zones[0]?.id || "",
+        origin,
+        destination,
         departureTime: value.departureTime,
         daysOfWeek: scheduleMode === "recurring" ? value.daysOfWeek : null,
         date: scheduleMode === "single" ? value.date : null,
@@ -180,19 +182,12 @@ export default function OfferPage() {
         }
         setMembership(firstMembership);
 
-        const [loadedVehicles, loadedZones] = await Promise.all([
-          communitiesApi.listVehicles(),
-          communitiesApi.listCommunityZones(firstMembership.communityId),
-        ]);
+        const loadedVehicles = await communitiesApi.listVehicles();
         if (!active) return;
         setVehicles(loadedVehicles);
-        setZones(loadedZones);
         if (loadedVehicles[0]) {
           offerForm.setFieldValue("vehicleId", loadedVehicles[0].id);
           offerForm.setFieldValue("seatsTotal", String(loadedVehicles[0].seats));
-        }
-        if (loadedZones[0]) {
-          offerForm.setFieldValue("originZoneId", loadedZones[0].id);
         }
       } catch {
         if (!active) return;
@@ -315,65 +310,51 @@ export default function OfferPage() {
           }}
           className="flex flex-col gap-5"
         >
-          <offerForm.Field name="direction">
-            {(field) => (
-              <div className="flex flex-col gap-2">
-                <span className="text-sm font-semibold">Sentido</span>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    aria-pressed={field.state.value === "outbound"}
-                    onClick={() => field.handleChange("outbound")}
-                    className={`rounded-xl border p-3 text-left text-xs font-medium ${
-                      field.state.value === "outbound"
-                        ? "border-foreground bg-brand-yellow/20 font-bold"
-                        : "bg-card"
-                    }`}
-                  >
-                    {`Hacia ${membership.destinationName}`}
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={field.state.value === "return"}
-                    onClick={() => field.handleChange("return")}
-                    className={`rounded-xl border p-3 text-left text-xs font-medium ${
-                      field.state.value === "return"
-                        ? "border-foreground bg-brand-yellow/20 font-bold"
-                        : "bg-card"
-                    }`}
-                  >
-                    {`De regreso desde ${membership.destinationName}`}
-                  </button>
-                </div>
-              </div>
-            )}
-          </offerForm.Field>
-
-          <offerForm.Subscribe selector={(state) => state.values.direction}>
-            {(direction) => (
-              <offerForm.Field name="originZoneId">
-                {(field) => (
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="origin-zone">
-                      {direction === "return" ? "Zona de llegada" : "Zona de salida"}
-                    </Label>
-                    <select
-                      id="origin-zone"
-                      value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      className="h-10 rounded-md border bg-background px-3 text-sm"
-                    >
-                      {zones.map((z) => (
-                        <option key={z.id} value={z.id}>
-                          {z.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </offerForm.Field>
-            )}
-          </offerForm.Subscribe>
+          <PlacePicker
+            id="trip-origin"
+            label="Sales de"
+            value={origin}
+            onChange={setOrigin}
+            withLocation
+          />
+          <PlacePicker
+            id="trip-destination"
+            label="Vas a"
+            value={destination}
+            onChange={setDestination}
+          />
+          {origin && destination ? (
+            <div className="flex flex-col gap-1">
+              <p className="text-xs text-muted-foreground">
+                Así lo verán: dibujamos las calles de tu ruta al publicar.
+              </p>
+              <RouteMap
+                route={{
+                  path: [
+                    [origin.lat, origin.lng],
+                    [destination.lat, destination.lng],
+                  ],
+                  approximate: true,
+                  markers: [
+                    {
+                      role: "start",
+                      name: origin.label,
+                      lat: origin.lat,
+                      lng: origin.lng,
+                      mine: false,
+                    },
+                    {
+                      role: "end",
+                      name: destination.label,
+                      lat: destination.lat,
+                      lng: destination.lng,
+                      mine: false,
+                    },
+                  ],
+                }}
+              />
+            </div>
+          ) : null}
 
           <offerForm.Field name="departureTime">
             {(field) => (

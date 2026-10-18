@@ -7,9 +7,11 @@ import {
   doublePrecision,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   primaryKey,
+  real,
   smallint,
   text,
   time,
@@ -106,6 +108,21 @@ export const tripOffer = pgTable(
     maxDetourMinutes: smallint("max_detour_minutes").notNull(),
     womenOnly: boolean("women_only").default(false).notNull(),
     note: varchar("note", { length: 280 }),
+    // Where the driver leaves from and where they go, chosen on the map. Null on the offers
+    // that still run between a zone and the community's headquarters.
+    originLat: doublePrecision("origin_lat"),
+    originLng: doublePrecision("origin_lng"),
+    originLabel: varchar("origin_label", { length: 160 }),
+    destLat: doublePrecision("dest_lat"),
+    destLng: doublePrecision("dest_lng"),
+    destLabel: varchar("dest_label", { length: 160 }),
+    // The street route between them, asked once to OSRM when the offer is published: [lat, lng]
+    // points, with its duration and length, so searching never calls a routing service.
+    routePath: jsonb("route_path").$type<[number, number][]>(),
+    routeMinutes: smallint("route_minutes"),
+    routeKm: real("route_km"),
+    // True when OSRM could not draw the streets and the route is a straight line.
+    routeApproximate: boolean("route_approximate").default(false).notNull(),
     // The base price per seat the driver sets, in céntimos of a sol; null when none is asked.
     priceCents: integer("price_cents"),
     paymentMethods: paymentMethodEnum("payment_methods").array().default([]).notNull(),
@@ -146,6 +163,13 @@ export const tripRequest = pgTable(
     windowStart: time("window_start").notNull(),
     windowEnd: time("window_end").notNull(),
     ...schedule,
+    // Where the person is and where they are going, when they searched from the map.
+    originLat: doublePrecision("origin_lat"),
+    originLng: doublePrecision("origin_lng"),
+    originLabel: varchar("origin_label", { length: 160 }),
+    destLat: doublePrecision("dest_lat"),
+    destLng: doublePrecision("dest_lng"),
+    destLabel: varchar("dest_label", { length: 160 }),
     maxWalkMinutes: smallint("max_walk_minutes").notNull(),
     fallbackMode: fallbackModeEnum("fallback_mode").notNull(),
     // "Solo mujeres" as the last search asked it; the seat request and the optimizer honour it (US-026).
@@ -178,9 +202,17 @@ export const seatBooking = pgTable(
       .references(() => tripRequest.id, { onDelete: "restrict" }),
     passengerId: text("passenger_id").references(() => user.id, { onDelete: "set null" }),
     passengerWasTeam: boolean("passenger_was_team").default(false).notNull(),
-    meetingPointId: text("meeting_point_id")
-      .notNull()
-      .references(() => meetingPoint.id, { onDelete: "restrict" }),
+    // A public meeting point on the trips between zones; null on the trips between two
+    // addresses, where the pickup and the drop-off below say where the person gets on and off.
+    meetingPointId: text("meeting_point_id").references(() => meetingPoint.id, {
+      onDelete: "restrict",
+    }),
+    pickupLat: doublePrecision("pickup_lat"),
+    pickupLng: doublePrecision("pickup_lng"),
+    pickupLabel: varchar("pickup_label", { length: 160 }),
+    dropoffLat: doublePrecision("dropoff_lat"),
+    dropoffLng: doublePrecision("dropoff_lng"),
+    dropoffLabel: varchar("dropoff_label", { length: 160 }),
     // A time of day like departure_time, not an instant: it repeats on every day of the trip.
     pickupAt: time("pickup_at").notNull(),
     detourMinutes: smallint("detour_minutes").notNull(),
@@ -201,6 +233,10 @@ export const seatBooking = pgTable(
     uniqueIndex("seat_booking_active_passenger_idx")
       .on(table.offerId, table.passengerId)
       .where(sql`${table.status} IN ('pending', 'accepted', 'rejected')`),
+    check(
+      "seat_booking_pickup_check",
+      sql`${table.meetingPointId} IS NOT NULL OR (${table.pickupLat} IS NOT NULL AND ${table.pickupLng} IS NOT NULL)`,
+    ),
     // Only a closed booking can lose its passenger, so the index above always applies.
     check(
       "seat_booking_passenger_required_check",

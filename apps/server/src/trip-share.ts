@@ -93,6 +93,7 @@ export async function getSharedTrip(database: Database, input: { token: string; 
       color: vehicle.color,
       plate: vehicle.plate,
       meetingPointId: seatBooking.meetingPointId,
+      pickupLabel: seatBooking.pickupLabel,
       pickupAt: seatBooking.pickupAt,
       bookingId: seatBooking.id,
     })
@@ -134,8 +135,10 @@ export async function getSharedTrip(database: Database, input: { token: string; 
     driverAlias: displayName(row.driverAlias, row.driverName),
     vehicle: { make: row.make, model: row.model, color: row.color, plate: row.plate },
     meetingPointName:
+      row.pickupLabel ??
       places.meetingPoints.find((point) => point.id === row.meetingPointId)?.name ??
-      row.meetingPointId,
+      row.meetingPointId ??
+      "",
     estimatedTime: row.pickupAt.slice(0, 5),
     // US-025 records both moments per day: the start of the trip and "Llegué bien".
     status: progressOf(BOOKING.accepted, currentDay(days, today)) ?? ("not_started" as const),
