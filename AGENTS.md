@@ -249,6 +249,7 @@ Contexto único de dominio en `AGENTS.md` / `CLAUDE.md` (más `GLOSSARY.md` y `d
 - Email: resend
 - Caching: upstash-redis
 - Storage: Cloudflare R2
+- Analytics: Plausible Analytics (`@plausible-analytics/tracker`)
 - Logging: evlog
 - Linter & Formatter: oxlint + oxfmt
 
