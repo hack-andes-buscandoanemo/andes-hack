@@ -47,14 +47,90 @@
         "properties": {
           "status": {
             "type": "string",
-            "enum": [
-              "ok"
-            ]
+            "enum": ["ok"]
+          }
+        },
+        "required": ["status"]
+      },
+      "CommunitiesResponse": {
+        "type": "object",
+        "properties": {
+          "communities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommunitySummary"
+            }
+          }
+        },
+        "required": ["communities"]
+      },
+      "CommunitySummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["company", "university", "public_entity", "event"]
+          },
+          "isDemo": {
+            "type": "boolean"
+          }
+        },
+        "required": ["id", "name", "kind", "isDemo"]
+      },
+      "JoinCommunityResponse": {
+        "type": "object",
+        "properties": {
+          "joined": {
+            "type": "boolean",
+            "enum": [true]
+          },
+          "alreadyMember": {
+            "type": "boolean"
+          },
+          "communityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "communityName": {
+            "type": "string"
+          },
+          "verificationMethod": {
+            "type": "string",
+            "enum": ["join_code", "email_domain"]
+          },
+          "isTeam": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
           }
         },
         "required": [
-          "status"
+          "joined",
+          "alreadyMember",
+          "communityId",
+          "communityName",
+          "verificationMethod",
+          "isTeam",
+          "message"
         ]
+      },
+      "JoinCommunityRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": ["code"]
       }
     },
     "parameters": {}
@@ -62,9 +138,7 @@
   "paths": {
     "/health": {
       "get": {
-        "tags": [
-          "Público"
-        ],
+        "tags": ["Público"],
         "responses": {
           "200": {
             "description": "Service health",
@@ -72,6 +146,60 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/communities": {
+      "get": {
+        "tags": ["Comunidades"],
+        "responses": {
+          "200": {
+            "description": "Lista pública de comunidades",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommunitiesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/communities/{id}/join": {
+      "post": {
+        "tags": ["Comunidades"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinCommunityRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Membresía verificada en la comunidad",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JoinCommunityResponse"
                 }
               }
             }

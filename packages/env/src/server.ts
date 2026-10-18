@@ -10,6 +10,7 @@ export const env = createEnv({
     UPSTASH_REDIS_REST_URL: z.url(),
     UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
     CORS_ORIGIN: z.url(),
+    TEAM_EMAILS: z.string().default(""),
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   },
   runtimeEnv: process.env,
