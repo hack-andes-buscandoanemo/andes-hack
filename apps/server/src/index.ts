@@ -6,13 +6,16 @@ import {
   getOfferDetailRoute,
   healthRoute,
   joinCommunityRoute,
+  latestMatchRunsRoute,
   listCommunitiesRoute,
   listCommunityOffersRoute,
   listCommunityZonesRoute,
   listMyTripsRoute,
+  listProposalsRoute,
   listVehiclesRoute,
   OPENAPI_DOCUMENT_CONFIG,
   requestSeatRoute,
+  runMatchingRoute,
   searchTripsRoute,
   updateMembershipRoute,
   updateOfferStatusRoute,
@@ -33,6 +36,8 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 import { sendEmail as defaultSendEmail, type SendEmailOptions } from "./lib/email";
+import type { JourneyLock } from "./lib/journey-lock";
+import { latestMatchRuns, listProposals, runMatching } from "./match-runs";
 import {
   rateLimitMiddleware,
   requireOnboardedMember,
@@ -63,6 +68,8 @@ export type AppDeps = {
   otpRateLimit?: RateLimitCheck;
   sendEmail?: (options: SendEmailOptions) => Promise<unknown>;
   now?: () => Date;
+  // Keeps two admins from matching the same journey at once; Redis unless injected.
+  journeyLock?: JourneyLock;
 };
 
 async function sha256Hex(value: string): Promise<string> {
@@ -238,6 +245,9 @@ export function createApp(deps: AppDeps = {}) {
     requireSession(deps.getSession),
     requireOnboardedMember((c) => c.req.param("id") ?? "", checkOnboarded),
   );
+  openApiApp.use("/communities/:id/match-runs", requireSession(deps.getSession));
+  openApiApp.use("/communities/:id/match-runs/latest", requireSession(deps.getSession));
+  openApiApp.use("/communities/:id/proposals", requireSession(deps.getSession));
   openApiApp.use("/vehicles", requireSession(deps.getSession));
   openApiApp.use("/offers/:id/status", requireSession(deps.getSession));
   openApiApp.use("/offers/:id", requireSession(deps.getSession));
@@ -898,6 +908,36 @@ export function createApp(deps: AppDeps = {}) {
   openApiApp.openapi(cancelBookingRoute, async (c) => {
     const { id: bookingId } = c.req.valid("param");
     return c.json(await withdrawRequest(database, { bookingId, userId: c.get("user").id }), 200);
+  });
+
+  const journeyLock = async (): Promise<JourneyLock> => {
+    if (deps.journeyLock) return deps.journeyLock;
+    const { createRedisJourneyLock } = await import("./lib/journey-lock");
+    return createRedisJourneyLock();
+  };
+
+  openApiApp.openapi(runMatchingRoute, async (c) => {
+    const { id: communityId } = c.req.valid("param");
+    const body = c.req.valid("json");
+    return c.json(
+      await runMatching(database, {
+        communityId,
+        userId: c.get("user").id,
+        body,
+        lock: await journeyLock(),
+      }),
+      201,
+    );
+  });
+
+  openApiApp.openapi(latestMatchRunsRoute, async (c) => {
+    const { id: communityId } = c.req.valid("param");
+    return c.json(await latestMatchRuns(database, { communityId, userId: c.get("user").id }), 200);
+  });
+
+  openApiApp.openapi(listProposalsRoute, async (c) => {
+    const { id: communityId } = c.req.valid("param");
+    return c.json(await listProposals(database, { communityId, userId: c.get("user").id }), 200);
   });
 
   openApiApp.openapi(updateOfferStatusRoute, async (c) => {

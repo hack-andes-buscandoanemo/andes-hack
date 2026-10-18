@@ -791,6 +791,229 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/communities/{id}/match-runs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: {
+        content: {
+          "application/json": components["schemas"]["RunMatchingRequest"];
+        };
+      };
+      responses: {
+        /** @description Las dos corridas guardadas, optimizador y primero en llegar, con las asignaciones recomendadas */
+        201: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["MatchRunsResponse"];
+          };
+        };
+        /** @description No hay sesión iniciada (`unauthorized`) */
+        401: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description No es miembro (`community_membership_required`) o no es administrador (`admin_required`) */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description La comunidad no existe (`community_not_found`) */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Ya hay un emparejamiento en curso para esta jornada (`match_run_in_progress`), no hay ofertas ni necesidades (`no_journey_inputs`) o la sede no se puede usar (`unknown_destination`) */
+        409: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Los datos enviados no son válidos (`validation_error`) */
+        422: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/communities/{id}/match-runs/latest": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description La última jornada emparejada, con ambas corridas y sus recomendaciones */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["MatchRunsResponse"];
+          };
+        };
+        /** @description No hay sesión iniciada (`unauthorized`) */
+        401: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description No es miembro (`community_membership_required`) o no es administrador (`admin_required`) */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description La comunidad no existe (`community_not_found`) o nunca se ejecutó el emparejamiento (`no_match_runs`) */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description El identificador no es válido (`validation_error`) */
+        422: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/communities/{id}/proposals": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Los viajes recomendados a la persona en los que todavía no solicitó asiento, el más próximo primero */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["MatchProposalsResponse"];
+          };
+        };
+        /** @description No hay sesión iniciada (`unauthorized`) */
+        401: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description No es miembro de la comunidad (`community_membership_required`) */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description El identificador no es válido (`validation_error`) */
+        422: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/public/waitlist": {
     parameters: {
       query?: never;
@@ -1236,6 +1459,67 @@ export interface components {
           | "completed"
           | "no_show";
       };
+    };
+    MatchRunsResponse: {
+      /** @enum {string} */
+      direction: "outbound" | "return";
+      date: string;
+      optimizer: components["schemas"]["MatchRunSummary"];
+      firstComeFirstServed: components["schemas"]["MatchRunSummary"];
+      suggestions: components["schemas"]["MatchSuggestion"][];
+    };
+    MatchRunSummary: {
+      /** Format: uuid */
+      id: string;
+      carTripsAvoided: number;
+      passengersMatched: number;
+      detourMinutes: number;
+      walkMinutes: number;
+      unassigned: number;
+      offers: number;
+      requests: number;
+      durationMs: number;
+      createdAt: string;
+    };
+    MatchSuggestion: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      offerId: string;
+      driverName: string;
+      /** Format: uuid */
+      requestId: string;
+      passengerName: string;
+      meetingPointName: string;
+      pickupAt: string;
+      arrivalAt: string;
+      detourMinutes: number;
+      walkMinutes: number;
+      avoidsCarTrip: boolean;
+      /** @enum {string} */
+      status: "proposed" | "accepted" | "rejected";
+    };
+    RunMatchingRequest: {
+      /** @enum {string} */
+      direction: "outbound" | "return";
+      date: string;
+    };
+    MatchProposalsResponse: {
+      proposals: components["schemas"]["MatchProposal"][];
+    };
+    MatchProposal: {
+      /** Format: uuid */
+      suggestionId: string;
+      /** Format: uuid */
+      offerId: string;
+      driverName: string;
+      /** @enum {string} */
+      direction: "outbound" | "return";
+      date: string;
+      meetingPointName: string;
+      pickupAt: string;
+      arrivalAt: string;
+      walkMinutes: number;
     };
     WaitlistEntryResponse: {
       message: string;
