@@ -393,7 +393,12 @@ export default function TripDetailPage() {
       </section>
       <section className="space-y-3 surface p-5">
         <p className="text-[0.9375rem] font-semibold">{`${from} → ${to}`}</p>
-        <RouteMap route={detail.routeMap} livePosition={livePosition} dropOff={dropOff} />
+        <RouteMap
+          route={detail.routeMap}
+          livePosition={livePosition}
+          dropOff={dropOff}
+          suggestRoute
+        />
         <div className="space-y-1 text-sm">
           {detail.daysOfWeek ? (
             <p className="text-muted-foreground">{`Viaje recurrente: ${daysLabel(detail.daysOfWeek)}`}</p>
