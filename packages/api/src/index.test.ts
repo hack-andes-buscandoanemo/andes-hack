@@ -25,6 +25,7 @@ it("generates the OpenAPI 3.1 contract from registered routes with the public AP
     "Búsqueda",
     "Solicitudes",
     "Emparejamiento",
+    "Seguridad",
     "Público",
   ]);
   expect(doc.paths?.["/health"]?.get?.tags).toEqual(["Público"]);

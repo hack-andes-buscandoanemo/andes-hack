@@ -226,6 +226,7 @@ describe("GET /offers/{id} (US-014)", () => {
     expect(await res.json()).toEqual({
       offerId: offer.id,
       status: "active",
+      driverId: driver.id,
       driverName: "Mateo",
       driverPhotoUrl: null,
       communityName: "Comunidad Alfa",

@@ -57,6 +57,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 import { createDataSourcesRoutes } from "./data-sources";
+import { createIncidentReportRoutes } from "./incident-reports";
 import { clientIp } from "./lib/client-ip";
 import { sendEmail as defaultSendEmail, type SendEmailOptions } from "./lib/email";
 import type { JourneyLock } from "./lib/journey-lock";
@@ -315,6 +316,9 @@ export function createApp(deps: AppDeps = {}) {
   );
   openApiApp.use("/communities/:id/match-runs", requireSession(deps.getSession));
   openApiApp.use("/communities/:id/match-runs/latest", requireSession(deps.getSession));
+  openApiApp.use("/communities/:id/incident-reports", requireSession(deps.getSession));
+  openApiApp.use("/incident-reports", requireSession(deps.getSession));
+  openApiApp.use("/incident-reports/*", requireSession(deps.getSession));
   openApiApp.use(
     "/communities/:id/proposals",
     requireSession(deps.getSession),
@@ -1444,6 +1448,7 @@ export function createApp(deps: AppDeps = {}) {
     }),
   );
   openApiApp.route("/", createDataSourcesRoutes());
+  openApiApp.route("/", createIncidentReportRoutes({ db: deps.db, now: deps.now }));
 
   openApiApp.doc31("/openapi.json", OPENAPI_DOCUMENT_CONFIG);
   openApiApp.get("/docs", apiReference({ spec: { url: "/openapi.json" } }));

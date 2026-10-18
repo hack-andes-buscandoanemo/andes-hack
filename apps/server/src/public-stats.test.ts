@@ -682,6 +682,7 @@ describe("GET /public/communities/{slug}/stats", () => {
       coverage: 0.5,
       acceptedRequests: 2,
       completedTrips: 1,
+      incidentReports: 0,
     });
     // Aggregates only: no names or emails of the people behind the numbers.
     expect(JSON.stringify(body)).not.toMatch(/alfa\.pe|Persona/);

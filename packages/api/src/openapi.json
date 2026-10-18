@@ -36,6 +36,10 @@
       "description": "Compatibilidad de rutas, horarios y gasto compartido"
     },
     {
+      "name": "Seguridad",
+      "description": "Reportes de incidentes y gestión comunitaria"
+    },
+    {
       "name": "Público",
       "description": "Rutas públicas y estado del servicio"
     }
@@ -1054,6 +1058,12 @@
             "type": "string",
             "format": "uuid"
           },
+          "driverId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -1219,6 +1229,7 @@
         },
         "required": [
           "offerId",
+          "driverId",
           "status",
           "driverName",
           "driverPhotoUrl",
@@ -2682,6 +2693,12 @@
               },
               "completedTrips": {
                 "type": "integer"
+              },
+              "incidentReports": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
               }
             },
             "required": [
@@ -2691,7 +2708,8 @@
               "openNeeds",
               "coverage",
               "acceptedRequests",
-              "completedTrips"
+              "completedTrips",
+              "incidentReports"
             ]
           },
           "waitlist": {
@@ -2864,6 +2882,202 @@
           "districts",
           "people",
           "vehicleImpact"
+        ]
+      },
+      "CreateIncidentReportResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "status": {
+            "type": "number",
+            "enum": [
+              201
+            ]
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "open",
+                  "reviewed"
+                ]
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "id",
+              "status",
+              "createdAt"
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "status",
+          "data"
+        ]
+      },
+      "CreateIncidentReportBody": {
+        "type": "object",
+        "properties": {
+          "offerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "harassment",
+              "dangerous_driving",
+              "no_show",
+              "inappropriate_behavior",
+              "other"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "reportedUserId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "messageId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "offerId",
+          "type"
+        ]
+      },
+      "IncidentReportsResponse": {
+        "type": "object",
+        "properties": {
+          "reports": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "offerId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "reportedUserId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "reportedUserName": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "messageId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "harassment",
+                    "dangerous_driving",
+                    "no_show",
+                    "inappropriate_behavior",
+                    "other"
+                  ]
+                },
+                "description": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "open",
+                    "reviewed"
+                  ]
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "offerId",
+                "reportedUserId",
+                "reportedUserName",
+                "messageId",
+                "type",
+                "description",
+                "status",
+                "createdAt"
+              ]
+            }
+          }
+        },
+        "required": [
+          "reports"
+        ]
+      },
+      "ReviewIncidentReportResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "reviewed"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ]
+      },
+      "ReviewIncidentReportBody": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "reviewed"
+            ]
+          }
+        },
+        "required": [
+          "status"
         ]
       },
       "CreateShareLinkResponse": {
@@ -5081,6 +5295,203 @@
           },
           "429": {
             "description": "Demasiadas consultas desde la misma IP",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/incident-reports": {
+      "post": {
+        "tags": [
+          "Seguridad"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateIncidentReportBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Reporte de incidente recibido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateIncidentReportResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Se requiere iniciar sesión",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "La persona no participó en el viaje",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Los datos del reporte no son válidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/communities/{id}/incident-reports": {
+      "get": {
+        "tags": [
+          "Seguridad"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reportes visibles solo para administradores de la comunidad",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentReportsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Se requiere iniciar sesión",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Solo los administradores de la comunidad pueden ver los reportes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "El identificador de la comunidad no es válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/incident-reports/{id}": {
+      "patch": {
+        "tags": [
+          "Seguridad"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewIncidentReportBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "El reporte quedó marcado como revisado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewIncidentReportResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Se requiere iniciar sesión",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Solo un administrador de la comunidad puede revisar el reporte",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El reporte no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Los datos del reporte no son válidos",
             "content": {
               "application/json": {
                 "schema": {

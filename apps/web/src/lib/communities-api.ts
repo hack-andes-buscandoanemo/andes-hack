@@ -46,6 +46,10 @@ export type TripMessagePayload =
       body: "Ya salí" | "Estoy en el punto de encuentro" | "Llego en 5 min" | "Hoy no podré ir";
     };
 export type PublicStats = components["schemas"]["PublicStats"];
+export type CreateIncidentReportRequest = components["schemas"]["CreateIncidentReportBody"];
+export type IncidentReportsResponse = components["schemas"]["IncidentReportsResponse"];
+export type IncidentReport = IncidentReportsResponse["reports"][number];
+export type ReviewIncidentReportResponse = components["schemas"]["ReviewIncidentReportResponse"];
 export type CreateShareLinkResponse = components["schemas"]["CreateShareLinkResponse"];
 export type SharedTrip = components["schemas"]["SharedTrip"];
 export type ProfilePhotoUploadRequest = components["schemas"]["ProfilePhotoUploadRequest"];
@@ -291,6 +295,22 @@ export const communitiesApi = {
     const response = await httpClient.get(
       `/public/communities/${slug}/stats` as "/public/communities/{slug}/stats",
     );
+    return response.data;
+  },
+  async createIncidentReport(payload: CreateIncidentReportRequest) {
+    const response = await httpClient.post("/incident-reports", payload);
+    return response.data;
+  },
+  async listCommunityIncidentReports(communityId: string): Promise<IncidentReportsResponse> {
+    const response = await httpClient.get(
+      `/communities/${communityId}/incident-reports` as "/communities/{id}/incident-reports",
+    );
+    return response.data;
+  },
+  async reviewIncidentReport(id: string): Promise<ReviewIncidentReportResponse> {
+    const response = await httpClient.patch(`/incident-reports/${id}` as "/incident-reports/{id}", {
+      status: "reviewed",
+    });
     return response.data;
   },
   async getTripMessages(offerId: string, after?: string): Promise<TripMessagesResponse> {
