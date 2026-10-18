@@ -80,7 +80,7 @@ describe("proposals on Inicio (US-019)", () => {
     );
     expect(
       screen.getByText(
-        "Referencial. Te Jalo no cobra ni procesa pagos; cualquier aporte es voluntario y nunca mayor al costo.",
+        "Referencial. Te Jalo no cobra ni procesa pagos: el precio lo fija quien maneja y se paga directamente con Yape o efectivo.",
       ),
     ).toBeInTheDocument();
   });

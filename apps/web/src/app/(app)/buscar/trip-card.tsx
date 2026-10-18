@@ -12,10 +12,15 @@ export default function TripCard({
   match,
   communityName,
   best,
+  onMap = false,
+  onShowMap,
 }: {
   match: TripMatch;
   communityName: string;
   best: boolean;
+  // This card's trip is the one drawn on the map above the list.
+  onMap?: boolean;
+  onShowMap?: () => void;
 }) {
   const outbound = match.direction === "outbound";
   const from = outbound ? match.originZoneName : match.destinationName;
@@ -53,7 +58,26 @@ export default function TripCard({
       </ul>
       {match.live ? <LiveBadge /> : null}
       <TripPrice priceCents={match.priceCents} paymentMethods={match.paymentMethods} />
+      {match.dropOffMeters !== null ? (
+        <p className="text-xs font-medium">
+          {match.dropOffMeters < 1000
+            ? `Te deja a ${match.dropOffMeters} m de tu destino`
+            : `Te deja a ${(match.dropOffMeters / 1000).toFixed(1)} km de tu destino`}
+        </p>
+      ) : null}
       <FuelShareLine estimate={match.fuelEstimate} />
+      {onShowMap ? (
+        <button
+          type="button"
+          aria-pressed={onMap}
+          onClick={onShowMap}
+          className={`flex min-h-11 items-center justify-center rounded-xl border font-bold ${
+            onMap ? "border-foreground bg-brand-yellow/20" : ""
+          }`}
+        >
+          {onMap ? "Viendo en el mapa" : "Ver en el mapa"}
+        </button>
+      ) : null}
       <Link
         href={`/viajes/${match.offerId}` as Route}
         className="flex min-h-11 items-center justify-center rounded-xl border font-bold"

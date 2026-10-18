@@ -15,6 +15,7 @@ import {
   getMyImpactRoute,
   getLiveLocationRoute,
   getOfferDetailRoute,
+  listLiveAlertsRoute,
   healthRoute,
   joinCommunityRoute,
   latestMatchRunsRoute,
@@ -68,6 +69,7 @@ import { logEvent } from "./lib/logger";
 import { safeLimit } from "./lib/safe-limit";
 import {
   getLiveLocation,
+  listLiveAlerts,
   liveOfferIds,
   shareLiveLocation,
   stopLiveLocation,
@@ -320,6 +322,11 @@ export function createApp(deps: AppDeps = {}) {
   );
   openApiApp.use(
     "/communities/:id/search",
+    requireSession(deps.getSession),
+    requireOnboardedMember((c) => c.req.param("id") ?? "", checkOnboarded),
+  );
+  openApiApp.use(
+    "/communities/:id/live-alerts",
     requireSession(deps.getSession),
     requireOnboardedMember((c) => c.req.param("id") ?? "", checkOnboarded),
   );
@@ -1215,14 +1222,34 @@ export function createApp(deps: AppDeps = {}) {
 
   openApiApp.openapi(shareLiveLocationRoute, async (c) => {
     const { id: offerId } = c.req.valid("param");
-    const position = c.req.valid("json");
+    const { lat, lng, priceCents, paymentMethods } = c.req.valid("json");
     return c.json(
       await shareLiveLocation(database, {
         offerId,
         userId: c.get("user").id,
-        position,
+        position: { lat, lng },
+        priceCents,
+        paymentMethods,
         now: getNow(),
       }),
+      200,
+    );
+  });
+
+  openApiApp.openapi(listLiveAlertsRoute, async (c) => {
+    const { id: communityId } = c.req.valid("param");
+    const { lat, lng } = c.req.valid("query");
+    return c.json(
+      await listLiveAlerts(
+        database,
+        {
+          communityId,
+          userId: c.get("user").id,
+          location: lat !== undefined && lng !== undefined ? { lat, lng } : undefined,
+          now: getNow(),
+        },
+        getProfilePhotoStorage,
+      ),
       200,
     );
   });

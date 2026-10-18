@@ -16,7 +16,13 @@ import { and, asc, desc, eq, inArray, ne, sql } from "drizzle-orm";
 
 import { fuelEstimateFor, occupantsSharingFuel } from "./fuel-estimate";
 import { liveOfferIds } from "./live-location";
-import { destinationOf, loadOfferRoutes, matchOfferForNeed, toRideRequest } from "./search";
+import {
+  destinationOf,
+  loadOfferRoutes,
+  matchOfferForNeed,
+  routeOfMatch,
+  toRideRequest,
+} from "./search";
 import { getCommunityProfilePhotos, type ProfilePhotoStorageResolver } from "./profile-photos";
 import { currentDay, dayState, loadDays } from "./trip-days";
 import { canSeePlate, displayName, limaClock, seatsFree } from "./trip-rules";
@@ -338,6 +344,7 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
         priceCents: altOffer.priceCents,
         paymentMethods: altOffer.paymentMethods,
         live: altLive.has(altOffer.id),
+        ...routeOfMatch(altOffer, destination.id, m.meetingPointId),
         fuelEstimate: fuelEstimateFor({
           direction: altOffer.direction,
           originZoneId: altOffer.originZoneId,

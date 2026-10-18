@@ -1029,6 +1029,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/communities/{id}/live-alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    lat?: number | null;
+                    lng?: number | null;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Viajes de la comunidad cuyo conductor tiene Te Jalo en vivo ahora, el más cercano primero */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LiveAlertsResponse"];
+                    };
+                };
+                /** @description No hay sesión iniciada (`unauthorized`) */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description No es miembro de la comunidad (`community_membership_required`) */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/trips": {
         parameters: {
             query?: never;
@@ -2937,17 +2995,35 @@ export interface components {
             priceCents: number | null;
             paymentMethods: ("yape" | "cash")[];
             live: boolean;
+            routeMap: components["schemas"]["RouteMap"];
+            dropOffMeters: number | null;
         };
         FuelEstimate: {
             tripSoles: number;
             perOccupantSoles: number;
             occupants: number;
         } | null;
+        RouteMap: {
+            path: [
+                number,
+                number
+            ][];
+            approximate: boolean;
+            markers: {
+                /** @enum {string} */
+                role: "start" | "end" | "meeting";
+                name: string;
+                lat: number;
+                lng: number;
+                mine: boolean;
+            }[];
+        };
         SearchTripsRequest: {
             /** @enum {string} */
             direction: "outbound" | "return";
             originZoneId?: string;
             location?: components["schemas"]["LatLng"];
+            destination?: components["schemas"]["LatLng"];
             windowStart: string;
             windowEnd: string;
             daysOfWeek?: number[] | null;
@@ -3019,24 +3095,28 @@ export interface components {
             routeMap: components["schemas"]["RouteMap"];
             alternatives?: components["schemas"]["TripMatch"][];
         };
-        RouteMap: {
-            path: [
-                number,
-                number
-            ][];
-            approximate: boolean;
-            markers: {
-                /** @enum {string} */
-                role: "start" | "end" | "meeting";
-                name: string;
-                lat: number;
-                lng: number;
-                mine: boolean;
-            }[];
+        LiveAlertsResponse: {
+            alerts: components["schemas"]["LiveAlert"][];
         };
-        ShareLiveLocationRequest: {
-            lat: number;
-            lng: number;
+        LiveAlert: {
+            /** Format: uuid */
+            offerId: string;
+            driverName: string;
+            /** Format: uri */
+            driverPhotoUrl: string | null;
+            originZoneName: string;
+            destinationName: string;
+            /** @enum {string} */
+            direction: "outbound" | "return";
+            departureTime: string;
+            seatsFree: number;
+            priceCents: number | null;
+            paymentMethods: ("yape" | "cash")[];
+            distanceKm: number | null;
+        };
+        ShareLiveLocationRequest: components["schemas"]["LatLng"] & {
+            priceCents?: number | null;
+            paymentMethods?: ("yape" | "cash")[];
         };
         MyTripsResponse: {
             trips: components["schemas"]["MyTrip"][];

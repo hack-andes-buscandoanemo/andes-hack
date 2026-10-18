@@ -716,6 +716,8 @@ export const SearchTripsBodySchema = z
     originZoneId: z.string().min(1, "Selecciona tu zona.").optional(),
     // Where the person is now, from the device. Only used to pick the zone; never stored.
     location: LatLngSchema.optional(),
+    // Where the person is really going. Only used to rank and draw; never stored.
+    destination: LatLngSchema.optional(),
     windowStart: clockTime,
     windowEnd: clockTime,
     daysOfWeek: z
@@ -763,6 +765,28 @@ export const FuelEstimateSchema = z
   .nullable()
   .openapi("FuelEstimate");
 
+// The trip map (US-037): the route, the public meeting points and the two ends of the trip.
+// Never an address or a live position.
+export const RouteMapSchema = z
+  .object({
+    // [lat, lng] points of the line to draw.
+    path: z.array(z.tuple([z.number(), z.number()])),
+    // True when part of the line is straight because there is no street shape for it.
+    approximate: z.boolean(),
+    // Start, meeting points in the order the car reaches them, then the end.
+    markers: z.array(
+      z.object({
+        role: z.enum(["start", "end", "meeting"]),
+        name: z.string(),
+        lat: z.number(),
+        lng: z.number(),
+        // The person's own meeting point.
+        mine: z.boolean(),
+      }),
+    ),
+  })
+  .openapi("RouteMap");
+
 // Never carries plates, emails or exact locations: only what the result card shows.
 export const TripMatchSchema = z
   .object({
@@ -785,6 +809,11 @@ export const TripMatchSchema = z
     paymentMethods: z.array(PaymentMethodSchema),
     // The driver has Te Jalo on and the car's position is arriving right now.
     live: z.boolean(),
+    // The route of this trip with the person's meeting point, to draw start and end on a map.
+    routeMap: RouteMapSchema,
+    // How far from the person's destination point the car's route passes, in metres; null when
+    // the search had no destination point.
+    dropOffMeters: z.number().int().nullable(),
   })
   .openapi("TripMatch");
 
@@ -844,28 +873,6 @@ const BookingStatusSchema = z.enum([
   "completed",
   "no_show",
 ]);
-
-// The trip map (US-037): the route, the public meeting points and the two ends of the trip.
-// Never an address or a live position.
-export const RouteMapSchema = z
-  .object({
-    // [lat, lng] points of the line to draw.
-    path: z.array(z.tuple([z.number(), z.number()])),
-    // True when part of the line is straight because there is no street shape for it.
-    approximate: z.boolean(),
-    // Start, meeting points in the order the car reaches them, then the end.
-    markers: z.array(
-      z.object({
-        role: z.enum(["start", "end", "meeting"]),
-        name: z.string(),
-        lat: z.number(),
-        lng: z.number(),
-        // The person's own meeting point.
-        mine: z.boolean(),
-      }),
-    ),
-  })
-  .openapi("RouteMap");
 
 export const OfferDetailSchema = z
   .object({
@@ -937,7 +944,16 @@ export const LiveLocationSchema = z
   })
   .openapi("LiveLocation");
 
-export const ShareLiveLocationBodySchema = LatLngSchema.openapi("ShareLiveLocationRequest");
+// The driver sets or changes the price when turning Te Jalo on; later updates only move the car.
+export const ShareLiveLocationBodySchema = LatLngSchema.extend({
+  priceCents: z.number().int().min(0).max(20000).nullable().optional(),
+  paymentMethods: z.array(PaymentMethodSchema).max(2).optional(),
+})
+  .refine((data) => !data.priceCents || (data.paymentMethods?.length ?? 0) > 0, {
+    message: "Elige cómo se paga: Yape o efectivo.",
+    path: ["paymentMethods"],
+  })
+  .openapi("ShareLiveLocationRequest");
 
 export const shareLiveLocationRoute = createRoute({
   method: "post",
@@ -988,6 +1004,50 @@ export const getLiveLocationRoute = createRoute({
     },
     401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
     404: apiErrorResponse("El viaje no existe o no es de tu comunidad (`offer_not_found`)"),
+  },
+});
+
+// A trip whose driver has just turned Te Jalo on: shown to the community's passengers without
+// them searching.
+export const LiveAlertSchema = z
+  .object({
+    offerId: z.string().uuid(),
+    driverName: z.string(),
+    driverPhotoUrl: z.string().url().nullable(),
+    originZoneName: z.string(),
+    destinationName: z.string(),
+    direction: TripDirectionSchema,
+    departureTime: z.string(),
+    seatsFree: z.number().int(),
+    priceCents: z.number().int().nullable(),
+    paymentMethods: z.array(PaymentMethodSchema),
+    // Kilometres between the car and the person, when the person shared their location.
+    distanceKm: z.number().nullable(),
+  })
+  .openapi("LiveAlert");
+
+export const LiveAlertsResponseSchema = z
+  .object({ alerts: z.array(LiveAlertSchema) })
+  .openapi("LiveAlertsResponse");
+
+export const LiveAlertsQuerySchema = z.object({
+  lat: z.coerce.number().min(-90).max(90).optional(),
+  lng: z.coerce.number().min(-180).max(180).optional(),
+});
+
+export const listLiveAlertsRoute = createRoute({
+  method: "get",
+  path: "/communities/{id}/live-alerts",
+  tags: ["Ofertas"],
+  request: { params: JoinCommunityParamsSchema, query: LiveAlertsQuerySchema },
+  responses: {
+    200: {
+      description:
+        "Viajes de la comunidad cuyo conductor tiene Te Jalo en vivo ahora, el más cercano primero",
+      content: { "application/json": { schema: LiveAlertsResponseSchema } },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    403: apiErrorResponse("No es miembro de la comunidad (`community_membership_required`)"),
   },
 });
 
@@ -2134,6 +2194,7 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   searchTripsRoute,
   getLiveLocationRoute,
   getOfferDetailRoute,
+  listLiveAlertsRoute,
   shareLiveLocationRoute,
   stopLiveLocationRoute,
   listMyTripsRoute,

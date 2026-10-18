@@ -11,7 +11,7 @@ export function soles(cents: number) {
   return `S/ ${(cents / 100).toFixed(2)}`;
 }
 
-// The base price per seat the driver asks, and how it is paid: a figure to agree on, since
+// The price per seat the driver asks, and how it is paid: a figure to agree on, since
 // Te Jalo does not process the payment.
 export function TripPrice({
   priceCents,
@@ -21,7 +21,7 @@ export function TripPrice({
   paymentMethods: PaymentMethod[];
 }) {
   if (!priceCents) {
-    return <p className="text-sm font-medium">Sin precio base: lo acuerdan entre ustedes.</p>;
+    return <p className="text-sm font-medium">Sin precio fijado: lo acuerdan entre ustedes.</p>;
   }
   return (
     <p className="text-sm">

@@ -1008,6 +1008,15 @@
           },
           "live": {
             "type": "boolean"
+          },
+          "routeMap": {
+            "$ref": "#/components/schemas/RouteMap"
+          },
+          "dropOffMeters": {
+            "type": [
+              "integer",
+              "null"
+            ]
           }
         },
         "required": [
@@ -1027,7 +1036,9 @@
           "fuelEstimate",
           "priceCents",
           "paymentMethods",
-          "live"
+          "live",
+          "routeMap",
+          "dropOffMeters"
         ]
       },
       "FuelEstimate": {
@@ -1053,6 +1064,68 @@
           "occupants"
         ]
       },
+      "RouteMap": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          },
+          "approximate": {
+            "type": "boolean"
+          },
+          "markers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "start",
+                    "end",
+                    "meeting"
+                  ]
+                },
+                "name": {
+                  "type": "string"
+                },
+                "lat": {
+                  "type": "number"
+                },
+                "lng": {
+                  "type": "number"
+                },
+                "mine": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "role",
+                "name",
+                "lat",
+                "lng",
+                "mine"
+              ]
+            }
+          }
+        },
+        "required": [
+          "path",
+          "approximate",
+          "markers"
+        ]
+      },
       "SearchTripsRequest": {
         "type": "object",
         "properties": {
@@ -1068,6 +1141,9 @@
             "minLength": 1
           },
           "location": {
+            "$ref": "#/components/schemas/LatLng"
+          },
+          "destination": {
             "$ref": "#/components/schemas/LatLng"
           },
           "windowStart": {
@@ -1412,85 +1488,122 @@
           "routeMap"
         ]
       },
-      "RouteMap": {
+      "LiveAlertsResponse": {
         "type": "object",
         "properties": {
-          "path": {
+          "alerts": {
             "type": "array",
             "items": {
-              "type": "array",
-              "prefixItems": [
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "number"
-                }
-              ]
-            }
-          },
-          "approximate": {
-            "type": "boolean"
-          },
-          "markers": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "role": {
-                  "type": "string",
-                  "enum": [
-                    "start",
-                    "end",
-                    "meeting"
-                  ]
-                },
-                "name": {
-                  "type": "string"
-                },
-                "lat": {
-                  "type": "number"
-                },
-                "lng": {
-                  "type": "number"
-                },
-                "mine": {
-                  "type": "boolean"
-                }
-              },
-              "required": [
-                "role",
-                "name",
-                "lat",
-                "lng",
-                "mine"
-              ]
+              "$ref": "#/components/schemas/LiveAlert"
             }
           }
         },
         "required": [
-          "path",
-          "approximate",
-          "markers"
+          "alerts"
+        ]
+      },
+      "LiveAlert": {
+        "type": "object",
+        "properties": {
+          "offerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "driverName": {
+            "type": "string"
+          },
+          "driverPhotoUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          },
+          "originZoneName": {
+            "type": "string"
+          },
+          "destinationName": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "outbound",
+              "return"
+            ]
+          },
+          "departureTime": {
+            "type": "string"
+          },
+          "seatsFree": {
+            "type": "integer"
+          },
+          "priceCents": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "paymentMethods": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "yape",
+                "cash"
+              ]
+            }
+          },
+          "distanceKm": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "offerId",
+          "driverName",
+          "driverPhotoUrl",
+          "originZoneName",
+          "destinationName",
+          "direction",
+          "departureTime",
+          "seatsFree",
+          "priceCents",
+          "paymentMethods",
+          "distanceKm"
         ]
       },
       "ShareLiveLocationRequest": {
-        "type": "object",
-        "properties": {
-          "lat": {
-            "type": "number",
-            "minimum": -90,
-            "maximum": 90
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/LatLng"
           },
-          "lng": {
-            "type": "number",
-            "minimum": -180,
-            "maximum": 180
+          {
+            "type": "object",
+            "properties": {
+              "priceCents": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 20000
+              },
+              "paymentMethods": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "yape",
+                    "cash"
+                  ]
+                },
+                "maxItems": 2
+              }
+            }
           }
-        },
-        "required": [
-          "lat",
-          "lng"
         ]
       },
       "MyTripsResponse": {
@@ -4446,6 +4559,82 @@
           },
           "422": {
             "description": "El identificador no es válido (`validation_error`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/communities/{id}/live-alerts": {
+      "get": {
+        "tags": [
+          "Ofertas"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": -90,
+              "maximum": 90
+            },
+            "required": false,
+            "name": "lat",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": -180,
+              "maximum": 180
+            },
+            "required": false,
+            "name": "lng",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Viajes de la comunidad cuyo conductor tiene Te Jalo en vivo ahora, el más cercano primero",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveAlertsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No hay sesión iniciada (`unauthorized`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro de la comunidad (`community_membership_required`)",
             "content": {
               "application/json": {
                 "schema": {

@@ -2,6 +2,11 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+// Leaflet and the tile provider are the boundary: the fake draws nothing.
+vi.mock("@/components/leaflet-map", () => ({
+  drawRouteMap: () => () => {},
+}));
+
 const getMe = vi.fn();
 const listCommunityZones = vi.fn();
 const searchTrips = vi.fn();
@@ -57,6 +62,27 @@ const MATCH = {
   detourMinutes: 6,
   walkMinutes: 14,
   fuelEstimate: { tripSoles: 10.04, perOccupantSoles: 5.02, occupants: 2 },
+  priceCents: 500,
+  paymentMethods: ["yape" as const, "cash" as const],
+  live: false,
+  routeMap: {
+    path: [
+      [-12.078, -76.9173],
+      [-12.0975, -77.0376],
+    ],
+    approximate: false,
+    markers: [
+      { role: "start" as const, name: "La Molina", lat: -12.078, lng: -76.9173, mine: false },
+      {
+        role: "end" as const,
+        name: "Centro Empresarial Real",
+        lat: -12.0975,
+        lng: -77.0376,
+        mine: false,
+      },
+    ],
+  },
+  dropOffMeters: null,
 };
 
 beforeEach(() => {
@@ -437,7 +463,7 @@ describe("search page /buscar (US-013)", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Referencial. Te Jalo no cobra ni procesa pagos; cualquier aporte es voluntario y nunca mayor al costo.",
+        "Referencial. Te Jalo no cobra ni procesa pagos: el precio lo fija quien maneja y se paga directamente con Yape o efectivo.",
       ),
     ).toBeInTheDocument();
   });
@@ -499,7 +525,7 @@ describe("search page /buscar (US-013)", () => {
     expect(
       within(screen.getByRole("group", { name: "Destino" })).getByText("Centro Empresarial Real"),
     ).toBeInTheDocument();
-    expect(screen.getByText("No pedimos tu dirección exacta")).toBeInTheDocument();
+    expect(screen.getByText("No guardamos tu dirección exacta")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Invertir sentido" }));
     await user.selectOptions(screen.getByLabelText("Mi zona"), "san-borja");
@@ -575,7 +601,7 @@ describe("search page /buscar (US-013)", () => {
 
     await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
 
-    expect(screen.getByText("Selecciona tu zona.")).toBeInTheDocument();
+    expect(screen.getByText("Selecciona tu zona o usa tu ubicación.")).toBeInTheDocument();
     expect(searchTrips).not.toHaveBeenCalled();
   });
 
