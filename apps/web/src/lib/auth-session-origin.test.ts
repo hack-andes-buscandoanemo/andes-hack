@@ -7,16 +7,16 @@ afterEach(() => {
   vi.resetModules();
 });
 
-it("lets a signed-in browser join through the API origin that owns its session cookie", async () => {
+it("routes sign-in and community join through the same API origin", async () => {
   const apiOrigin = "http://127.0.0.1:3100";
-  const cookieOrigins = new Set<string>();
+  const signInOrigins = new Set<string>();
   vi.stubEnv("NEXT_PUBLIC_SERVER_URL", apiOrigin);
   vi.stubGlobal("fetch", async (input: RequestInfo | URL) => {
     const requestUrl = new URL(
       input instanceof Request ? input.url : String(input),
       window.location.origin,
     );
-    if (requestUrl.pathname.endsWith("/sign-in/email")) cookieOrigins.add(requestUrl.origin);
+    if (requestUrl.pathname.endsWith("/sign-in/email")) signInOrigins.add(requestUrl.origin);
     return Response.json({
       token: "test-session",
       user: { id: "test-user", email: "test@example.com" },
@@ -31,10 +31,11 @@ it("lets a signed-in browser join through the API origin that owns its session c
   ]);
   httpClient.defaults.adapter = async (config) => {
     const requestUrl = new URL(config.url ?? "", config.baseURL ?? apiOrigin);
+    const sameOriginAsSignIn = signInOrigins.has(requestUrl.origin);
     const response = {
       data: { joined: true, alreadyMember: false },
-      status: cookieOrigins.has(requestUrl.origin) ? 200 : 401,
-      statusText: cookieOrigins.has(requestUrl.origin) ? "OK" : "Unauthorized",
+      status: sameOriginAsSignIn ? 200 : 401,
+      statusText: sameOriginAsSignIn ? "OK" : "Unauthorized",
       headers: new AxiosHeaders(),
       config,
       request: {},
