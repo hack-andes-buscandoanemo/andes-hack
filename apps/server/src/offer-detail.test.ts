@@ -257,7 +257,44 @@ describe("GET /offers/{id} (US-014)", () => {
           },
         ],
       },
+      reportTargets: [],
     });
+  });
+
+  it("shows report targets only to trip participants and omits the current member", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const lucia = await createMember(alfa.id, "u-lucia", "Lucía");
+    const rosa = await createMember(alfa.id, "u-rosa", "Rosa");
+    const spectator = await createMember(alfa.id, "u-ana", "Ana");
+    const offer = await seedOffer(alfa.id, driver.id);
+    await bookSeat(offer, lucia.id, "accepted");
+    await bookSeat(offer, rosa.id, "accepted");
+
+    const reportTargetsFor = async (member: { id: string }) => {
+      const response = await requestAs(member, `/offers/${offer.id}`);
+      return ((await response.json()) as { reportTargets: { id: string; name: string }[] })
+        .reportTargets;
+    };
+
+    const driverTargets = await reportTargetsFor(driver);
+    const passengerTargets = await reportTargetsFor(lucia);
+
+    expect(driverTargets).toHaveLength(2);
+    expect(driverTargets).toEqual(
+      expect.arrayContaining([
+        { id: lucia.id, name: "Lucía" },
+        { id: rosa.id, name: "Rosa" },
+      ]),
+    );
+    expect(passengerTargets).toHaveLength(2);
+    expect(passengerTargets).toEqual(
+      expect.arrayContaining([
+        { id: driver.id, name: "Mateo" },
+        { id: rosa.id, name: "Rosa" },
+      ]),
+    );
+    expect(await reportTargetsFor(spectator)).toEqual([]);
   });
 
   it("estimates the fuel of the leg for the driver, the accepted passengers and the person looking", async () => {
@@ -765,17 +802,19 @@ describe("GET and POST /offers/{id}/messages (US-024)", () => {
     });
     expect(sent.status).toBe(201);
     expect(
-      ((await sent.json()) as { message: { body: string; senderName: string } }).message,
+      ((await sent.json()) as { message: { body: string; senderName: string; isOwn: boolean } })
+        .message,
     ).toMatchObject({
       body: "Estoy en el punto de encuentro",
       senderName: "Lucía R.",
       senderRole: "passenger",
+      isOwn: true,
     });
 
     const history = await requestAs(driver, `/offers/${offer.id}/messages`);
-    expect(((await history.json()) as { messages: Array<{ body: string }> }).messages).toHaveLength(
-      1,
-    );
+    expect(
+      ((await history.json()) as { messages: Array<{ body: string; isOwn: boolean }> }).messages,
+    ).toEqual([expect.objectContaining({ body: "Estoy en el punto de encuentro", isOwn: false })]);
     const passengerChats = (await (await requestAs(passenger, "/me/chats")).json()) as {
       chats: Array<{ offerId: string; role: string; meetingPointName: string | null }>;
     };
@@ -1337,6 +1376,31 @@ describe("DELETE /me (US-029)", () => {
 });
 
 describe("trip message cursor (US-024)", () => {
+  it("marks which messages belong to the current participant", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const passenger = await createMember(alfa.id, "u-lucia", "Lucía");
+    const offer = await seedOffer(alfa.id, driver.id);
+    await bookSeat(offer, passenger.id, "accepted");
+    const driverMessageId = "11111111-1111-4111-8111-111111111111";
+    const passengerMessageId = "22222222-2222-4222-8222-222222222222";
+    await testDb.insert(tripMessage).values([
+      { id: driverMessageId, offerId: offer.id, senderId: driver.id, body: "Primero" },
+      { id: passengerMessageId, offerId: offer.id, senderId: passenger.id, body: "Segundo" },
+    ]);
+
+    const response = await requestAs(passenger, `/offers/${offer.id}/messages`);
+    const body = (await response.json()) as {
+      messages: { id: string; isOwn: boolean }[];
+    };
+
+    expect(body.messages.map(({ id, isOwn }) => ({ id, isOwn }))).toEqual([
+      { id: driverMessageId, isOwn: false },
+      { id: passengerMessageId, isOwn: true },
+    ]);
+    expect(JSON.stringify(body)).not.toContain("senderId");
+  });
+
   it("returns messages after an exact cursor when timestamps match", async () => {
     const alfa = await createCommunity("comunidad-alfa");
     const driver = await createMember(alfa.id, "u-mateo", "Mateo");

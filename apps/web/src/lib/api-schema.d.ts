@@ -2100,6 +2100,213 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/incident-reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["CreateIncidentReportBody"];
+                };
+            };
+            responses: {
+                /** @description Reporte de incidente recibido */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CreateIncidentReportResponse"];
+                    };
+                };
+                /** @description Se requiere iniciar sesión */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description La persona no participó en el viaje */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Los datos del reporte no son válidos */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/communities/{id}/incident-reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Reportes visibles solo para administradores de la comunidad */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["IncidentReportsResponse"];
+                    };
+                };
+                /** @description Se requiere iniciar sesión */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Solo los administradores de la comunidad pueden ver los reportes */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description El identificador de la comunidad no es válido */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incident-reports/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["ReviewIncidentReportBody"];
+                };
+            };
+            responses: {
+                /** @description El reporte quedó marcado como revisado */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ReviewIncidentReportResponse"];
+                    };
+                };
+                /** @description Se requiere iniciar sesión */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Solo un administrador de la comunidad puede revisar el reporte */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description El reporte no existe */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Los datos del reporte no son válidos */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
     "/bookings/{id}/share-links": {
         parameters: {
             query?: never;
@@ -2581,6 +2788,10 @@ export interface components {
             /** @enum {string} */
             status: "active" | "paused" | "cancelled";
             driverName: string;
+            reportTargets: {
+                id: string;
+                name: string;
+            }[];
             /** Format: uri */
             driverPhotoUrl: string | null;
             communityName: string;
@@ -2894,6 +3105,7 @@ export interface components {
             messages: {
                 /** Format: uuid */
                 id: string;
+                isOwn: boolean;
                 senderName: string;
                 /** Format: uri */
                 senderPhotoUrl: string | null;
@@ -2910,6 +3122,7 @@ export interface components {
             message: {
                 /** Format: uuid */
                 id: string;
+                isOwn: boolean;
                 senderName: string;
                 /** Format: uri */
                 senderPhotoUrl: string | null;
@@ -2966,6 +3179,7 @@ export interface components {
                 coverage: number | null;
                 acceptedRequests: number;
                 completedTrips: number;
+                incidentReports: number | null;
             };
             waitlist: {
                 institutions: number;
@@ -3006,6 +3220,59 @@ export interface components {
                 induced: number;
                 net: number;
             };
+        };
+        CreateIncidentReportResponse: {
+            /** @enum {boolean} */
+            success: true;
+            /** @enum {number} */
+            status: 201;
+            data: {
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                status: "open" | "reviewed";
+                /** Format: date-time */
+                createdAt: string;
+            };
+        };
+        CreateIncidentReportBody: {
+            /** Format: uuid */
+            offerId: string;
+            /** @enum {string} */
+            type: "harassment" | "dangerous_driving" | "no_show" | "inappropriate_behavior" | "other";
+            description?: string;
+            reportedUserId?: string;
+            /** Format: uuid */
+            messageId?: string;
+        };
+        IncidentReportsResponse: {
+            reports: {
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                offerId: string;
+                reportedUserId: string | null;
+                reportedUserName: string | null;
+                /** Format: uuid */
+                messageId: string | null;
+                /** @enum {string} */
+                type: "harassment" | "dangerous_driving" | "no_show" | "inappropriate_behavior" | "other";
+                description: string | null;
+                /** @enum {string} */
+                status: "open" | "reviewed";
+                /** Format: date-time */
+                createdAt: string;
+            }[];
+        };
+        ReviewIncidentReportResponse: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: "reviewed";
+        };
+        ReviewIncidentReportBody: {
+            /** @enum {string} */
+            status: "reviewed";
         };
         CreateShareLinkResponse: {
             /** Format: uuid */

@@ -303,6 +303,7 @@ export async function getTripMessages(
     },
     messages: messages.map((message) => ({
       id: message.id,
+      isOwn: message.senderId === input.userId,
       senderName: message.senderAlias ?? message.senderAccountName,
       senderPhotoUrl: photoUrls.get(message.senderId) ?? null,
       senderRole: message.senderId === driverId ? ("driver" as const) : ("passenger" as const),
@@ -342,6 +343,7 @@ export async function sendTripMessage(
   return {
     message: {
       id: row!.id,
+      isOwn: true,
       senderName: sender?.alias ?? sender?.name ?? "Miembro",
       senderPhotoUrl: photoUrls.get(input.userId) ?? null,
       senderRole: conversation.role,

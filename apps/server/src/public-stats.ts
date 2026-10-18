@@ -1,6 +1,7 @@
 import { publicStatsRoute, type PublicStatsSchema } from "@andes-hack/api";
 import type * as schema from "@andes-hack/db/schema/index";
 import { community, communityMember } from "@andes-hack/db/schema/community";
+import { incidentReport } from "@andes-hack/db/schema/incident-report";
 import { tripOffer } from "@andes-hack/db/schema/trips";
 import { measureImpact } from "@andes-hack/matching";
 import { OpenAPIHono, type z } from "@hono/zod-openapi";
@@ -99,6 +100,11 @@ export function createPublicStatsRoutes(deps: PublicStatsDeps = {}) {
           eq(tripOffer.driverWasTeam, false),
         ),
       );
+    const [reportCount] = await db
+      .select({ total: count() })
+      .from(incidentReport)
+      .where(eq(incidentReport.communityId, org.id));
+    const incidentReports = reportCount?.total ?? 0;
     const activity = await loadCommunityActivity(db, org, getNow());
     const impact = measureImpact(activity);
     const completedTrips = activity.offers
@@ -119,6 +125,7 @@ export function createPublicStatsRoutes(deps: PublicStatsDeps = {}) {
         coverage: impact.coverage,
         acceptedRequests: impact.peopleTransported,
         completedTrips,
+        incidentReports: incidentReports > 0 && incidentReports < 10 ? null : incidentReports,
       },
       waitlist: await waitlistTotals(db),
       comparison: await loadPublicComparison(db, org.id),

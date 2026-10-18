@@ -123,18 +123,59 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
       status: seatBooking.status,
       meetingPointId: seatBooking.meetingPointId,
       pickupAt: seatBooking.pickupAt,
+      passengerAlias: communityMember.alias,
+      passengerAccountName: userTable.name,
     })
     .from(seatBooking)
+    .innerJoin(userTable, eq(seatBooking.passengerId, userTable.id))
+    .leftJoin(
+      communityMember,
+      and(
+        eq(communityMember.userId, seatBooking.passengerId),
+        eq(communityMember.communityId, row.communityId),
+      ),
+    )
     .where(
       and(
         eq(seatBooking.offerId, row.id),
-        inArray(seatBooking.status, ["pending", "accepted", "rejected", "cancelled_by_driver"]),
+        inArray(seatBooking.status, [
+          "pending",
+          "accepted",
+          "rejected",
+          "cancelled_by_driver",
+          "completed",
+          "no_show",
+        ]),
       ),
     )
     .orderBy(desc(seatBooking.createdAt));
   const isOwn = row.driverId === input.userId;
   const mine = bookings.find((booking) => booking.passengerId === input.userId);
   const acceptedCount = bookings.filter((booking) => booking.status === "accepted").length;
+  const canReport = isOwn || ["accepted", "completed", "no_show"].includes(mine?.status ?? "");
+  const reportTargets = canReport
+    ? [
+        ...(isOwn
+          ? []
+          : [{ id: row.driverId!, name: displayName(row.driverAlias, row.accountName) }]),
+        ...new Map(
+          bookings
+            .filter(
+              (booking) =>
+                booking.passengerId !== null &&
+                booking.passengerId !== input.userId &&
+                ["accepted", "completed", "no_show"].includes(booking.status),
+            )
+            .map((booking) => [
+              booking.passengerId,
+              {
+                id: booking.passengerId!,
+                name: displayName(booking.passengerAlias, booking.passengerAccountName),
+              },
+            ]),
+        ).values(),
+      ]
+    : [];
 
   const destination = destinationOf(row);
   // The person's open need in this direction, saved by their last search.
@@ -166,6 +207,7 @@ async function loadOfferDetail(database: Database, input: { offerId: string; use
     offerId: row.id,
     status: row.status,
     driverName: displayName(row.driverAlias, row.accountName),
+    reportTargets,
     communityName: row.communityName,
     originZoneName: row.originZoneName,
     destinationName: destination.name,

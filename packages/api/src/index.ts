@@ -6,6 +6,7 @@ export const OPENAPI_TAGS = [
   { name: "Búsqueda", description: "Búsqueda de viajes compatibles para pasajeros" },
   { name: "Solicitudes", description: "Solicitudes de asiento y confirmación de pasajeros" },
   { name: "Emparejamiento", description: "Compatibilidad de rutas, horarios y gasto compartido" },
+  { name: "Seguridad", description: "Reportes de incidentes y gestión comunitaria" },
   { name: "Público", description: "Rutas públicas y estado del servicio" },
 ] as const;
 
@@ -835,6 +836,7 @@ export const OfferDetailSchema = z
     // Only an active trip can be requested; paused and cancelled trips are unavailable.
     status: z.enum(["active", "paused", "cancelled"]),
     driverName: z.string(),
+    reportTargets: z.array(z.object({ id: z.string(), name: z.string() })),
     driverPhotoUrl: z.string().url().nullable(),
     communityName: z.string(),
     originZoneName: z.string(),
@@ -1195,6 +1197,7 @@ export const TripMessageBodySchema = z.union([
 
 export const TripMessageSchema = z.object({
   id: z.string().uuid(),
+  isOwn: z.boolean(),
   senderName: z.string(),
   senderPhotoUrl: z.string().url().nullable(),
   senderRole: z.enum(["driver", "passenger"]),
@@ -1704,6 +1707,8 @@ export const PublicStatsSchema = z
       coverage: z.number().nullable(),
       acceptedRequests: z.number().int(),
       completedTrips: z.number().int(),
+      // Counts from 1 through 9 are suppressed to avoid exposing small groups.
+      incidentReports: z.number().int().nullable(),
     }),
     waitlist: z.object({ institutions: z.number().int(), individuals: z.number().int() }),
     comparison: z
@@ -1739,6 +1744,131 @@ export const publicStatsRoute = createRoute({
     404: apiErrorResponse("Comunidad no encontrada"),
     422: apiErrorResponse("El identificador de la comunidad no es válido"),
     429: apiErrorResponse("Demasiadas consultas desde la misma IP"),
+  },
+});
+
+export const IncidentReportTypeSchema = z.enum([
+  "harassment",
+  "dangerous_driving",
+  "no_show",
+  "inappropriate_behavior",
+  "other",
+]);
+
+export const IncidentReportStatusSchema = z.enum(["open", "reviewed"]);
+
+export const CreateIncidentReportBodySchema = z
+  .object({
+    offerId: z.string().uuid(),
+    type: IncidentReportTypeSchema,
+    description: z.string().max(1000).optional(),
+    reportedUserId: z.string().min(1).optional(),
+    messageId: z.string().uuid().optional(),
+  })
+  .openapi("CreateIncidentReportBody");
+
+export const CreateIncidentReportResponseSchema = z
+  .object({
+    success: z.literal(true),
+    status: z.literal(201),
+    data: z.object({
+      id: z.string().uuid(),
+      status: IncidentReportStatusSchema,
+      createdAt: z.string().datetime(),
+    }),
+  })
+  .openapi("CreateIncidentReportResponse");
+
+export const createIncidentReportRoute = createRoute({
+  method: "post",
+  path: "/incident-reports",
+  tags: ["Seguridad"],
+  request: {
+    body: { content: { "application/json": { schema: CreateIncidentReportBodySchema } } },
+  },
+  responses: {
+    201: {
+      description: "Reporte de incidente recibido",
+      content: { "application/json": { schema: CreateIncidentReportResponseSchema } },
+    },
+    401: {
+      description: "Se requiere iniciar sesión",
+      content: { "application/json": { schema: ApiErrorSchema } },
+    },
+    403: {
+      description: "La persona no participó en el viaje",
+      content: { "application/json": { schema: ApiErrorSchema } },
+    },
+    422: {
+      description: "Los datos del reporte no son válidos",
+      content: { "application/json": { schema: ApiErrorSchema } },
+    },
+  },
+});
+
+export const IncidentReportsResponseSchema = z
+  .object({
+    reports: z.array(
+      z.object({
+        id: z.string().uuid(),
+        offerId: z.string().uuid(),
+        reportedUserId: z.string().nullable(),
+        reportedUserName: z.string().nullable(),
+        messageId: z.string().uuid().nullable(),
+        type: IncidentReportTypeSchema,
+        description: z.string().nullable(),
+        status: IncidentReportStatusSchema,
+        createdAt: z.string().datetime(),
+      }),
+    ),
+  })
+  .openapi("IncidentReportsResponse");
+
+export const listCommunityIncidentReportsRoute = createRoute({
+  method: "get",
+  path: "/communities/{id}/incident-reports",
+  tags: ["Seguridad"],
+  request: { params: JoinCommunityParamsSchema },
+  responses: {
+    200: {
+      description: "Reportes visibles solo para administradores de la comunidad",
+      content: { "application/json": { schema: IncidentReportsResponseSchema } },
+    },
+    401: apiErrorResponse("Se requiere iniciar sesión"),
+    403: apiErrorResponse("Solo los administradores de la comunidad pueden ver los reportes"),
+    422: apiErrorResponse("El identificador de la comunidad no es válido"),
+  },
+});
+
+export const reviewIncidentReportRoute = createRoute({
+  method: "patch",
+  path: "/incident-reports/{id}",
+  tags: ["Seguridad"],
+  request: {
+    params: JoinCommunityParamsSchema,
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({ status: z.literal("reviewed") }).openapi("ReviewIncidentReportBody"),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "El reporte quedó marcado como revisado",
+      content: {
+        "application/json": {
+          schema: z
+            .object({ id: z.string().uuid(), status: z.literal("reviewed") })
+            .openapi("ReviewIncidentReportResponse"),
+        },
+      },
+    },
+    401: apiErrorResponse("Se requiere iniciar sesión"),
+    403: apiErrorResponse("Solo un administrador de la comunidad puede revisar el reporte"),
+    404: apiErrorResponse("El reporte no existe"),
+    422: apiErrorResponse("Los datos del reporte no son válidos"),
   },
 });
 
@@ -1920,6 +2050,9 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   joinWaitlistRoute,
   waitlistSummaryRoute,
   publicStatsRoute,
+  createIncidentReportRoute,
+  listCommunityIncidentReportsRoute,
+  reviewIncidentReportRoute,
   createShareLinkRoute,
   revokeShareLinkRoute,
   sharedTripRoute,
