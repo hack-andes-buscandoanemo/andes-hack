@@ -234,7 +234,7 @@ describe("active seat bookings", () => {
     );
   });
 
-  it.each(["rejected", "cancelled_by_passenger", "cancelled_by_driver"] as const)(
+  it.each(["cancelled_by_passenger", "cancelled_by_driver"] as const)(
     "lets the passenger request the offer again after a %s booking",
     async (status) => {
       const seat = await givenPassengerForOffer();
@@ -246,6 +246,16 @@ describe("active seat bookings", () => {
       expect(retry.status).toBe("pending");
     },
   );
+
+  it("does not let the passenger request the offer again after a rejected booking", async () => {
+    const seat = await givenPassengerForOffer();
+    const earlier = await requestSeat(seat);
+    await db.update(seatBooking).set({ status: "rejected" }).where(eq(seatBooking.id, earlier.id));
+
+    await expect(requestSeat(seat)).rejects.toMatchObject(
+      uniqueViolation("seat_booking_active_passenger_idx"),
+    );
+  });
 
   it("rejects an active booking without a passenger", async () => {
     const seat = await givenPassengerForOffer();
