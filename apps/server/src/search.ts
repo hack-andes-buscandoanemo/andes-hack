@@ -210,7 +210,10 @@ export async function searchTrips(
   const destination = destinationOf(destinationRow);
 
   const [passenger] = await database
-    .select({ identifiesAsWoman: communityMember.identifiesAsWoman })
+    .select({
+      identifiesAsWoman: communityMember.identifiesAsWoman,
+      womenOnly: communityMember.womenOnly,
+    })
     .from(communityMember)
     .where(and(eq(communityMember.communityId, communityId), eq(communityMember.userId, userId)))
     .limit(1);
@@ -221,7 +224,8 @@ export async function searchTrips(
     });
   }
 
-  if (body.womenOnly && !passenger.identifiesAsWoman) {
+  const womenOnly = body.womenOnly ?? passenger.womenOnly;
+  if (womenOnly && !passenger.identifiesAsWoman) {
     throw new ApiError(
       403,
       "Esta preferencia solo está disponible para quienes la activaron en su perfil.",
@@ -262,7 +266,7 @@ export async function searchTrips(
   const request = toRideRequest(body, {
     userId,
     communityId,
-    womenOnly: body.womenOnly,
+    womenOnly,
     passengerIsWoman: passenger.identifiesAsWoman,
   });
 

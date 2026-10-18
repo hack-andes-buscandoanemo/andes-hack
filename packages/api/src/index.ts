@@ -598,7 +598,8 @@ export const SearchTripsBodySchema = z
       .optional(),
     maxWalkMinutes: z.number().int().min(1).max(30).default(15),
     fallbackMode: FallbackModeSchema,
-    womenOnly: z.boolean().default(false),
+    // Left out, the person's "Solo mujeres" preference from their profile applies.
+    womenOnly: z.boolean().optional(),
   })
   .refine((data) => Boolean(data.date) !== Boolean(data.daysOfWeek && data.daysOfWeek.length > 0), {
     message: "Elige una fecha puntual o días habituales, pero no ambos.",
