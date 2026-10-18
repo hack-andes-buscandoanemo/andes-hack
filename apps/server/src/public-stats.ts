@@ -14,6 +14,7 @@ import {
 } from "./community-activity";
 import { clientIp } from "./lib/client-ip";
 import { logEvent } from "./lib/logger";
+import { safeLimit } from "./lib/safe-limit";
 import { ApiError } from "./utils/api-response";
 import { errorHandler, validationHook } from "./utils/error-handler";
 import { waitlistTotals } from "./waitlist";
@@ -140,12 +141,7 @@ export function createPublicStatsRoutes(deps: PublicStatsDeps = {}) {
   app.openapi(publicStatsRoute, async (c) => {
     const ip = clientIp(c);
     // Redis down must not take the panel down: without a verdict the request goes through.
-    const allowed = ip
-      ? await limit(`public-stats:${ip}`).catch(() => {
-          logEvent("public_stats_rate_limit_unavailable");
-          return { success: true, reset: 0 };
-        })
-      : { success: true, reset: 0 };
+    const allowed = ip ? await safeLimit(limit, `public-stats:${ip}`) : { success: true, reset: 0 };
     if (!allowed.success) {
       c.header(
         "Retry-After",

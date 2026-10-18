@@ -78,6 +78,20 @@ async function summary(app: ReturnType<typeof waitlistApp>) {
 }
 
 describe("POST /public/waitlist (US-033)", () => {
+  it("still takes the signup when the rate limiter is down", async () => {
+    const down: NonNullable<WaitlistDeps["limit"]> = async () => {
+      throw new Error("Redis unavailable");
+    };
+
+    const response = await waitlistApp(down).request("/public/waitlist", {
+      method: "POST",
+      headers: { "content-type": "application/json", "cf-connecting-ip": "203.0.113.7" },
+      body: JSON.stringify(pilotRequest),
+    });
+
+    expect(response.status).toBe(201);
+  });
+
   it("registers an institution that asks for a pilot and counts it, without showing emails", async () => {
     const app = waitlistApp();
 

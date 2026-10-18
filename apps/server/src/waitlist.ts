@@ -6,6 +6,7 @@ import { count } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 
 import { clientIp } from "./lib/client-ip";
+import { safeLimit } from "./lib/safe-limit";
 import { ApiError } from "./utils/api-response";
 import { errorHandler, validationHook } from "./utils/error-handler";
 
@@ -45,7 +46,7 @@ export function createWaitlistRoutes(deps: WaitlistDeps = {}) {
 
   app.openapi(joinWaitlistRoute, async (c) => {
     const ip = clientIp(c);
-    const allowed = ip ? await limit(`waitlist:${ip}`) : { success: true, reset: 0 };
+    const allowed = ip ? await safeLimit(limit, `waitlist:${ip}`) : { success: true, reset: 0 };
     if (!allowed.success) {
       c.header("Retry-After", String(Math.max(1, Math.ceil((allowed.reset - Date.now()) / 1000))));
       throw new ApiError(429, "Inténtalo en unos minutos.", { code: "too_many_waitlist_entries" });
