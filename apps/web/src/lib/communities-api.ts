@@ -28,6 +28,8 @@ export type MatchSuggestion = components["schemas"]["MatchSuggestion"];
 export type MatchProposal = components["schemas"]["MatchProposal"];
 
 export type PublicStats = components["schemas"]["PublicStats"];
+export type CreateShareLinkResponse = components["schemas"]["CreateShareLinkResponse"];
+export type SharedTrip = components["schemas"]["SharedTrip"];
 
 export const communitiesApi = {
   async listCommunities(): Promise<CommunitySummary[]> {
@@ -159,6 +161,19 @@ export const communitiesApi = {
     const response = await httpClient.post(
       `/bookings/${bookingId}/cancel` as "/bookings/{id}/cancel",
     );
+    return response.data;
+  },
+  async createShareLink(bookingId: string): Promise<CreateShareLinkResponse> {
+    const response = await httpClient.post(
+      `/bookings/${bookingId}/share-links` as "/bookings/{id}/share-links",
+    );
+    return response.data;
+  },
+  async revokeShareLink(linkId: string): Promise<void> {
+    await httpClient.delete(`/share-links/${linkId}` as "/share-links/{id}");
+  },
+  async getSharedTrip(token: string): Promise<SharedTrip> {
+    const response = await httpClient.get(`/public/share/${token}` as "/public/share/{token}");
     return response.data;
   },
   async runMatching(communityId: string, payload: RunMatchingRequest): Promise<MatchRunsResponse> {
