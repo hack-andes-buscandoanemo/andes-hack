@@ -19,6 +19,7 @@ import { meetingPoint, zone } from "@andes-hack/db/schema/places";
 import { seatBooking, tripOffer, tripRequest } from "@andes-hack/db/schema/trips";
 import { vehicle } from "@andes-hack/db/schema/vehicle";
 import { createTestDb } from "@andes-hack/db/test-db";
+import { eq } from "drizzle-orm";
 
 import { createApp } from "./index";
 
@@ -233,9 +234,10 @@ describe("GET /communities/{id}/me/impact", () => {
   it("counts a ride with a team driver on the passenger's own profile", async () => {
     const org = await seedWorld();
     const team = await createMember(org.id, "driver-team", "Equipo Te Jalo");
-    await testDb.update(communityMember).set({ isTeam: true });
     const ana = await createMember(org.id, "pax-ana", "Ana Torres");
-    await ride(await createOffer(org.id, team.id), ana.id, "drive_alone");
+    const offer = await createOffer(org.id, team.id);
+    await testDb.update(tripOffer).set({ driverWasTeam: true }).where(eq(tripOffer.id, offer.id));
+    await ride(offer, ana.id, "drive_alone");
 
     const { body } = await myImpact(ana, org.id);
 
