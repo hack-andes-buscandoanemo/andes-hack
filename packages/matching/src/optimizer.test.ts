@@ -10,10 +10,12 @@ const places = [
   { id: "san-borja", lat: -12.107075, lng: -76.9988421 },
   { id: "centro-empresarial-real", lat: -12.0975459, lng: -77.0375707 },
   { id: "san-borja-municipalidad", lat: -12.1071567, lng: -76.9991313 },
+  { id: "la-molina-plaza-de-armas", lat: -12.0780067, lng: -76.917343 },
 ];
 
-// From the San Borja zone the municipalidad is 0.56 min away on foot.
-const meetingPointIds = ["san-borja-municipalidad"];
+// From the San Borja zone the municipalidad is 0.56 min away on foot; the plaza de armas
+// is next to the La Molina zone.
+const meetingPointIds = ["san-borja-municipalidad", "la-molina-plaza-de-armas"];
 
 const freeFlow: Record<string, number> = {
   "la-molina>centro-empresarial-real": 20,
@@ -22,6 +24,12 @@ const freeFlow: Record<string, number> = {
   // Lucía drives from Surquillo: the municipalidad costs her 2 + 16 − 15 = 3 minutes.
   "surquillo>centro-empresarial-real": 15,
   "surquillo>san-borja-municipalidad": 2,
+  // Through the plaza de armas Carlos takes 1 + 22 = 23 min alone, 1 + 6 + 16 = 23 with
+  // the municipalidad after it, and much longer the other way round.
+  "la-molina>la-molina-plaza-de-armas": 1,
+  "la-molina-plaza-de-armas>centro-empresarial-real": 22,
+  "la-molina-plaza-de-armas>san-borja-municipalidad": 6,
+  "san-borja-municipalidad>la-molina-plaza-de-armas": 9,
 };
 
 const ids = places.map((place) => place.id);
@@ -123,5 +131,31 @@ describe("seats of a day assigned to maximise the car trips avoided", () => {
       ["bruno", "carlos"],
     ]);
     expect(plan.unassigned).toEqual([]);
+  });
+
+  it("reports each passenger's times on the final route, after everyone is seated", () => {
+    // Pedro costs Carlos 2 min and is seated first, picked up at 7:00 + 6 × 1.72 = 7:10.
+    // Sofía, 3 min alone, goes before him at the plaza: 7:00 + 1 × 1.72 = 7:02, which
+    // pushes Pedro to 7:00 + 7 × 1.72 = 7:12. Both arrive at 7:00 + 23 × 1.72 = 7:40.
+    const plan = optimizeDay(
+      {
+        date: monday,
+        offers: [offer({ maxDetourMinutes: 10 })],
+        requests: [request("pedro"), request("sofia", { originZoneId: "la-molina" })],
+      },
+      model,
+    );
+
+    expect(
+      plan.assignments.map(({ passengerId, meetingPointId, pickupAt, arrivalAt }) => [
+        passengerId,
+        meetingPointId,
+        pickupAt,
+        arrivalAt,
+      ]),
+    ).toEqual([
+      ["pedro", "san-borja-municipalidad", "07:12", "07:40"],
+      ["sofia", "la-molina-plaza-de-armas", "07:02", "07:40"],
+    ]);
   });
 });

@@ -122,6 +122,25 @@ function stopTimes(
   });
 }
 
+export interface StopTimes {
+  pickupAt: string;
+  arrivalAt: string;
+}
+
+// Every passenger's times on the route as it stands, in route order, on `day`.
+export function timetable(route: OfferRoute, day: string, model: TravelTimeModel): StopTimes[] {
+  const outbound = route.direction === "outbound";
+  const departure = minutesOfDay(route.departureTime);
+  const stops = route.passengers.map((passenger) => passenger.meetingPointId);
+  const times = stopTimes(route, stops, day, model);
+  const end = times.at(-1)!;
+  // On the way back passengers board at the destination and get off at their stop.
+  return times.slice(0, -1).map((stop) => ({
+    pickupAt: timeOfDay(outbound ? stop : departure),
+    arrivalAt: timeOfDay(outbound ? end : stop),
+  }));
+}
+
 function isoWeekday(date: string) {
   return new Date(`${date}T12:00:00Z`).getUTCDay() || 7;
 }

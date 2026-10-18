@@ -4,6 +4,7 @@ import {
   type OfferRoute,
   rankOffersForRequest,
   type RideRequest,
+  timetable,
 } from "./insertion";
 import { avoidsCarTrip, type FallbackMode } from "./metrics";
 import type { TravelTimeModel } from "./travel-time";
@@ -78,6 +79,11 @@ function seatsFirst(a: Candidate, b: Candidate) {
 
 export function optimizeDay(instance: DayInstance, model: TravelTimeModel): DayPlan {
   const routes = new Map(instance.offers.map((offer) => [offer.id, offer]));
+  // Who sits at each stop of a route, in its order: a request's id, or null for a
+  // passenger the driver had already accepted.
+  const riders = new Map(
+    instance.offers.map((offer) => [offer.id, offer.passengers.map((): string | null => null)]),
+  );
   const seated = new Map<string, Assignment>();
   let waiting = instance.requests;
 
@@ -105,6 +111,7 @@ export function optimizeDay(instance: DayInstance, model: TravelTimeModel): DayP
       ...route,
       passengers: route.passengers.toSpliced(best.position, 0, stop),
     });
+    riders.set(route.id, riders.get(route.id)!.toSpliced(best.position, 0, request.id));
     seated.set(request.id, {
       requestId: request.id,
       passengerId: request.passengerId,
@@ -119,6 +126,15 @@ export function optimizeDay(instance: DayInstance, model: TravelTimeModel): DayP
   }
 
   const offers = [...routes.values()];
+  // Seating someone ahead of a passenger delays them, so times come from the final routes.
+  for (const route of offers) {
+    const times = timetable(route, instance.date, model);
+    riders.get(route.id)!.forEach((requestId, stop) => {
+      const assignment = requestId === null ? undefined : seated.get(requestId);
+      if (assignment) seated.set(assignment.requestId, { ...assignment, ...times[stop]! });
+    });
+  }
+
   return {
     // In the order the requests came.
     assignments: instance.requests.flatMap((request) => seated.get(request.id) ?? []),
