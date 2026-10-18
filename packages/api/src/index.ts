@@ -251,6 +251,44 @@ export const updateMembershipRoute = createRoute({
   },
 });
 
+// "Me identifico como mujer" is only used for matching: no other person ever sees it.
+export const TravelPreferencesSchema = z
+  .object({
+    identifiesAsWoman: z.boolean(),
+    womenOnly: z.boolean(),
+  })
+  .openapi("TravelPreferences");
+
+export const TravelPreferencesResponseSchema = TravelPreferencesSchema.extend({
+  message: z.string(),
+}).openapi("TravelPreferencesResponse");
+
+export const updateTravelPreferencesRoute = createRoute({
+  method: "put",
+  path: "/communities/{id}/preferences",
+  tags: ["Comunidades"],
+  request: {
+    params: JoinCommunityParamsSchema,
+    body: {
+      content: {
+        "application/json": {
+          schema: TravelPreferencesSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Preferencias de viaje guardadas",
+      content: {
+        "application/json": {
+          schema: TravelPreferencesResponseSchema,
+        },
+      },
+    },
+  },
+});
+
 export function normalizePlate(raw: string): string {
   return raw.replace(/[\s-]+/g, "").toUpperCase();
 }
