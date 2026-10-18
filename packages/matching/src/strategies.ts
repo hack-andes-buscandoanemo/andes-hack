@@ -1,11 +1,28 @@
 import { rankOffersForRequest, timeRoute } from "./insertion";
 import { avoidsCarTrip } from "./metrics";
-import { type Assignment, type DayInstance, type DayPlan, optimizeDay } from "./optimizer";
+import {
+  type Assignment,
+  type ByFallback,
+  type DayInstance,
+  type DayPlan,
+  type DayRequest,
+  optimizeDay,
+} from "./optimizer";
 import type { TravelTimeModel } from "./travel-time";
 
 // What a WhatsApp group or an app that only filters does: each need, in the order it came,
 // takes the best offer still feasible, and nobody is moved afterwards.
+// The same grouping optimizeDay reports, so both plans read alike.
+function byFallback(requests: readonly DayRequest[]): ByFallback {
+  const wouldDrive = requests.filter((request) => avoidsCarTrip(request.fallbackMode)).length;
+  const publicTransport = requests.filter(
+    (request) => request.fallbackMode === "public_transport",
+  ).length;
+  return { wouldDrive, publicTransport, other: requests.length - wouldDrive - publicTransport };
+}
+
 export function firstComeFirstServed(instance: DayInstance, model: TravelTimeModel): DayPlan {
+  const start = performance.now();
   const routes = new Map(instance.offers.map((offer) => [offer.id, offer]));
   // Who sits at each stop of a route, in its order: a request's id, or null for a
   // passenger the driver had already accepted.
@@ -53,15 +70,28 @@ export function firstComeFirstServed(instance: DayInstance, model: TravelTimeMod
     if (ids.every((requestId) => requestId === null)) continue;
     // Someone seated later but ahead on the route delays those before: times and positions
     // come from the final route, as in optimizeDay.
-    const timing = timeRoute(routes.get(offer.id)!, instance.date, model);
+    const route = routes.get(offer.id)!;
+    const timing = timeRoute(route, instance.date, model);
     ids.forEach((requestId, stop) => {
       const assignment = requestId === null ? undefined : seated.get(requestId);
-      if (assignment)
-        seated.set(assignment.requestId, { ...assignment, ...timing.stops[stop]!, position: stop });
+      if (!assignment) return;
+      // As optimizeDay reports it: how much shorter the trip would be without this passenger.
+      const without = { ...route, passengers: route.passengers.toSpliced(stop, 1) };
+      const detourMinutes = Math.round(
+        timing.minutes - timeRoute(without, instance.date, model).minutes,
+      );
+      seated.set(assignment.requestId, {
+        ...assignment,
+        ...timing.stops[stop]!,
+        position: stop,
+        detourMinutes,
+      });
     });
     detourMinutes += Math.round(timing.minutes - timeRoute(offer, instance.date, model).minutes);
   }
   const assignments = instance.requests.flatMap((request) => seated.get(request.id) ?? []);
+  const matched = instance.requests.filter((request) => seated.has(request.id));
+  const waiting = instance.requests.filter((request) => !seated.has(request.id));
 
   return {
     assignments,
@@ -72,6 +102,8 @@ export function firstComeFirstServed(instance: DayInstance, model: TravelTimeMod
       detourMinutes,
       walkMinutes: assignments.reduce((sum, assignment) => sum + assignment.walkMinutes, 0),
     },
+    metrics: { matched: byFallback(matched), unassigned: byFallback(waiting) },
+    durationMs: Math.round(performance.now() - start),
   };
 }
 
