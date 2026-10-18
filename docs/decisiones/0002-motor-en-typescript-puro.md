@@ -9,7 +9,7 @@ El emparejamiento (tiempos en hora punta, punto de encuentro y desvío, asignaci
 
 ## Consecuencias
 
-- Escribimos nosotros la heurística: inserción por arrepentimiento (_regret insertion_) y luego una búsqueda local que mueve pasajeros entre autos mientras el objetivo mejora (`optimizer.ts`). No hay pasos aleatorios: la misma jornada da el mismo plan.
-- Al no ser un solver exacto, lo comparamos contra el óptimo: `scripts/exhaustive-optima.ts` prueba todas las asignaciones de 200 jornadas pequeñas y `optimizer-optimality.test.ts` exige que el optimizador nunca supere ese óptimo y lo alcance en al menos el 95 % de las jornadas.
-- El tiempo de la búsqueda local tiene un tope (`timeBudgetMs`); al vencer, se devuelve el mejor plan encontrado hasta entonces.
+- Escribimos nosotros la heurística: inserción por arrepentimiento (_regret insertion_) y luego una búsqueda local que mueve pasajeros entre autos mientras el objetivo mejora (`packages/matching/src/optimizer.ts`). No hay pasos aleatorios: si la búsqueda termina dentro de su tope de tiempo, la misma jornada da el mismo plan.
+- Al no ser un solver exacto, lo comparamos contra el óptimo: `packages/matching/scripts/exhaustive-optima.ts` prueba todas las asignaciones de 200 jornadas pequeñas y `packages/matching/src/optimizer-optimality.test.ts` exige que el optimizador nunca supere ese óptimo y lo alcance en al menos el 95 % de las jornadas.
+- El tiempo de la búsqueda local tiene un tope (`timeBudgetMs`); al vencer, se devuelve el mejor plan encontrado hasta entonces, que puede variar con la velocidad de la máquina.
 - La corrida de emparejamiento de la API (`apps/server/src/match-runs.ts`) llama a `compareStrategies`, que corre el optimizador y la estrategia "primero en llegar" (US-018) sobre la misma jornada. Si la escala lo pidiera, un solver externo podría reemplazar al optimizador detrás de esa misma función.

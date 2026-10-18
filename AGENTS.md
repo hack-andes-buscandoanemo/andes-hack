@@ -299,6 +299,8 @@ andes-hack/
 
 ### Stack Parts, ownership, and evidence
 
+> **Deriva conocida:** `bts.jsonc` aún lista `framer-motion` y `react-hook-form`, pero lo instalado en `apps/web/package.json` es `motion` y `@tanstack/react-form` (ver Tech Stack). Manda `package.json`; corrige el grafo con `create-better-fullstack` en vez de editar `bts.jsonc` a mano.
+
 - `backend.api:typescript:openapi`. It belongs to `backend:typescript:hono`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
 - `backend.auth:typescript:better-auth`. It belongs to `backend:typescript:hono`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
 - `backend.backendUtilities:typescript:backend-utils`. It belongs to `backend:typescript:hono`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.

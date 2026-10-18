@@ -238,7 +238,7 @@ Cada constante del motor y cada cifra que la app compara tiene una fuente (`dato
 
 **Estimado de combustible del ejemplo de Carlos** (15,77 km, `estimateFuelCost`): S/ 10,04 por viaje. Con el auto lleno (4 ocupantes) serían **S/ 2,51 por ocupante**, cerca del pasaje del Corredor Rojo (S/ 2,43). Con 2 ocupantes serían S/ 5,02. Es un estimado de gasolina: no incluye mantenimiento, estacionamiento ni peajes.
 
-Toda frase del README con una cifra debe enlazar a su fuente o a `/datos`; las que prometían más de lo que podemos respaldar ("garantiza", "más rápido") se corrigieron.
+**Regla del README:** toda cifra enlaza a su fuente o a `/datos`, y no prometemos lo que no podemos respaldar (ni "garantiza" ni "más rápido").
 
 ---
 
