@@ -16,10 +16,11 @@ vi.hoisted(() => {
 import { user } from "@andes-hack/db/schema/auth";
 import { community, communityMember } from "@andes-hack/db/schema/community";
 import { meetingPoint, zone } from "@andes-hack/db/schema/places";
-import { seatBooking, tripOffer, tripRequest } from "@andes-hack/db/schema/trips";
+import { seatBooking, tripOffer, tripRequest, tripShareLink } from "@andes-hack/db/schema/trips";
 import { vehicle } from "@andes-hack/db/schema/vehicle";
 import { createTestDb } from "@andes-hack/db/test-db";
 import { eq } from "drizzle-orm";
+import { createHash } from "node:crypto";
 
 import { createApp, type AppDeps } from "./index";
 
@@ -251,6 +252,16 @@ const UNAVAILABLE = {
 };
 
 describe("an unavailable link", () => {
+  it("keeps only the SHA-256 of the token, so the table cannot open a link", async () => {
+    const { passenger, booking } = await world();
+
+    const { token, id } = await (await shareAs(passenger, booking.id)).json();
+
+    const [stored] = await testDb.select().from(tripShareLink).where(eq(tripShareLink.id, id));
+    expect(stored!.tokenHash).not.toBe(token);
+    expect(stored!.tokenHash).toBe(createHash("sha256").update(token).digest("hex"));
+  });
+
   it("answers the same for a token that never existed", async () => {
     await world();
 
