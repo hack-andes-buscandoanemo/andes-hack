@@ -576,6 +576,7 @@ export const TripMatchSchema = z
   .object({
     offerId: z.string().uuid(),
     driverName: z.string(),
+    driverPhotoUrl: z.string().url().nullable(),
     originZoneName: z.string(),
     destinationName: z.string(),
     direction: TripDirectionSchema,

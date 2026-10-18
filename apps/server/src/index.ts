@@ -29,6 +29,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 import { sendEmail as defaultSendEmail, type SendEmailOptions } from "./lib/email";
+import { getDownloadUrl } from "./lib/storage";
 import {
   rateLimitMiddleware,
   requireOnboardedMember,
@@ -57,6 +58,7 @@ export type AppDeps = {
   otpRateLimit?: RateLimitCheck;
   sendEmail?: (options: SendEmailOptions) => Promise<unknown>;
   now?: () => Date;
+  getDownloadUrl?: typeof getDownloadUrl;
 };
 
 async function sha256Hex(value: string): Promise<string> {
@@ -108,6 +110,7 @@ export function createApp(deps: AppDeps = {}) {
   const database = deps.db ?? defaultDb;
   const emailSender = deps.sendEmail ?? defaultSendEmail;
   const getNow = deps.now ?? (() => new Date());
+  const signPhotoUrl = deps.getDownloadUrl ?? getDownloadUrl;
   const authInstance =
     deps.db || deps.sendEmail
       ? createAuth({
@@ -864,7 +867,7 @@ export function createApp(deps: AppDeps = {}) {
     const { id: communityId } = c.req.valid("param");
     const body = c.req.valid("json");
     return c.json(
-      await searchTrips(database, { communityId, userId: c.get("user").id, body }),
+      await searchTrips(database, { communityId, userId: c.get("user").id, body }, signPhotoUrl),
       200,
     );
   });

@@ -597,6 +597,10 @@
           "driverName": {
             "type": "string"
           },
+          "driverPhotoUrl": {
+            "type": ["string", "null"],
+            "format": "uri"
+          },
           "originZoneName": {
             "type": "string"
           },
@@ -632,6 +636,7 @@
         "required": [
           "offerId",
           "driverName",
+          "driverPhotoUrl",
           "originZoneName",
           "destinationName",
           "direction",

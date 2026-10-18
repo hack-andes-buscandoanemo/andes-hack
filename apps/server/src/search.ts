@@ -19,6 +19,7 @@ import { ApiError } from "./utils/api-response";
 
 type Database = typeof defaultDb;
 type SearchBody = z.infer<typeof SearchTripsBodySchema>;
+type PhotoUrlSigner = (key: string, options?: { expiresIn?: number }) => Promise<string>;
 
 const model = createTravelTimeModel();
 
@@ -36,6 +37,7 @@ function destinationOf(row: { destinationName: string }) {
 export async function searchTrips(
   database: Database,
   input: { communityId: string; userId: string; body: SearchBody },
+  signPhotoUrl: PhotoUrlSigner,
 ) {
   const { communityId, userId, body } = input;
   const [destinationRow] = await database
@@ -101,6 +103,7 @@ export async function searchTrips(
       womenOnly: tripOffer.womenOnly,
       driverName: communityMember.alias,
       accountName: userTable.name,
+      image: userTable.image,
       driverIsWoman: communityMember.identifiesAsWoman,
     })
     .from(tripOffer)
@@ -219,23 +222,26 @@ export async function searchTrips(
   return {
     requestId: saved!.id,
     reason: ranking.reason,
-    matches: ranking.matches.map((match) => {
-      const offer = byId.get(match.offerId)!;
-      return {
-        offerId: match.offerId,
-        driverName: offer.driverName ?? offer.accountName,
-        originZoneName: offer.originZoneName,
-        destinationName: destination.name,
-        direction: offer.direction,
-        departureTime: offer.departureTime,
-        // Same count the engine uses for its seat check: accepted passengers.
-        seatsFree: offer.seatsTotal - (acceptedByOffer.get(offer.id)?.length ?? 0),
-        meetingPointName: meetingPointNames.get(match.meetingPointId) ?? match.meetingPointId,
-        pickupAt: match.pickupAt,
-        arrivalAt: match.arrivalAt,
-        detourMinutes: match.detourMinutes,
-        walkMinutes: match.walkMinutes,
-      };
-    }),
+    matches: await Promise.all(
+      ranking.matches.map(async (match) => {
+        const offer = byId.get(match.offerId)!;
+        return {
+          offerId: match.offerId,
+          driverName: offer.driverName ?? offer.accountName,
+          driverPhotoUrl: offer.image ? await signPhotoUrl(offer.image, { expiresIn: 300 }) : null,
+          originZoneName: offer.originZoneName,
+          destinationName: destination.name,
+          direction: offer.direction,
+          departureTime: offer.departureTime,
+          // Same count the engine uses for its seat check: accepted passengers.
+          seatsFree: offer.seatsTotal - (acceptedByOffer.get(offer.id)?.length ?? 0),
+          meetingPointName: meetingPointNames.get(match.meetingPointId) ?? match.meetingPointId,
+          pickupAt: match.pickupAt,
+          arrivalAt: match.arrivalAt,
+          detourMinutes: match.detourMinutes,
+          walkMinutes: match.walkMinutes,
+        };
+      }),
+    ),
   };
 }

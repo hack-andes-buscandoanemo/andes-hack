@@ -800,6 +800,8 @@ export interface components {
       /** Format: uuid */
       offerId: string;
       driverName: string;
+      /** Format: uri */
+      driverPhotoUrl: string | null;
       originZoneName: string;
       destinationName: string;
       /** @enum {string} */

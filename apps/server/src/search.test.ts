@@ -218,6 +218,7 @@ describe("POST /communities/{id}/search (US-013)", () => {
       {
         offerId: offer!.id,
         driverName: "Mateo",
+        driverPhotoUrl: null,
         originZoneName: "La Molina",
         destinationName: "Centro Empresarial Real",
         direction: "outbound",
@@ -456,6 +457,32 @@ describe("POST /communities/{id}/search (US-013)", () => {
     const body = (await res.json()) as { matches: { driverName: string }[] };
     expect(body.matches.map((match) => match.driverName)).toEqual(["Mateo Q."]);
     expect(JSON.stringify(body)).not.toContain("mateo@alfa.pe");
+  });
+
+  it("returns a signed driver photo URL in community search results", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    await createZones();
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    await testDb.update(user).set({ image: "profiles/u-mateo.webp" }).where(eq(user.id, driver.id));
+    const passenger = await createMember(alfa.id, "u-lucia", "Lucía");
+    await morningOffer(alfa.id, driver.id);
+
+    const app = createApp({
+      db: testDb as never,
+      getSession: async () => ({ user: passenger }) as never,
+      rateLimit: async () => ({ success: true, reset: 0 }),
+      getDownloadUrl: async () => "https://photos.example.test/profile?signature=short",
+    });
+    const res = await app.request(`/communities/${alfa.id}/search`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(weekdayMorning),
+    });
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({
+      matches: [{ driverPhotoUrl: "https://photos.example.test/profile?signature=short" }],
+    });
   });
 
   it("refuses people who do not belong to the community, and people who are not signed in", async () => {
