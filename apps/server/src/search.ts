@@ -11,7 +11,7 @@ import {
   type OfferRoute,
   type RideRequest,
 } from "@andes-hack/matching";
-import { and, asc, eq, inArray, ne } from "drizzle-orm";
+import { and, asc, eq, inArray, ne, type SQL } from "drizzle-orm";
 import type { z } from "zod";
 
 import { logEvent } from "./lib/logger";
@@ -23,7 +23,7 @@ type SearchBody = z.infer<typeof SearchTripsBodySchema>;
 const model = createTravelTimeModel();
 
 // The community stores its destination as a name and coordinates; the engine knows it as a place.
-function destinationOf(row: { destinationName: string }) {
+export function destinationOf(row: { destinationName: string }) {
   const place = places.destinations.find((candidate) => candidate.name === row.destinationName);
   if (!place) {
     throw new ApiError(409, "La sede de esta comunidad todavía no se puede usar para buscar.", {
@@ -31,6 +31,163 @@ function destinationOf(row: { destinationName: string }) {
     });
   }
   return place;
+}
+
+// Every active-offer input the engine needs, with accepted passengers and the rejections of this person.
+export async function loadOfferRoutes(
+  database: Database,
+  input: {
+    where: SQL | undefined;
+    userId: string;
+    communityId: string;
+    destination: { id: string };
+  },
+) {
+  const { where, userId, communityId, destination } = input;
+  const rows = await database
+    .select({
+      id: tripOffer.id,
+      direction: tripOffer.direction,
+      originZoneId: tripOffer.originZoneId,
+      originZoneName: zone.name,
+      departureTime: tripOffer.departureTime,
+      date: tripOffer.date,
+      daysOfWeek: tripOffer.daysOfWeek,
+      seatsTotal: tripOffer.seatsTotal,
+      maxDetourMinutes: tripOffer.maxDetourMinutes,
+      womenOnly: tripOffer.womenOnly,
+      driverName: communityMember.alias,
+      accountName: userTable.name,
+      driverIsWoman: communityMember.identifiesAsWoman,
+    })
+    .from(tripOffer)
+    .innerJoin(zone, eq(tripOffer.originZoneId, zone.id))
+    .innerJoin(userTable, eq(tripOffer.driverId, userTable.id))
+    .innerJoin(
+      communityMember,
+      and(
+        eq(communityMember.userId, tripOffer.driverId),
+        eq(communityMember.communityId, tripOffer.communityId),
+      ),
+    )
+    .where(where);
+
+  // Accepted passengers hold seats and their windows still bind the driver.
+  // ponytail: ordered by pickup time then arrival of the booking; the stop position is not stored (US-014 may add it).
+  const accepted = rows.length
+    ? await database
+        .select({
+          offerId: seatBooking.offerId,
+          meetingPointId: seatBooking.meetingPointId,
+          windowStart: tripRequest.windowStart,
+          windowEnd: tripRequest.windowEnd,
+        })
+        .from(seatBooking)
+        .innerJoin(tripRequest, eq(seatBooking.requestId, tripRequest.id))
+        .where(
+          and(
+            inArray(
+              seatBooking.offerId,
+              rows.map((row) => row.id),
+            ),
+            eq(seatBooking.status, "accepted"),
+          ),
+        )
+        .orderBy(asc(seatBooking.pickupAt), asc(seatBooking.createdAt))
+    : [];
+
+  const rejected = rows.length
+    ? await database
+        .select({ offerId: seatBooking.offerId })
+        .from(seatBooking)
+        .where(
+          and(
+            inArray(
+              seatBooking.offerId,
+              rows.map((row) => row.id),
+            ),
+            eq(seatBooking.passengerId, userId),
+            eq(seatBooking.status, "rejected"),
+          ),
+        )
+    : [];
+  const acceptedByOffer = Map.groupBy(accepted, (booking) => booking.offerId);
+  const rejectedOffers = new Set(rejected.map((booking) => booking.offerId));
+  const routes: OfferRoute[] = rows.map((row) => ({
+    id: row.id,
+    communityId,
+    direction: row.direction,
+    originZoneId: row.originZoneId,
+    destinationId: destination.id,
+    departureTime: row.departureTime.slice(0, 5),
+    date: row.date,
+    daysOfWeek: row.daysOfWeek,
+    seatsTotal: row.seatsTotal,
+    maxDetourMinutes: row.maxDetourMinutes,
+    womenOnly: row.womenOnly,
+    driverIsWoman: row.driverIsWoman,
+    rejectedPassengerIds: rejectedOffers.has(row.id) ? [userId] : [],
+    passengers: (acceptedByOffer.get(row.id) ?? []).map((booking) => ({
+      meetingPointId: booking.meetingPointId,
+      windowStart: booking.windowStart.slice(0, 5),
+      windowEnd: booking.windowEnd.slice(0, 5),
+    })),
+  }));
+  return { rows, routes, acceptedByOffer };
+}
+
+// What a person asked for, as stored in a trip request or sent by the search form.
+type NeedFields = Pick<
+  typeof tripRequest.$inferSelect,
+  "direction" | "originZoneId" | "windowStart" | "windowEnd" | "maxWalkMinutes"
+> & { date?: string | null; daysOfWeek?: number[] | null };
+
+type MatchOfferInput = {
+  offerId: string;
+  communityId: string;
+  userId: string;
+  passengerIsWoman: boolean;
+  destination: { id: string };
+  need: NeedFields;
+};
+
+// The single place that turns a need into the engine's request (stored times may carry seconds).
+function toRideRequest(
+  need: NeedFields,
+  who: { userId: string; communityId: string; womenOnly: boolean; passengerIsWoman: boolean },
+): RideRequest {
+  return {
+    passengerId: who.userId,
+    communityId: who.communityId,
+    direction: need.direction,
+    originZoneId: need.originZoneId,
+    windowStart: need.windowStart.slice(0, 5),
+    windowEnd: need.windowEnd.slice(0, 5),
+    date: need.date ?? null,
+    daysOfWeek: need.daysOfWeek ?? null,
+    maxWalkMinutes: need.maxWalkMinutes,
+    womenOnly: who.womenOnly,
+    passengerIsWoman: who.passengerIsWoman,
+  };
+}
+
+// The engine's verdict on one offer for a saved need: the pickup it calculates, or null when it no longer fits.
+export async function matchOfferForNeed(database: Database, input: MatchOfferInput) {
+  const { need, userId, communityId } = input;
+  const { routes } = await loadOfferRoutes(database, {
+    where: and(eq(tripOffer.id, input.offerId), eq(tripOffer.status, "active")),
+    userId,
+    communityId,
+    destination: input.destination,
+  });
+  // ponytail: the saved need does not store the "Solo mujeres" preference; the offer's own flag still applies.
+  const request = toRideRequest(need, {
+    userId,
+    communityId,
+    womenOnly: false,
+    passengerIsWoman: input.passengerIsWoman,
+  });
+  return rankOffersForRequest(request, routes, model).matches[0] ?? null;
 }
 
 export async function searchTrips(
@@ -87,115 +244,23 @@ export async function searchTrips(
     maxWalkMinutes: body.maxWalkMinutes,
     fallbackMode: body.fallbackMode,
   };
-  const rows = await database
-    .select({
-      id: tripOffer.id,
-      direction: tripOffer.direction,
-      originZoneId: tripOffer.originZoneId,
-      originZoneName: zone.name,
-      departureTime: tripOffer.departureTime,
-      date: tripOffer.date,
-      daysOfWeek: tripOffer.daysOfWeek,
-      seatsTotal: tripOffer.seatsTotal,
-      maxDetourMinutes: tripOffer.maxDetourMinutes,
-      womenOnly: tripOffer.womenOnly,
-      driverName: communityMember.alias,
-      accountName: userTable.name,
-      driverIsWoman: communityMember.identifiesAsWoman,
-    })
-    .from(tripOffer)
-    .innerJoin(zone, eq(tripOffer.originZoneId, zone.id))
-    .innerJoin(userTable, eq(tripOffer.driverId, userTable.id))
-    .innerJoin(
-      communityMember,
-      and(
-        eq(communityMember.userId, tripOffer.driverId),
-        eq(communityMember.communityId, tripOffer.communityId),
-      ),
-    )
-    .where(
-      and(
-        eq(tripOffer.communityId, communityId),
-        eq(tripOffer.status, "active"),
-        ne(tripOffer.driverId, userId),
-      ),
-    );
-
-  // Accepted passengers hold seats and their windows still bind the driver.
-  // ponytail: ordered by pickup time then arrival of the booking; the stop position is not stored (US-014 may add it).
-  const accepted = rows.length
-    ? await database
-        .select({
-          offerId: seatBooking.offerId,
-          meetingPointId: seatBooking.meetingPointId,
-          windowStart: tripRequest.windowStart,
-          windowEnd: tripRequest.windowEnd,
-        })
-        .from(seatBooking)
-        .innerJoin(tripRequest, eq(seatBooking.requestId, tripRequest.id))
-        .where(
-          and(
-            inArray(
-              seatBooking.offerId,
-              rows.map((row) => row.id),
-            ),
-            eq(seatBooking.status, "accepted"),
-          ),
-        )
-        .orderBy(asc(seatBooking.pickupAt), asc(seatBooking.createdAt))
-    : [];
-
-  const rejected = rows.length
-    ? await database
-        .select({ offerId: seatBooking.offerId })
-        .from(seatBooking)
-        .where(
-          and(
-            inArray(
-              seatBooking.offerId,
-              rows.map((row) => row.id),
-            ),
-            eq(seatBooking.passengerId, userId),
-            eq(seatBooking.status, "rejected"),
-          ),
-        )
-    : [];
-
-  const request: RideRequest = {
-    passengerId: userId,
+  const { rows, routes, acceptedByOffer } = await loadOfferRoutes(database, {
     communityId,
-    direction: body.direction,
-    originZoneId: body.originZoneId,
-    windowStart: body.windowStart,
-    windowEnd: body.windowEnd,
-    date: body.date ?? null,
-    daysOfWeek: body.daysOfWeek ?? null,
-    maxWalkMinutes: body.maxWalkMinutes,
+    userId,
+    destination,
+    where: and(
+      eq(tripOffer.communityId, communityId),
+      eq(tripOffer.status, "active"),
+      ne(tripOffer.driverId, userId),
+    ),
+  });
+
+  const request = toRideRequest(body, {
+    userId,
+    communityId,
     womenOnly: body.womenOnly,
     passengerIsWoman: passenger.identifiesAsWoman,
-  };
-  const acceptedByOffer = Map.groupBy(accepted, (booking) => booking.offerId);
-  const rejectedOffers = new Set(rejected.map((booking) => booking.offerId));
-  const routes: OfferRoute[] = rows.map((row) => ({
-    id: row.id,
-    communityId,
-    direction: row.direction,
-    originZoneId: row.originZoneId,
-    destinationId: destination.id,
-    departureTime: row.departureTime.slice(0, 5),
-    date: row.date,
-    daysOfWeek: row.daysOfWeek,
-    seatsTotal: row.seatsTotal,
-    maxDetourMinutes: row.maxDetourMinutes,
-    womenOnly: row.womenOnly,
-    driverIsWoman: row.driverIsWoman,
-    rejectedPassengerIds: rejectedOffers.has(row.id) ? [userId] : [],
-    passengers: (acceptedByOffer.get(row.id) ?? []).map((booking) => ({
-      meetingPointId: booking.meetingPointId,
-      windowStart: booking.windowStart.slice(0, 5),
-      windowEnd: booking.windowEnd.slice(0, 5),
-    })),
-  }));
+  });
 
   const ranking = rankOffersForRequest(request, routes, model);
   const hadResults = ranking.matches.length > 0;

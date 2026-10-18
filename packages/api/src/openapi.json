@@ -47,10 +47,14 @@
         "properties": {
           "status": {
             "type": "string",
-            "enum": ["ok"]
+            "enum": [
+              "ok"
+            ]
           }
         },
-        "required": ["status"]
+        "required": [
+          "status"
+        ]
       },
       "CommunitiesResponse": {
         "type": "object",
@@ -62,7 +66,9 @@
             }
           }
         },
-        "required": ["communities"]
+        "required": [
+          "communities"
+        ]
       },
       "CommunitySummary": {
         "type": "object",
@@ -76,7 +82,12 @@
           },
           "kind": {
             "type": "string",
-            "enum": ["company", "university", "public_entity", "event"]
+            "enum": [
+              "company",
+              "university",
+              "public_entity",
+              "event"
+            ]
           },
           "isDemo": {
             "type": "boolean"
@@ -85,17 +96,29 @@
             "type": "boolean"
           },
           "matchedEmailDomain": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
-        "required": ["id", "name", "kind", "isDemo", "hasEmailVerification", "matchedEmailDomain"]
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "isDemo",
+          "hasEmailVerification",
+          "matchedEmailDomain"
+        ]
       },
       "JoinCommunityResponse": {
         "type": "object",
         "properties": {
           "joined": {
             "type": "boolean",
-            "enum": [true]
+            "enum": [
+              true
+            ]
           },
           "alreadyMember": {
             "type": "boolean"
@@ -109,7 +132,10 @@
           },
           "verificationMethod": {
             "type": "string",
-            "enum": ["join_code", "email_domain"]
+            "enum": [
+              "join_code",
+              "email_domain"
+            ]
           },
           "isTeam": {
             "type": "boolean"
@@ -136,7 +162,9 @@
             "minLength": 1
           }
         },
-        "required": ["code"]
+        "required": [
+          "code"
+        ]
       },
       "MeResponse": {
         "type": "object",
@@ -155,7 +183,11 @@
                 "format": "email"
               }
             },
-            "required": ["id", "name", "email"]
+            "required": [
+              "id",
+              "name",
+              "email"
+            ]
           },
           "memberships": {
             "type": "array",
@@ -164,7 +196,10 @@
             }
           }
         },
-        "required": ["user", "memberships"]
+        "required": [
+          "user",
+          "memberships"
+        ]
       },
       "MembershipSummary": {
         "type": "object",
@@ -185,20 +220,35 @@
           },
           "role": {
             "type": "string",
-            "enum": ["member", "admin"]
+            "enum": [
+              "member",
+              "admin"
+            ]
           },
           "verificationMethod": {
             "type": "string",
-            "enum": ["join_code", "email_domain"]
+            "enum": [
+              "join_code",
+              "email_domain"
+            ]
           },
           "consentVersion": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "consentAt": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "usualMode": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "enum": [
               "drove_alone",
               "drove_with_others",
@@ -210,11 +260,22 @@
             ]
           },
           "travelRole": {
-            "type": ["string", "null"],
-            "enum": ["driver", "passenger", "both", null]
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "driver",
+              "passenger",
+              "both",
+              null
+            ]
           },
           "alias": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "identifiesAsWoman": {
             "type": "boolean"
@@ -262,7 +323,11 @@
           },
           "travelRole": {
             "type": "string",
-            "enum": ["driver", "passenger", "both"]
+            "enum": [
+              "driver",
+              "passenger",
+              "both"
+            ]
           },
           "alias": {
             "type": "string",
@@ -270,7 +335,11 @@
             "maxLength": 30
           }
         },
-        "required": ["consentAccepted", "usualMode", "travelRole"]
+        "required": [
+          "consentAccepted",
+          "usualMode",
+          "travelRole"
+        ]
       },
       "VehiclesResponse": {
         "type": "object",
@@ -282,7 +351,9 @@
             }
           }
         },
-        "required": ["vehicles"]
+        "required": [
+          "vehicles"
+        ]
       },
       "VehicleSummary": {
         "type": "object",
@@ -309,7 +380,14 @@
             "maximum": 6
           }
         },
-        "required": ["id", "plate", "make", "model", "color", "seats"]
+        "required": [
+          "id",
+          "plate",
+          "make",
+          "model",
+          "color",
+          "seats"
+        ]
       },
       "CreateVehicleRequest": {
         "type": "object",
@@ -339,7 +417,11 @@
             "maximum": 6
           }
         },
-        "required": ["plate", "color", "seats"]
+        "required": [
+          "plate",
+          "color",
+          "seats"
+        ]
       },
       "ZonesResponse": {
         "type": "object",
@@ -351,7 +433,9 @@
             }
           }
         },
-        "required": ["zones"]
+        "required": [
+          "zones"
+        ]
       },
       "ZoneSummary": {
         "type": "object",
@@ -372,7 +456,13 @@
             "type": "number"
           }
         },
-        "required": ["id", "name", "district", "lat", "lng"]
+        "required": [
+          "id",
+          "name",
+          "district",
+          "lat",
+          "lng"
+        ]
       },
       "TripOffersResponse": {
         "type": "object",
@@ -384,7 +474,9 @@
             }
           }
         },
-        "required": ["offers"]
+        "required": [
+          "offers"
+        ]
       },
       "TripOfferSummary": {
         "type": "object",
@@ -398,15 +490,24 @@
             "format": "uuid"
           },
           "driverId": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "vehicleId": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "uuid"
           },
           "direction": {
             "type": "string",
-            "enum": ["outbound", "return"]
+            "enum": [
+              "outbound",
+              "return"
+            ]
           },
           "originZoneId": {
             "type": "string"
@@ -418,13 +519,19 @@
             "type": "string"
           },
           "daysOfWeek": {
-            "type": ["array", "null"],
+            "type": [
+              "array",
+              "null"
+            ],
             "items": {
               "type": "integer"
             }
           },
           "date": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "seatsTotal": {
             "type": "integer"
@@ -439,11 +546,18 @@
             "type": "boolean"
           },
           "note": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "status": {
             "type": "string",
-            "enum": ["active", "paused", "cancelled"]
+            "enum": [
+              "active",
+              "paused",
+              "cancelled"
+            ]
           }
         },
         "required": [
@@ -474,7 +588,10 @@
             "type": "string"
           }
         },
-        "required": ["offer", "message"]
+        "required": [
+          "offer",
+          "message"
+        ]
       },
       "CreateTripOfferRequest": {
         "type": "object",
@@ -485,7 +602,10 @@
           },
           "direction": {
             "type": "string",
-            "enum": ["outbound", "return"]
+            "enum": [
+              "outbound",
+              "return"
+            ]
           },
           "originZoneId": {
             "type": "string",
@@ -496,7 +616,10 @@
             "pattern": "^\\d{2}:\\d{2}(:\\d{2})?$"
           },
           "daysOfWeek": {
-            "type": ["array", "null"],
+            "type": [
+              "array",
+              "null"
+            ],
             "items": {
               "type": "integer",
               "minimum": 1,
@@ -505,7 +628,10 @@
             "minItems": 1
           },
           "date": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
           },
           "seatsTotal": {
@@ -517,15 +643,21 @@
             "anyOf": [
               {
                 "type": "number",
-                "enum": [0]
+                "enum": [
+                  0
+                ]
               },
               {
                 "type": "number",
-                "enum": [5]
+                "enum": [
+                  5
+                ]
               },
               {
                 "type": "number",
-                "enum": [10]
+                "enum": [
+                  10
+                ]
               }
             ]
           },
@@ -534,7 +666,10 @@
             "default": false
           },
           "note": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "maxLength": 280
           }
         },
@@ -552,10 +687,15 @@
         "properties": {
           "status": {
             "type": "string",
-            "enum": ["active", "paused"]
+            "enum": [
+              "active",
+              "paused"
+            ]
           }
         },
-        "required": ["status"]
+        "required": [
+          "status"
+        ]
       },
       "SearchTripsResponse": {
         "type": "object",
@@ -571,7 +711,10 @@
             }
           },
           "reason": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "enum": [
               "different_community",
               "days_mismatch",
@@ -585,7 +728,11 @@
             ]
           }
         },
-        "required": ["requestId", "matches", "reason"]
+        "required": [
+          "requestId",
+          "matches",
+          "reason"
+        ]
       },
       "TripMatch": {
         "type": "object",
@@ -605,7 +752,10 @@
           },
           "direction": {
             "type": "string",
-            "enum": ["outbound", "return"]
+            "enum": [
+              "outbound",
+              "return"
+            ]
           },
           "departureTime": {
             "type": "string"
@@ -649,7 +799,9 @@
         "properties": {
           "success": {
             "type": "boolean",
-            "enum": [false]
+            "enum": [
+              false
+            ]
           },
           "status": {
             "type": "integer"
@@ -670,18 +822,27 @@
                 }
               }
             },
-            "required": ["code"],
+            "required": [
+              "code"
+            ],
             "additionalProperties": {}
           }
         },
-        "required": ["success", "status", "error"]
+        "required": [
+          "success",
+          "status",
+          "error"
+        ]
       },
       "SearchTripsRequest": {
         "type": "object",
         "properties": {
           "direction": {
             "type": "string",
-            "enum": ["outbound", "return"]
+            "enum": [
+              "outbound",
+              "return"
+            ]
           },
           "originZoneId": {
             "type": "string",
@@ -696,7 +857,10 @@
             "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
           },
           "daysOfWeek": {
-            "type": ["array", "null"],
+            "type": [
+              "array",
+              "null"
+            ],
             "items": {
               "type": "integer",
               "minimum": 1,
@@ -706,7 +870,10 @@
             "maxItems": 7
           },
           "date": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
           },
           "maxWalkMinutes": {
@@ -717,14 +884,295 @@
           },
           "fallbackMode": {
             "type": "string",
-            "enum": ["drive_alone", "taxi_app", "public_transport", "picked_up", "other"]
+            "enum": [
+              "drive_alone",
+              "taxi_app",
+              "public_transport",
+              "picked_up",
+              "other"
+            ]
           },
           "womenOnly": {
             "type": "boolean",
             "default": false
           }
         },
-        "required": ["direction", "originZoneId", "windowStart", "windowEnd", "fallbackMode"]
+        "required": [
+          "direction",
+          "originZoneId",
+          "windowStart",
+          "windowEnd",
+          "fallbackMode"
+        ]
+      },
+      "OfferDetail": {
+        "type": "object",
+        "properties": {
+          "offerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "paused",
+              "cancelled"
+            ]
+          },
+          "driverName": {
+            "type": "string"
+          },
+          "communityName": {
+            "type": "string"
+          },
+          "originZoneName": {
+            "type": "string"
+          },
+          "destinationName": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "outbound",
+              "return"
+            ]
+          },
+          "departureTime": {
+            "type": "string"
+          },
+          "date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "daysOfWeek": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "integer"
+            }
+          },
+          "seatsFree": {
+            "type": "integer"
+          },
+          "vehicle": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "make": {
+                "type": "string"
+              },
+              "model": {
+                "type": "string"
+              },
+              "plate": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "make",
+              "model",
+              "plate"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "isOwn": {
+            "type": "boolean"
+          },
+          "match": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "meetingPointName": {
+                "type": "string"
+              },
+              "pickupAt": {
+                "type": "string"
+              },
+              "arrivalAt": {
+                "type": "string"
+              },
+              "detourMinutes": {
+                "type": "integer"
+              },
+              "walkMinutes": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "meetingPointName",
+              "pickupAt",
+              "arrivalAt",
+              "detourMinutes",
+              "walkMinutes"
+            ]
+          },
+          "booking": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "accepted",
+                  "rejected",
+                  "cancelled_by_passenger",
+                  "cancelled_by_driver",
+                  "completed",
+                  "no_show"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "status"
+            ]
+          }
+        },
+        "required": [
+          "offerId",
+          "status",
+          "driverName",
+          "communityName",
+          "originZoneName",
+          "destinationName",
+          "direction",
+          "departureTime",
+          "date",
+          "daysOfWeek",
+          "seatsFree",
+          "vehicle",
+          "note",
+          "isOwn",
+          "match",
+          "booking"
+        ]
+      },
+      "RequestSeatResponse": {
+        "type": "object",
+        "properties": {
+          "booking": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "accepted",
+                  "rejected",
+                  "cancelled_by_passenger",
+                  "cancelled_by_driver",
+                  "completed",
+                  "no_show"
+                ]
+              },
+              "message": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "meetingPointName": {
+                "type": "string"
+              },
+              "pickupAt": {
+                "type": "string"
+              },
+              "arrivalAt": {
+                "type": "string"
+              },
+              "detourMinutes": {
+                "type": "integer"
+              },
+              "walkMinutes": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id",
+              "status",
+              "message",
+              "meetingPointName",
+              "pickupAt",
+              "arrivalAt",
+              "detourMinutes",
+              "walkMinutes"
+            ]
+          }
+        },
+        "required": [
+          "booking"
+        ]
+      },
+      "RequestSeatRequest": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "maxLength": 280
+          }
+        }
+      },
+      "CancelBookingResponse": {
+        "type": "object",
+        "properties": {
+          "booking": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "accepted",
+                  "rejected",
+                  "cancelled_by_passenger",
+                  "cancelled_by_driver",
+                  "completed",
+                  "no_show"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "status"
+            ]
+          }
+        },
+        "required": [
+          "booking"
+        ]
       },
       "WaitlistEntryResponse": {
         "type": "object",
@@ -733,7 +1181,9 @@
             "type": "string"
           }
         },
-        "required": ["message"]
+        "required": [
+          "message"
+        ]
       },
       "WaitlistEntryRequest": {
         "oneOf": [
@@ -742,7 +1192,9 @@
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["institution"]
+                "enum": [
+                  "institution"
+                ]
               },
               "institution": {
                 "type": "string",
@@ -756,7 +1208,9 @@
               },
               "consent": {
                 "type": "boolean",
-                "enum": [true]
+                "enum": [
+                  true
+                ]
               },
               "website": {
                 "type": "string"
@@ -790,7 +1244,9 @@
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["individual"]
+                "enum": [
+                  "individual"
+                ]
               },
               "institution": {
                 "type": "string",
@@ -804,13 +1260,20 @@
               },
               "consent": {
                 "type": "boolean",
-                "enum": [true]
+                "enum": [
+                  true
+                ]
               },
               "website": {
                 "type": "string"
               }
             },
-            "required": ["kind", "institution", "email", "consent"]
+            "required": [
+              "kind",
+              "institution",
+              "email",
+              "consent"
+            ]
           }
         ]
       },
@@ -824,7 +1287,10 @@
             "type": "integer"
           }
         },
-        "required": ["institutions", "individuals"]
+        "required": [
+          "institutions",
+          "individuals"
+        ]
       }
     },
     "parameters": {}
@@ -832,7 +1298,9 @@
   "paths": {
     "/health": {
       "get": {
-        "tags": ["Público"],
+        "tags": [
+          "Público"
+        ],
         "responses": {
           "200": {
             "description": "Service health",
@@ -849,7 +1317,9 @@
     },
     "/communities": {
       "get": {
-        "tags": ["Comunidades"],
+        "tags": [
+          "Comunidades"
+        ],
         "responses": {
           "200": {
             "description": "Lista pública de comunidades",
@@ -866,7 +1336,9 @@
     },
     "/communities/{id}/join": {
       "post": {
-        "tags": ["Comunidades"],
+        "tags": [
+          "Comunidades"
+        ],
         "parameters": [
           {
             "schema": {
@@ -903,7 +1375,9 @@
     },
     "/communities/{id}/verify-email": {
       "post": {
-        "tags": ["Comunidades"],
+        "tags": [
+          "Comunidades"
+        ],
         "parameters": [
           {
             "schema": {
@@ -931,7 +1405,9 @@
     },
     "/me": {
       "get": {
-        "tags": ["Comunidades"],
+        "tags": [
+          "Comunidades"
+        ],
         "responses": {
           "200": {
             "description": "Perfil y membresías de la persona autenticada",
@@ -948,7 +1424,9 @@
     },
     "/communities/{id}/membership": {
       "patch": {
-        "tags": ["Comunidades"],
+        "tags": [
+          "Comunidades"
+        ],
         "parameters": [
           {
             "schema": {
@@ -985,7 +1463,9 @@
     },
     "/vehicles": {
       "get": {
-        "tags": ["Ofertas"],
+        "tags": [
+          "Ofertas"
+        ],
         "responses": {
           "200": {
             "description": "Vehículos registrados por la persona autenticada",
@@ -1000,7 +1480,9 @@
         }
       },
       "post": {
-        "tags": ["Ofertas"],
+        "tags": [
+          "Ofertas"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1026,7 +1508,9 @@
     },
     "/communities/{id}/zones": {
       "get": {
-        "tags": ["Ofertas"],
+        "tags": [
+          "Ofertas"
+        ],
         "parameters": [
           {
             "schema": {
@@ -1054,7 +1538,9 @@
     },
     "/communities/{id}/offers": {
       "get": {
-        "tags": ["Ofertas"],
+        "tags": [
+          "Ofertas"
+        ],
         "parameters": [
           {
             "schema": {
@@ -1080,7 +1566,9 @@
         }
       },
       "post": {
-        "tags": ["Ofertas"],
+        "tags": [
+          "Ofertas"
+        ],
         "parameters": [
           {
             "schema": {
@@ -1117,7 +1605,9 @@
     },
     "/offers/{id}/status": {
       "patch": {
-        "tags": ["Ofertas"],
+        "tags": [
+          "Ofertas"
+        ],
         "parameters": [
           {
             "schema": {
@@ -1154,7 +1644,9 @@
     },
     "/communities/{id}/search": {
       "post": {
-        "tags": ["Búsqueda"],
+        "tags": [
+          "Búsqueda"
+        ],
         "parameters": [
           {
             "schema": {
@@ -1239,9 +1731,230 @@
         }
       }
     },
+    "/offers/{id}": {
+      "get": {
+        "tags": [
+          "Ofertas"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalle del viaje para miembros de su comunidad, sin placa hasta la aceptación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No hay sesión iniciada (`unauthorized`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El viaje no existe o es de otra comunidad: se responde igual para no revelar ids (`offer_not_found`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "El identificador no es válido (`validation_error`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/offers/{id}/bookings": {
+      "post": {
+        "tags": [
+          "Ofertas"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestSeatRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Solicitud pendiente con el punto de encuentro y la recogida calculados por el servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestSeatResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No hay sesión iniciada (`unauthorized`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Es el viaje propio (`own_offer`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El viaje no existe o es de otra comunidad (`offer_not_found`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ya solicitado (`already_requested`), sin asientos (`no_seats`), sin búsqueda guardada (`search_required`) o el viaje ya no es compatible o ya no está activo (`no_longer_compatible`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "El mensaje supera 280 caracteres o el identificador no es válido (`validation_error`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bookings/{id}/cancel": {
+      "post": {
+        "tags": [
+          "Ofertas"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "La solicitud pendiente quedó retirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelBookingResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No hay sesión iniciada (`unauthorized`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "La solicitud no existe o es de otra persona (`booking_not_found`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "La solicitud ya fue aceptada y no se retira aquí (`not_withdrawable`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "El identificador no es válido (`validation_error`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/public/waitlist": {
       "post": {
-        "tags": ["Público"],
+        "tags": [
+          "Público"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1297,7 +2010,9 @@
     },
     "/public/waitlist/summary": {
       "get": {
-        "tags": ["Público"],
+        "tags": [
+          "Público"
+        ],
         "responses": {
           "200": {
             "description": "Totales de la lista de espera, sin datos de contacto",

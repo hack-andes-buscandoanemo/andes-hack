@@ -512,6 +512,229 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/offers/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Detalle del viaje para miembros de su comunidad, sin placa hasta la aceptación */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["OfferDetail"];
+          };
+        };
+        /** @description No hay sesión iniciada (`unauthorized`) */
+        401: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description El viaje no existe o es de otra comunidad: se responde igual para no revelar ids (`offer_not_found`) */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description El identificador no es válido (`validation_error`) */
+        422: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/offers/{id}/bookings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: {
+        content: {
+          "application/json": components["schemas"]["RequestSeatRequest"];
+        };
+      };
+      responses: {
+        /** @description Solicitud pendiente con el punto de encuentro y la recogida calculados por el servidor */
+        201: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["RequestSeatResponse"];
+          };
+        };
+        /** @description No hay sesión iniciada (`unauthorized`) */
+        401: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Es el viaje propio (`own_offer`) */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description El viaje no existe o es de otra comunidad (`offer_not_found`) */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Ya solicitado (`already_requested`), sin asientos (`no_seats`), sin búsqueda guardada (`search_required`) o el viaje ya no es compatible o ya no está activo (`no_longer_compatible`) */
+        409: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description El mensaje supera 280 caracteres o el identificador no es válido (`validation_error`) */
+        422: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/bookings/{id}/cancel": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description La solicitud pendiente quedó retirada */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["CancelBookingResponse"];
+          };
+        };
+        /** @description No hay sesión iniciada (`unauthorized`) */
+        401: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description La solicitud no existe o es de otra persona (`booking_not_found`) */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description La solicitud ya fue aceptada y no se retira aquí (`not_withdrawable`) */
+        409: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description El identificador no es válido (`validation_error`) */
+        422: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/public/waitlist": {
     parameters: {
       query?: never;
@@ -838,6 +1061,88 @@ export interface components {
       fallbackMode: "drive_alone" | "taxi_app" | "public_transport" | "picked_up" | "other";
       /** @default false */
       womenOnly: boolean;
+    };
+    OfferDetail: {
+      /** Format: uuid */
+      offerId: string;
+      /** @enum {string} */
+      status: "active" | "paused" | "cancelled";
+      driverName: string;
+      communityName: string;
+      originZoneName: string;
+      destinationName: string;
+      /** @enum {string} */
+      direction: "outbound" | "return";
+      departureTime: string;
+      date: string | null;
+      daysOfWeek: number[] | null;
+      seatsFree: number;
+      vehicle: {
+        make: string;
+        model: string;
+        plate: string | null;
+      } | null;
+      note: string | null;
+      isOwn: boolean;
+      match: {
+        meetingPointName: string;
+        pickupAt: string;
+        arrivalAt: string;
+        detourMinutes: number;
+        walkMinutes: number;
+      } | null;
+      booking: {
+        /** Format: uuid */
+        id: string;
+        /** @enum {string} */
+        status:
+          | "pending"
+          | "accepted"
+          | "rejected"
+          | "cancelled_by_passenger"
+          | "cancelled_by_driver"
+          | "completed"
+          | "no_show";
+      } | null;
+    };
+    RequestSeatResponse: {
+      booking: {
+        /** Format: uuid */
+        id: string;
+        /** @enum {string} */
+        status:
+          | "pending"
+          | "accepted"
+          | "rejected"
+          | "cancelled_by_passenger"
+          | "cancelled_by_driver"
+          | "completed"
+          | "no_show";
+        message: string | null;
+        meetingPointName: string;
+        pickupAt: string;
+        arrivalAt: string;
+        detourMinutes: number;
+        walkMinutes: number;
+      };
+    };
+    RequestSeatRequest: {
+      message?: string;
+    };
+    CancelBookingResponse: {
+      booking: {
+        /** Format: uuid */
+        id: string;
+        /** @enum {string} */
+        status:
+          | "pending"
+          | "accepted"
+          | "rejected"
+          | "cancelled_by_passenger"
+          | "cancelled_by_driver"
+          | "completed"
+          | "no_show";
+      };
     };
     WaitlistEntryResponse: {
       message: string;
