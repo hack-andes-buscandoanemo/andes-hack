@@ -41,7 +41,10 @@ export default function AppShell({
 }) {
   const pathname = usePathname();
   const sections = isAdmin
-    ? [...SECTIONS, { href: "/comunidad/reportes", label: "Reportes", icon: Shield01Icon }]
+    ? [
+        ...SECTIONS,
+        { href: "/comunidad/reportes", label: "Administrar comunidad", icon: Shield01Icon },
+      ]
     : SECTIONS;
 
   return (

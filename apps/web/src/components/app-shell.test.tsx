@@ -40,13 +40,13 @@ describe("app shell", () => {
     ]);
   });
 
-  it("shows incident reports only to community admins", () => {
+  it("links community admins to community administration", () => {
     const { unmount } = shell();
     expect(screen.queryByRole("link", { name: "Reportes" })).not.toBeInTheDocument();
     unmount();
 
     shell(true);
-    expect(screen.getByRole("link", { name: "Reportes" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Administrar comunidad" })).toHaveAttribute(
       "href",
       "/comunidad/reportes",
     );

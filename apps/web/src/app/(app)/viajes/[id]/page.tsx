@@ -457,11 +457,7 @@ export default function TripDetailPage() {
         showIncidentReport ? (
           <IncidentReportForm
             offerId={id}
-            reportedUsers={
-              detail.isOwn || !detail.driverId
-                ? undefined
-                : [{ id: detail.driverId, name: detail.driverName }]
-            }
+            reportedUsers={detail.reportTargets}
             onCancel={() => setShowIncidentReport(false)}
           />
         ) : (

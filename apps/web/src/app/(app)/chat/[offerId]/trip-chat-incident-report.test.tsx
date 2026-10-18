@@ -41,13 +41,23 @@ it("reports a chat message by id without copying its text", async () => {
           messages: [
             {
               id: MESSAGE_ID,
-              senderId: "u-driver",
+              isOwn: false,
               senderName: "Mateo M.",
               senderPhotoUrl: null,
               senderRole: "driver",
               kind: "text",
               body: "Mensaje privado del viaje",
               createdAt: "2026-10-18T17:30:00.000Z",
+            },
+            {
+              id: "66666666-6666-4666-8666-666666666666",
+              isOwn: true,
+              senderName: "Lucía R.",
+              senderPhotoUrl: null,
+              senderRole: "passenger",
+              kind: "text",
+              body: "Mi propio mensaje",
+              createdAt: "2026-10-18T17:31:00.000Z",
             },
           ],
         },
@@ -82,6 +92,8 @@ it("reports a chat message by id without copying its text", async () => {
 
   render(<TripChat offerId={OFFER_ID} />);
   expect(await screen.findByText("Mensaje privado del viaje")).toBeInTheDocument();
+  expect(screen.getByText("Mi propio mensaje")).toBeInTheDocument();
+  expect(screen.getAllByRole("button", { name: "Reportar mensaje" })).toHaveLength(1);
   await user.click(screen.getByRole("button", { name: "Reportar mensaje" }));
   await user.selectOptions(screen.getByLabelText("Tipo"), "harassment");
   await user.click(screen.getByRole("button", { name: "Enviar reporte" }));

@@ -15,6 +15,7 @@ const OFFER_ID = "22222222-2222-4222-8222-222222222222";
 const DRIVER_ID = "u-driver";
 const originalAdapter = httpClient.defaults.adapter;
 let reportPayload: Record<string, unknown> | undefined;
+vi.mock("@/components/leaflet-map", () => ({ drawRouteMap: () => () => {} }));
 
 afterEach(() => {
   cleanup();
@@ -29,7 +30,6 @@ it("lets a passenger optionally identify the driver when reporting a trip", asyn
       return {
         data: {
           offerId: OFFER_ID,
-          driverId: DRIVER_ID,
           status: "active",
           driverName: "Mateo Q.",
           driverPhotoUrl: null,
@@ -48,6 +48,24 @@ it("lets a passenger optionally identify the driver when reporting a trip", asyn
           match: null,
           booking: { id: "44444444-4444-4444-8444-444444444444", status: "accepted" },
           fuelEstimate: null,
+          reportTargets: [
+            { id: DRIVER_ID, name: "Mateo Q." },
+            { id: "u-passenger", name: "Lucía R." },
+          ],
+          routeMap: {
+            path: [],
+            approximate: true,
+            markers: [
+              { role: "start", name: "La Molina", lat: -12.078, lng: -76.9173, mine: false },
+              {
+                role: "end",
+                name: "Centro Empresarial Real",
+                lat: -12.0975,
+                lng: -77.0376,
+                mine: false,
+              },
+            ],
+          },
         },
         status: 200,
         statusText: "OK",
@@ -80,6 +98,8 @@ it("lets a passenger optionally identify the driver when reporting a trip", asyn
 
   render(<TripDetailPage />);
   await user.click(await screen.findByRole("button", { name: "Reportar" }));
+  expect(screen.getByRole("option", { name: "Mateo Q." })).toBeInTheDocument();
+  expect(screen.getByRole("option", { name: "Lucía R." })).toBeInTheDocument();
   await user.selectOptions(screen.getByLabelText("Tipo"), "dangerous_driving");
   await user.selectOptions(screen.getByLabelText("Persona reportada (opcional)"), DRIVER_ID);
   await user.click(screen.getByRole("button", { name: "Enviar reporte" }));

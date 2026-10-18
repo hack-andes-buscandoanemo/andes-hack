@@ -149,21 +149,22 @@ export default function TripChat({ offerId }: { offerId: string }) {
                     </time>
                   </div>
                 </div>
-                {reportingMessageId === message.id ? (
-                  <IncidentReportForm
-                    offerId={offerId}
-                    messageId={message.id}
-                    onCancel={() => setReportingMessageId(null)}
-                  />
-                ) : (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setReportingMessageId(message.id)}
-                  >
-                    Reportar mensaje
-                  </Button>
-                )}
+                {!message.isOwn &&
+                  (reportingMessageId === message.id ? (
+                    <IncidentReportForm
+                      offerId={offerId}
+                      messageId={message.id}
+                      onCancel={() => setReportingMessageId(null)}
+                    />
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setReportingMessageId(message.id)}
+                    >
+                      Reportar mensaje
+                    </Button>
+                  ))}
               </li>
             ))}
           </ol>
