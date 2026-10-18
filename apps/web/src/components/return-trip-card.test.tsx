@@ -14,6 +14,7 @@ const TRIP: MyTrip = {
   offerId: "22222222-2222-4222-8222-222222222222",
   role: "passenger",
   status: "accepted",
+  progress: null,
   direction: "outbound",
   date: null,
   daysOfWeek: [1, 2, 3, 4, 5],

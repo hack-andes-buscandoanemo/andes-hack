@@ -753,6 +753,8 @@ export const TripMatchSchema = z
   })
   .openapi("TripMatch");
 
+export type TripMatch = z.infer<typeof TripMatchSchema>;
+
 export const SearchTripsResponseSchema = z
   .object({
     // The passenger's saved need, one per direction; kept even when nothing matched.
@@ -840,6 +842,7 @@ export const OfferDetailSchema = z
     // The person's active or rejected request on this trip, if any.
     booking: z.object({ id: z.string().uuid(), status: BookingStatusSchema }).nullable(),
     fuelEstimate: FuelEstimateSchema,
+    alternatives: z.array(TripMatchSchema).optional(),
   })
   .openapi("OfferDetail");
 
@@ -884,7 +887,7 @@ export const MyTripSchema = z
     role: z.enum(["passenger", "driver"]),
     status: TripStatusSchema,
     // Day-of-trip progress of an accepted seat (the driver sees "in_progress" once it started); null otherwise.
-    progress: z.enum(["not_started", "in_progress", "arrived"]).nullable().optional(),
+    progress: z.enum(["not_started", "in_progress", "arrived"]).nullable(),
     direction: TripDirectionSchema,
     date: z.string().nullable(),
     daysOfWeek: z.array(z.number().int()).nullable(),
@@ -1053,6 +1056,8 @@ export const rejectBookingRoute = createRoute({
 
 export const StartTripResponseSchema = z
   .object({
+    // The Lima date of the trip that started: a weekly offer starts again every week.
+    tripDate: z.string(),
     startedAt: z.string().datetime(),
     boarded: z.number().int(),
     message: z.string(),
@@ -1070,10 +1075,11 @@ export const startTripRoute = createRoute({
       content: { "application/json": { schema: StartTripResponseSchema } },
     },
     401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
-    403: apiErrorResponse("Solo quien conduce puede iniciar el viaje (`driver_required`)"),
-    404: apiErrorResponse("El viaje no existe (`offer_not_found`)"),
+    404: apiErrorResponse(
+      "El viaje no existe o no es de la persona que conduce (`offer_not_found`)",
+    ),
     409: apiErrorResponse(
-      "El viaje no se puede iniciar (`trip_too_early`: antes de 30 minutos de la salida; `trip_not_today`; `trip_cancelled`)",
+      "El viaje no se puede iniciar (`trip_too_early`: antes de 30 minutos de la salida; `trip_not_today`; `trip_cancelled`; `no_accepted_passengers`: no hay pasajeros aceptados para ese día)",
     ),
     422: apiErrorResponse("El identificador no es válido (`validation_error`)"),
   },
@@ -1081,11 +1087,13 @@ export const startTripRoute = createRoute({
 
 export const TripProgressResponseSchema = z
   .object({
+    // How one day of the seat went; the booking itself stays accepted for the next week.
     booking: z.object({
       id: z.string().uuid(),
-      status: BookingStatusSchema,
+      tripDate: z.string(),
       startedAt: z.string().datetime().nullable(),
       arrivedAt: z.string().datetime().nullable(),
+      outcome: z.enum(["completed", "no_show"]).nullable(),
     }),
     message: z.string(),
   })
@@ -1104,7 +1112,7 @@ export const boardBookingRoute = createRoute({
     401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
     404: apiErrorResponse("La reserva no existe o no es de la persona (`booking_not_found`)"),
     409: apiErrorResponse(
-      "No se puede marcar el viaje (`booking_not_accepted`: la solicitud no está aceptada; `trip_too_early`; `trip_not_today`; `trip_cancelled`)",
+      "No se puede marcar el viaje (`booking_not_accepted`: la solicitud no está aceptada; `booking_no_show`: el conductor registró que no se presentó; `trip_too_early`; `trip_not_today`; `trip_cancelled`)",
     ),
     422: apiErrorResponse("El identificador no es válido (`validation_error`)"),
   },
@@ -1140,12 +1148,11 @@ export const noShowBookingRoute = createRoute({
       content: { "application/json": { schema: TripProgressResponseSchema } },
     },
     401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
-    403: apiErrorResponse(
-      "Solo quien conduce puede marcar que alguien no se presentó (`driver_required`)",
+    404: apiErrorResponse(
+      "La reserva no existe o no es de un viaje de la persona (`booking_not_found`)",
     ),
-    404: apiErrorResponse("La reserva no existe (`booking_not_found`)"),
     409: apiErrorResponse(
-      "No se puede marcar (`no_show_too_early`: antes de 10 minutos de la hora de recogida; `booking_not_accepted`; `booking_already_started`)",
+      "No se puede marcar (`no_show_too_early`: antes de 10 minutos de la hora de recogida; `trip_not_today`; `trip_cancelled`; `booking_not_accepted`; `booking_already_started`)",
     ),
     422: apiErrorResponse("El identificador no es válido (`validation_error`)"),
   },
@@ -1317,7 +1324,10 @@ export const cancelBookingRoute = createRoute({
       content: {
         "application/json": {
           schema: z
-            .object({ booking: z.object({ id: z.string().uuid(), status: BookingStatusSchema }) })
+            .object({
+              booking: z.object({ id: z.string().uuid(), status: BookingStatusSchema }),
+              lateCancelled: z.boolean(),
+            })
             .openapi("CancelBookingResponse"),
         },
       },
@@ -1325,6 +1335,46 @@ export const cancelBookingRoute = createRoute({
     401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
     404: apiErrorResponse("La solicitud no existe (`booking_not_found`)"),
     409: apiErrorResponse("No se puede retirar esta solicitud (`booking_conflict`)"),
+    422: apiErrorResponse("El identificador no es válido (`validation_error`)"),
+  },
+});
+
+export const CancelOfferResponseSchema = z
+  .object({
+    offer: z.object({
+      id: z.string().uuid(),
+      status: z.enum(["active", "paused", "cancelled"]),
+    }),
+    lateCancelled: z.boolean(),
+    affectedBookings: z.array(
+      z.object({
+        bookingId: z.string().uuid(),
+        passengerId: z.string().nullable(),
+        status: z.enum(["cancelled_by_driver"]),
+      }),
+    ),
+  })
+  .openapi("CancelOfferResponse");
+
+export type CancelOfferResponse = z.infer<typeof CancelOfferResponseSchema>;
+
+export const cancelOfferRoute = createRoute({
+  method: "post",
+  path: "/offers/{id}/cancel",
+  tags: ["Ofertas"],
+  request: { params: JoinCommunityParamsSchema },
+  responses: {
+    200: {
+      description: "El viaje fue cancelado por el conductor",
+      content: {
+        "application/json": {
+          schema: CancelOfferResponseSchema,
+        },
+      },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    403: apiErrorResponse("No puedes gestionar este viaje (`driver_required`)"),
+    404: apiErrorResponse("No encontramos este viaje (`offer_not_found`)"),
     422: apiErrorResponse("El identificador no es válido (`validation_error`)"),
   },
 });
@@ -1835,6 +1885,7 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   noShowBookingRoute,
   listOfferBookingsRoute,
   cancelBookingRoute,
+  cancelOfferRoute,
   runMatchingRoute,
   latestMatchRunsRoute,
   listProposalsRoute,

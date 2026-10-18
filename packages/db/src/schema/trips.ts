@@ -7,6 +7,7 @@ import {
   index,
   pgEnum,
   pgTable,
+  primaryKey,
   smallint,
   text,
   time,
@@ -51,6 +52,9 @@ export const bookingStatusEnum = pgEnum("booking_status", [
   "completed",
   "no_show",
 ]);
+
+// How one day of a trip ended for a seat (US-025). A seat that is still open has no outcome.
+export const tripDayOutcomeEnum = pgEnum("trip_day_outcome", ["completed", "no_show"]);
 
 export const tripMessageKindEnum = pgEnum("trip_message_kind", ["text", "quick"]);
 
@@ -169,6 +173,8 @@ export const seatBooking = pgTable(
     message: varchar("message", { length: 280 }),
     status: bookingStatusEnum("status").default("pending").notNull(),
     decidedAt: timestamp("decided_at", { withTimezone: true }),
+    // Deprecated since US-025: progress is kept per day in seat_booking_day, because a weekly
+    // seat is reused every week. Nothing writes these two columns any more.
     startedAt: timestamp("started_at", { withTimezone: true }),
     arrivedAt: timestamp("arrived_at", { withTimezone: true }),
     ...timestamps,
@@ -184,6 +190,39 @@ export const seatBooking = pgTable(
     check(
       "seat_booking_passenger_required_check",
       sql`${table.passengerId} IS NOT NULL OR ${table.status} NOT IN ('pending', 'accepted')`,
+    ),
+  ],
+);
+
+// How a seat went on one day of the trip (US-025). A weekly offer reuses the same booking
+// every week, so start / arrival / no-show belong to the (booking, Lima date) pair and never
+// to the booking itself. The booking stays `accepted`, so the seat survives the next week.
+export const seatBookingDay = pgTable(
+  "seat_booking_day",
+  {
+    bookingId: uuid("booking_id")
+      .notNull()
+      .references(() => seatBooking.id, { onDelete: "cascade" }),
+    // The date of the trip in Lima, which is not always the date of `startedAt`: a 00:15 trip
+    // can start the evening before.
+    tripDate: date("trip_date").notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    arrivedAt: timestamp("arrived_at", { withTimezone: true }),
+    outcome: tripDayOutcomeEnum("outcome"),
+    ...timestamps,
+  },
+  (table) => [
+    primaryKey({ columns: [table.bookingId, table.tripDate] }),
+    // Arriving means the trip started, and only a completed day has an arrival.
+    check(
+      "seat_booking_day_completed_check",
+      sql`COALESCE(${table.outcome} = 'completed', false) = (${table.arrivedAt} IS NOT NULL)
+        AND (${table.outcome} IS DISTINCT FROM 'completed' OR ${table.startedAt} IS NOT NULL)`,
+    ),
+    // Someone who did not show up never got in the car.
+    check(
+      "seat_booking_day_no_show_check",
+      sql`${table.outcome} IS DISTINCT FROM 'no_show' OR ${table.startedAt} IS NULL`,
     ),
   ],
 );
@@ -208,6 +247,7 @@ export const tripMessage = pgTable(
 export type TripOffer = typeof tripOffer.$inferSelect;
 export type TripRequest = typeof tripRequest.$inferSelect;
 export type SeatBooking = typeof seatBooking.$inferSelect;
+export type SeatBookingDay = typeof seatBookingDay.$inferSelect;
 export type TripMessage = typeof tripMessage.$inferSelect;
 
 // A link a passenger gives to someone they trust (US-028). Only the SHA-256 of the token is

@@ -7,6 +7,7 @@ import { serverError } from "@/test/server-error";
 const getOfferDetail = vi.fn();
 const requestSeat = vi.fn();
 const cancelBooking = vi.fn();
+const cancelOffer = vi.fn();
 
 vi.mock("next/navigation", () => ({ useParams: () => ({ id: currentId }) }));
 vi.mock("@/lib/communities-api", () => ({
@@ -14,6 +15,7 @@ vi.mock("@/lib/communities-api", () => ({
     getOfferDetail: (...args: unknown[]) => getOfferDetail(...args),
     requestSeat: (...args: unknown[]) => requestSeat(...args),
     cancelBooking: (...args: unknown[]) => cancelBooking(...args),
+    cancelOffer: (...args: unknown[]) => cancelOffer(...args),
   },
 }));
 
@@ -56,6 +58,7 @@ beforeEach(() => {
   getOfferDetail.mockReset().mockResolvedValue(DETAIL);
   requestSeat.mockReset();
   cancelBooking.mockReset();
+  cancelOffer.mockReset();
 });
 
 describe("trip detail /viajes/{id} (US-014)", () => {
@@ -406,5 +409,88 @@ describe("trip detail /viajes/{id} (US-014)", () => {
     render(<TripDetailPage />);
 
     expect(await screen.findByText("1 asiento disponible")).toBeTruthy();
+  });
+
+  describe("trip cancellation (US-022)", () => {
+    it("lets the driver cancel their own trip with reasons dialog and confirms cancellation", async () => {
+      getOfferDetail.mockResolvedValue({ ...DETAIL, isOwn: true, status: "active" });
+      cancelOffer.mockResolvedValue({
+        offer: { id: OFFER_ID, status: "cancelled" },
+        lateCancelled: false,
+        affectedBookings: [],
+      });
+      const user = userEvent.setup();
+      render(<TripDetailPage />);
+
+      const cancelBtn = await screen.findByRole("button", { name: "Cancelar viaje" });
+      await user.click(cancelBtn);
+
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      expect(screen.getByText("¿Cancelar este viaje?")).toBeInTheDocument();
+
+      await user.click(screen.getByLabelText("Cambié de horario"));
+      await user.click(screen.getByRole("button", { name: "Sí, cancelar" }));
+
+      expect(cancelOffer).toHaveBeenCalledWith(OFFER_ID);
+      expect(await screen.findByText("Cancelaste este viaje.")).toBeInTheDocument();
+    });
+
+    it("lets an accepted passenger cancel their seat with reasons dialog and confirms cancellation", async () => {
+      getOfferDetail.mockResolvedValue({ ...DETAIL, booking: { id: "b-1", status: "accepted" } });
+      cancelBooking.mockResolvedValue({
+        booking: { id: "b-1", status: "cancelled_by_passenger" },
+        lateCancelled: false,
+      });
+      const user = userEvent.setup();
+      render(<TripDetailPage />);
+
+      expect(await screen.findByText("Mateo Q. aceptó tu solicitud.")).toBeInTheDocument();
+      const cancelBtn = screen.getByRole("button", { name: "Cancelar viaje" });
+      await user.click(cancelBtn);
+
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      await user.click(screen.getByLabelText("No iré a la sede"));
+      await user.click(screen.getByRole("button", { name: "Sí, cancelar" }));
+
+      expect(cancelBooking).toHaveBeenCalledWith("b-1");
+      expect(await screen.findByText("Cancelaste tu viaje.")).toBeInTheDocument();
+    });
+
+    it("shows driver cancellation notice and recalculated alternatives for affected passengers", async () => {
+      getOfferDetail.mockResolvedValue({
+        ...DETAIL,
+        status: "cancelled",
+        booking: { id: "b-1", status: "cancelled_by_driver" },
+        alternatives: [
+          {
+            offerId: OTHER_ID,
+            driverName: "Carlos R.",
+            driverPhotoUrl: null,
+            originZoneName: "La Molina",
+            destinationName: "Centro Empresarial Real",
+            direction: "outbound",
+            departureTime: "07:15:00",
+            seatsFree: 2,
+            meetingPointName: "Estación La Cultura",
+            pickupAt: "07:35",
+            arrivalAt: "07:55",
+            detourMinutes: 5,
+            walkMinutes: 8,
+            fuelEstimate: { tripSoles: 10, perOccupantSoles: 5, occupants: 2 },
+          },
+        ],
+      });
+      const user = userEvent.setup();
+      render(<TripDetailPage />);
+
+      expect(await screen.findByText("Mateo Q. canceló el viaje.")).toBeInTheDocument();
+      expect(screen.getByText("Te incluiremos en el próximo emparejamiento.")).toBeInTheDocument();
+
+      const altToggle = screen.getByRole("button", { name: "Ver alternativas" });
+      await user.click(altToggle);
+
+      expect(await screen.findByText("Carlos R.")).toBeInTheDocument();
+      expect(screen.getByText(/Estación La Cultura/)).toBeInTheDocument();
+    });
   });
 });

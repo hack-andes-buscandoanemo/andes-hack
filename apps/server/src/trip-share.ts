@@ -4,15 +4,14 @@ import { communityMember } from "@andes-hack/db/schema/community";
 import { seatBooking, tripOffer, tripShareLink } from "@andes-hack/db/schema/trips";
 import { vehicle } from "@andes-hack/db/schema/vehicle";
 import { places } from "@andes-hack/matching";
-import { and, eq, gt, inArray, isNull, ne } from "drizzle-orm";
+import { and, eq, gt, isNull, ne } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import { ApiError } from "./utils/api-response";
-import { displayName, limaClock } from "./trip-rules";
+import { currentDay, loadDays, progressOf } from "./trip-days";
+import { BOOKING, displayName, endOfLimaDay, limaClock } from "./trip-rules";
 
 type Database = typeof defaultDb;
-
-const HOUR_MS = 60 * 60 * 1000;
 
 // 128+ bits would do; 256 makes the link impossible to guess or enumerate.
 const newToken = () =>
@@ -25,9 +24,6 @@ async function sha256Hex(value: string) {
 
 const uniqueViolation = (error: unknown) =>
   (error as { cause?: { code?: string } }).cause?.code === "23505";
-
-// Midnight at the end of `day` in Lima (UTC-5, no daylight saving time).
-const endOfLimaDay = (day: string) => new Date(Date.parse(`${day}T00:00:00.000Z`) + 29 * HOUR_MS);
 
 export async function createShareLink(
   database: Database,
@@ -98,8 +94,7 @@ export async function getSharedTrip(database: Database, input: { token: string; 
       plate: vehicle.plate,
       meetingPointId: seatBooking.meetingPointId,
       pickupAt: seatBooking.pickupAt,
-      startedAt: seatBooking.startedAt,
-      arrivedAt: seatBooking.arrivedAt,
+      bookingId: seatBooking.id,
     })
     .from(tripShareLink)
     .innerJoin(seatBooking, eq(tripShareLink.bookingId, seatBooking.id))
@@ -125,13 +120,15 @@ export async function getSharedTrip(database: Database, input: { token: string; 
       and(
         eq(tripShareLink.tokenHash, await sha256Hex(input.token)),
         isNull(tripShareLink.revokedAt),
-        inArray(seatBooking.status, ["accepted", "completed"]),
+        eq(seatBooking.status, BOOKING.accepted),
         ne(tripOffer.status, "cancelled"),
         gt(tripShareLink.expiresAt, input.now),
       ),
     )
     .limit(1);
   if (!row) throw unavailable();
+  const { today } = limaClock(input.now);
+  const days = (await loadDays(database, [row.bookingId], today)).get(row.bookingId) ?? [];
   return {
     passengerAlias: displayName(row.passengerAlias, row.passengerName),
     driverAlias: displayName(row.driverAlias, row.driverName),
@@ -140,12 +137,8 @@ export async function getSharedTrip(database: Database, input: { token: string; 
       places.meetingPoints.find((point) => point.id === row.meetingPointId)?.name ??
       row.meetingPointId,
     estimatedTime: row.pickupAt.slice(0, 5),
-    // US-025 records both moments: started_at when the trip begins, arrived_at on "Llegué bien".
-    status: row.arrivedAt
-      ? ("arrived" as const)
-      : row.startedAt
-        ? ("in_progress" as const)
-        : ("not_started" as const),
+    // US-025 records both moments per day: the start of the trip and "Llegué bien".
+    status: progressOf(BOOKING.accepted, currentDay(days, today)) ?? ("not_started" as const),
   };
 }
 

@@ -25,6 +25,7 @@ export type RequestSeatRequest = components["schemas"]["RequestSeatRequest"];
 export type RequestSeatResponse = components["schemas"]["RequestSeatResponse"];
 export type MyImpact = components["schemas"]["MyImpact"];
 export type CancelBookingResponse = components["schemas"]["CancelBookingResponse"];
+export type CancelOfferResponse = components["schemas"]["CancelOfferResponse"];
 export type RunMatchingRequest = components["schemas"]["RunMatchingRequest"];
 export type MatchRunsResponse = components["schemas"]["MatchRunsResponse"];
 export type MatchSuggestion = components["schemas"]["MatchSuggestion"];
@@ -218,6 +219,10 @@ export const communitiesApi = {
   },
   async getSharedTrip(token: string): Promise<SharedTrip> {
     const response = await httpClient.get(`/public/share/${token}` as "/public/share/{token}");
+    return response.data;
+  },
+  async cancelOffer(offerId: string): Promise<CancelOfferResponse> {
+    const response = await httpClient.post(`/offers/${offerId}/cancel` as "/offers/{id}/cancel");
     return response.data;
   },
   async runMatching(communityId: string, payload: RunMatchingRequest): Promise<MatchRunsResponse> {

@@ -51,7 +51,8 @@ beforeEach(async () => {
 
 // Monday 2026-10-19 in Lima (UTC-5); the trip leaves at 07:00 and picks up at 07:29.
 const TRIP_DAY = "2026-10-19";
-const at = (limaTime: string) => new Date(`${TRIP_DAY}T${limaTime}:00.000-05:00`);
+const at = (limaTime: string) => atDay(TRIP_DAY, limaTime);
+const atDay = (day: string, limaTime: string) => new Date(`${day}T${limaTime}:00.000-05:00`);
 
 async function seedWorld() {
   const [org] = await testDb
@@ -109,6 +110,7 @@ async function createOffer(
     date?: string;
     daysOfWeek?: number[];
     status?: "active" | "paused" | "cancelled";
+    departureTime?: string;
   } = {},
 ) {
   const [car] = await testDb
@@ -130,7 +132,7 @@ async function createOffer(
       vehicleId: car!.id,
       direction: "outbound",
       originZoneId: "la-molina",
-      departureTime: "07:00",
+      departureTime: options.departureTime ?? "07:00",
       ...(options.date
         ? { date: options.date }
         : { daysOfWeek: options.daysOfWeek ?? [1, 2, 3, 4, 5, 6, 7] }),
@@ -147,8 +149,6 @@ async function book(
   passengerId: string,
   options: {
     status?: "pending" | "accepted" | "rejected" | "cancelled_by_passenger" | "completed";
-    startedAt?: Date;
-    arrivedAt?: Date;
   } = {},
 ) {
   const [need] = await testDb
@@ -177,8 +177,6 @@ async function book(
       detourMinutes: 6,
       walkMinutes: 4,
       status: options.status ?? "accepted",
-      startedAt: options.startedAt,
-      arrivedAt: options.arrivedAt,
     })
     .returning();
   return booking!;
@@ -216,6 +214,7 @@ describe("POST /offers/{id}/start", () => {
 
     expect(reply.status).toBe(200);
     expect(await reply.json()).toEqual({
+      tripDate: "2026-10-19",
       startedAt: "2026-10-19T11:30:00.000Z",
       boarded: 1,
       message: "Viaje en curso.",
@@ -225,7 +224,7 @@ describe("POST /offers/{id}/start", () => {
 
 describe("the time window to start", () => {
   it("refuses to start more than 30 minutes before departure and changes nothing", async () => {
-    const { driver, offer, booking } = await world();
+    const { driver, passenger, offer } = await world();
 
     const reply = await post(driver, `/offers/${offer.id}/start`, at("06:29"));
 
@@ -233,23 +232,22 @@ describe("the time window to start", () => {
     const body = await reply.json();
     expect(body.error).toBe("Podrás iniciar el viaje 30 minutos antes de la salida.");
     expect(body.details.code).toBe("trip_too_early");
-    const [after] = await testDb.select().from(seatBooking).where(eq(seatBooking.id, booking.id));
-    expect(after!.startedAt).toBeNull();
+    expect(await progressesOf(passenger, at("06:29"))).toEqual(["not_started"]);
   });
 });
 
 describe("who can start", () => {
   it("lets only the driver of that trip start it", async () => {
-    const { org, passenger, offer, booking } = await world();
+    const { org, passenger, offer } = await world();
     const stranger = await createMember(org.id, "stranger", "Otra Persona", "Otra P.");
 
+    // 404 for anyone else: a trip that is not yours looks like one that does not exist.
     for (const person of [passenger, stranger]) {
       const reply = await post(person, `/offers/${offer.id}/start`, at("06:30"));
-      expect(reply.status).toBe(403);
-      expect((await reply.json()).details.code).toBe("driver_required");
+      expect(reply.status).toBe(404);
+      expect((await reply.json()).details.code).toBe("offer_not_found");
     }
-    const [after] = await testDb.select().from(seatBooking).where(eq(seatBooking.id, booking.id));
-    expect(after!.startedAt).toBeNull();
+    expect(await progressesOf(passenger, at("06:30"))).toEqual(["not_started"]);
   });
 
   it("answers 404 for a trip that does not exist", async () => {
@@ -268,19 +266,18 @@ describe("who can start", () => {
 
 describe("starting twice", () => {
   it("keeps the first moment and answers the same", async () => {
-    const { driver, offer, booking } = await world();
+    const { driver, offer } = await world();
     await post(driver, `/offers/${offer.id}/start`, at("06:30"));
 
     const again = await post(driver, `/offers/${offer.id}/start`, at("06:40"));
 
     expect(again.status).toBe(200);
     expect(await again.json()).toEqual({
+      tripDate: "2026-10-19",
       startedAt: "2026-10-19T11:30:00.000Z",
       boarded: 1,
       message: "Viaje en curso.",
     });
-    const [after] = await testDb.select().from(seatBooking).where(eq(seatBooking.id, booking.id));
-    expect(after!.startedAt!.toISOString()).toBe("2026-10-19T11:30:00.000Z");
   });
 });
 
@@ -290,14 +287,12 @@ describe("a trip that cannot start", () => {
     const driver = await createMember(org.id, "driver", "Carlos Quispe Huamán");
     const passenger = await createMember(org.id, "passenger", "María Torres Rojas");
     const offer = await createOffer(org.id, driver.id, { date: TRIP_DAY, status: "cancelled" });
-    const booking = await book(offer, passenger.id);
+    await book(offer, passenger.id);
 
     const reply = await post(driver, `/offers/${offer.id}/start`, at("06:30"));
 
     expect(reply.status).toBe(409);
     expect((await reply.json()).details.code).toBe("trip_cancelled");
-    const [after] = await testDb.select().from(seatBooking).where(eq(seatBooking.id, booking.id));
-    expect(after!.startedAt).toBeNull();
   });
 });
 
@@ -346,9 +341,10 @@ describe("POST /bookings/{id}/board", () => {
     expect(await reply.json()).toEqual({
       booking: {
         id: booking.id,
-        status: "accepted",
+        tripDate: "2026-10-19",
         startedAt: "2026-10-19T11:45:00.000Z",
         arrivedAt: null,
+        outcome: null,
       },
       message: "Viaje en curso.",
     });
@@ -374,8 +370,6 @@ describe("who can board", () => {
       const body = await reply.json();
       expect(body.error).toBe("Solo puedes marcar el viaje si tu asiento está confirmado.");
       expect(body.details.code).toBe("booking_not_accepted");
-      const [after] = await testDb.select().from(seatBooking).where(eq(seatBooking.id, booking.id));
-      expect(after!.startedAt).toBeNull();
     }
   });
 });
@@ -390,8 +384,7 @@ describe("the time window to board", () => {
     const body = await reply.json();
     expect(body.error).toBe("Podrás iniciar el viaje 30 minutos antes de la salida.");
     expect(body.details.code).toBe("trip_too_early");
-    const [after] = await testDb.select().from(seatBooking).where(eq(seatBooking.id, booking.id));
-    expect(after!.startedAt).toBeNull();
+    expect(await progressesOf(passenger, at("06:29"))).toEqual(["not_started"]);
   });
 });
 
@@ -423,9 +416,10 @@ describe("POST /bookings/{id}/arrive", () => {
     expect(await reply.json()).toEqual({
       booking: {
         id: booking.id,
-        status: "completed",
+        tripDate: "2026-10-19",
         startedAt: "2026-10-19T11:30:00.000Z",
         arrivedAt: "2026-10-19T12:55:00.000Z",
+        outcome: "completed",
       },
       message: "Llegada confirmada. ¡Gracias por compartir el viaje!",
     });
@@ -451,7 +445,6 @@ describe("arriving without having travelled", () => {
       expect((await reply.json()).details.code).toBe("booking_not_accepted");
       const [after] = await testDb.select().from(seatBooking).where(eq(seatBooking.id, booking.id));
       expect(after!.status).toBe(status);
-      expect(after!.arrivedAt).toBeNull();
     }
   });
 });
@@ -468,7 +461,6 @@ describe("arriving before the trip started", () => {
     expect(body.details.code).toBe("trip_not_started");
     const [after] = await testDb.select().from(seatBooking).where(eq(seatBooking.id, booking.id));
     expect(after!.status).toBe("accepted");
-    expect(after!.arrivedAt).toBeNull();
   });
 });
 
@@ -499,7 +491,7 @@ describe("arriving twice", () => {
 
     expect(replies.map((reply) => reply.status)).toEqual([200, 200]);
     const bodies = await Promise.all(replies.map((reply) => reply.json()));
-    expect(bodies.map((body) => body.booking.status)).toEqual(["completed", "completed"]);
+    expect(bodies.map((body) => body.booking.outcome)).toEqual(["completed", "completed"]);
     expect(bodies.map((body) => body.booking.arrivedAt)).toEqual([
       "2026-10-19T12:55:00.000Z",
       "2026-10-19T12:55:00.000Z",
@@ -515,7 +507,13 @@ describe("POST /bookings/{id}/no-show", () => {
 
     expect(reply.status).toBe(200);
     expect(await reply.json()).toEqual({
-      booking: { id: booking.id, status: "no_show", startedAt: null, arrivedAt: null },
+      booking: {
+        id: booking.id,
+        tripDate: "2026-10-19",
+        startedAt: null,
+        arrivedAt: null,
+        outcome: "no_show",
+      },
       message: "Registramos que la persona no se presentó.",
     });
   });
@@ -533,8 +531,6 @@ describe("the time window for no-show", () => {
       "Podrás marcar que no se presentó 10 minutos después de la hora de recogida.",
     );
     expect(body.details.code).toBe("no_show_too_early");
-    const [after] = await testDb.select().from(seatBooking).where(eq(seatBooking.id, booking.id));
-    expect(after!.status).toBe("accepted");
   });
 });
 
@@ -545,11 +541,10 @@ describe("who can mark a no-show", () => {
 
     for (const person of [passenger, stranger]) {
       const reply = await post(person, `/bookings/${booking.id}/no-show`, at("07:45"));
-      expect(reply.status).toBe(403);
-      expect((await reply.json()).details.code).toBe("driver_required");
+      expect(reply.status).toBe(404);
+      expect((await reply.json()).details.code).toBe("booking_not_found");
     }
-    const [after] = await testDb.select().from(seatBooking).where(eq(seatBooking.id, booking.id));
-    expect(after!.status).toBe("accepted");
+    expect(await progressesOf(passenger, at("07:00"))).toEqual(["not_started"]);
   });
 });
 
@@ -561,13 +556,12 @@ describe("a no-show that makes no sense", () => {
     const arrived = await createMember(org.id, "arrived", "Eva Arrived");
     const waiting = await createMember(org.id, "waiting", "Rosa Waiting");
     const offer = await createOffer(org.id, driver.id, { date: TRIP_DAY });
-    const started = await book(offer, aboard.id, { startedAt: at("07:00") });
-    const completed = await book(offer, arrived.id, {
-      status: "completed",
-      startedAt: at("07:00"),
-      arrivedAt: at("07:50"),
-    });
+    const started = await book(offer, aboard.id);
+    const completed = await book(offer, arrived.id);
     const pending = await book(offer, waiting.id, { status: "pending" });
+    await post(aboard, `/bookings/${started.id}/board`, at("07:00"));
+    await post(arrived, `/bookings/${completed.id}/board`, at("07:00"));
+    await post(arrived, `/bookings/${completed.id}/arrive`, at("07:50"));
 
     const codes = [];
     for (const booking of [started, completed, pending]) {
@@ -578,13 +572,16 @@ describe("a no-show that makes no sense", () => {
 
     expect(codes).toEqual([
       "booking_already_started",
-      "booking_not_accepted",
+      "booking_already_started",
       "booking_not_accepted",
     ]);
-    const rows = await testDb.select().from(seatBooking);
-    expect(rows.map((row) => row.status).sort()).toEqual(["accepted", "completed", "pending"]);
   });
 });
+
+async function progressesOf(person: { id: string }, now: Date) {
+  const trips = await myTrips(person, "passenger", "upcoming", now);
+  return trips.map((trip) => trip.progress);
+}
 
 async function myTrips(
   person: { id: string },
@@ -597,6 +594,7 @@ async function myTrips(
     id: string;
     status: string;
     progress: string | null;
+    date: string | null;
   }>;
 }
 
@@ -666,5 +664,180 @@ describe("the community panel", () => {
     const afterArriving = await panel(at("08:00"));
 
     expect([whileTravelling, afterArriving]).toEqual([0, 1]);
+  });
+});
+
+describe("a weekly seat", () => {
+  async function weeklyWorld() {
+    const org = await seedWorld();
+    const driver = await createMember(org.id, "driver", "Carlos Quispe Huamán", "Carlos Q.");
+    const passenger = await createMember(org.id, "passenger", "María Torres Rojas", "Mari T.");
+    const offer = await createOffer(org.id, driver.id, { daysOfWeek: [1] });
+    const booking = await book(offer, passenger.id);
+    return { driver, passenger, offer, booking };
+  }
+
+  it("travels again next week after arriving this week, and keeps this week as completed", async () => {
+    const { driver, passenger, offer, booking } = await weeklyWorld();
+    await post(driver, `/offers/${offer.id}/start`, atDay("2026-10-19", "06:30"));
+    const week1 = await post(
+      passenger,
+      `/bookings/${booking.id}/arrive`,
+      atDay("2026-10-19", "07:55"),
+    );
+
+    await post(driver, `/offers/${offer.id}/start`, atDay("2026-10-26", "06:30"));
+    const week2 = await post(
+      passenger,
+      `/bookings/${booking.id}/arrive`,
+      atDay("2026-10-26", "07:55"),
+    );
+
+    expect(week1.status).toBe(200);
+    expect(week2.status).toBe(200);
+    expect((await week2.json()).booking).toEqual({
+      id: booking.id,
+      tripDate: "2026-10-26",
+      startedAt: "2026-10-26T11:30:00.000Z",
+      arrivedAt: "2026-10-26T12:55:00.000Z",
+      outcome: "completed",
+    });
+    const past = await myTrips(passenger, "passenger", "past", atDay("2026-10-26", "08:00"));
+    expect(past.map((trip) => [trip.status, trip.date])).toEqual([
+      ["completed", "2026-10-26"],
+      ["completed", "2026-10-19"],
+    ]);
+    const upcoming = await myTrips(
+      passenger,
+      "passenger",
+      "upcoming",
+      atDay("2026-10-26", "08:00"),
+    );
+    expect(upcoming.map((trip) => [trip.status, trip.progress])).toEqual([["accepted", "arrived"]]);
+  });
+
+  it("keeps the seat for next week after a no-show this week", async () => {
+    const { driver, passenger, offer, booking } = await weeklyWorld();
+    const noShow = await post(
+      driver,
+      `/bookings/${booking.id}/no-show`,
+      atDay("2026-10-19", "07:45"),
+    );
+
+    const nextWeek = await post(
+      passenger,
+      `/bookings/${booking.id}/board`,
+      atDay("2026-10-26", "06:45"),
+    );
+
+    expect(noShow.status).toBe(200);
+    expect(nextWeek.status).toBe(200);
+    expect((await nextWeek.json()).booking.startedAt).toBe("2026-10-26T11:45:00.000Z");
+    const past = await myTrips(passenger, "passenger", "past", atDay("2026-10-26", "07:00"));
+    expect(past.map((trip) => [trip.status, trip.date])).toEqual([["no_show", "2026-10-19"]]);
+    const upcoming = await myTrips(
+      passenger,
+      "passenger",
+      "upcoming",
+      atDay("2026-10-26", "07:00"),
+    );
+    expect(upcoming.map((trip) => [trip.status, trip.progress])).toEqual([
+      ["accepted", "in_progress"],
+    ]);
+    expect(offer.id).toBeDefined();
+  });
+});
+
+describe("the community panel with a weekly seat", () => {
+  it("counts one verified trip for each day the same seat arrived", async () => {
+    const org = await seedWorld();
+    const driver = await createMember(org.id, "driver", "Carlos Quispe Huamán");
+    const passenger = await createMember(org.id, "passenger", "María Torres Rojas");
+    const offer = await createOffer(org.id, driver.id, { daysOfWeek: [1] });
+    const booking = await book(offer, passenger.id);
+    for (const day of ["2026-10-19", "2026-10-26"]) {
+      await post(driver, `/offers/${offer.id}/start`, atDay(day, "06:30"));
+      await post(passenger, `/bookings/${booking.id}/arrive`, atDay(day, "07:55"));
+    }
+    const app = createApp({
+      db: testDb as never,
+      now: () => atDay("2026-10-26", "08:00"),
+      statsRateLimit: async () => ({ success: true, reset: 0 }),
+      statsCache: { get: async () => null, set: async () => {} },
+    });
+
+    const reply = await app.request("/public/communities/alfa/stats");
+
+    expect(((await reply.json()) as any).vehicleImpact.verified.trips).toBe(2);
+  });
+});
+
+describe("a trip nobody can join", () => {
+  it("refuses to start with no accepted passengers and invents no start time", async () => {
+    const org = await seedWorld();
+    const driver = await createMember(org.id, "driver", "Carlos Quispe Huamán");
+    const waiting = await createMember(org.id, "waiting", "Ana Waiting");
+    const offer = await createOffer(org.id, driver.id, { date: TRIP_DAY });
+    await book(offer, waiting.id, { status: "pending" });
+
+    const reply = await post(driver, `/offers/${offer.id}/start`, at("06:30"));
+
+    expect(reply.status).toBe(409);
+    const body = await reply.json();
+    expect(body.error).toBe("Aún no tienes pasajeros aceptados para este viaje.");
+    expect(body.details.code).toBe("no_accepted_passengers");
+  });
+});
+
+describe("a passenger the driver marked as no-show", () => {
+  it("cannot board that day any more", async () => {
+    const { driver, passenger, booking } = await world();
+    await post(driver, `/bookings/${booking.id}/no-show`, at("07:45"));
+
+    const reply = await post(passenger, `/bookings/${booking.id}/board`, at("07:50"));
+
+    expect(reply.status).toBe(409);
+    expect((await reply.json()).details.code).toBe("booking_no_show");
+  });
+});
+
+describe("a trip that leaves just after midnight", () => {
+  async function nightWorld() {
+    const org = await seedWorld();
+    const driver = await createMember(org.id, "driver", "Carlos Quispe Huamán");
+    const passenger = await createMember(org.id, "passenger", "María Torres Rojas");
+    const offer = await createOffer(org.id, driver.id, {
+      date: "2026-10-20",
+      departureTime: "00:15",
+    });
+    await book(offer, passenger.id);
+    return { driver, offer };
+  }
+
+  it("opens 30 minutes before, on the evening before", async () => {
+    const { driver, offer } = await nightWorld();
+
+    const early = await post(driver, `/offers/${offer.id}/start`, atDay("2026-10-19", "23:44"));
+    const open = await post(driver, `/offers/${offer.id}/start`, atDay("2026-10-19", "23:45"));
+
+    expect(early.status).toBe(409);
+    expect((await early.json()).details.code).toBe("trip_too_early");
+    expect(open.status).toBe(200);
+    expect((await open.json()).tripDate).toBe("2026-10-20");
+  });
+
+  it("closes at the end of the trip day", async () => {
+    const { driver, offer } = await nightWorld();
+
+    const lastMinute = await post(
+      driver,
+      `/offers/${offer.id}/start`,
+      atDay("2026-10-20", "23:59"),
+    );
+    const nextDay = await post(driver, `/offers/${offer.id}/start`, atDay("2026-10-21", "00:00"));
+
+    expect(lastMinute.status).toBe(200);
+    expect(nextDay.status).toBe(409);
+    expect((await nextDay.json()).details.code).toBe("trip_not_today");
   });
 });

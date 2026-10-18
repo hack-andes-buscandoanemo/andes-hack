@@ -142,8 +142,6 @@ async function book(
   passengerId: string,
   options: {
     status?: "pending" | "accepted" | "rejected" | "cancelled_by_passenger" | "completed";
-    startedAt?: Date;
-    arrivedAt?: Date;
   } = {},
 ) {
   const [need] = await testDb
@@ -172,8 +170,6 @@ async function book(
       detourMinutes: 6,
       walkMinutes: 4,
       status: options.status ?? "accepted",
-      startedAt: options.startedAt,
-      arrivedAt: options.arrivedAt,
     })
     .returning();
   return booking!;
@@ -360,19 +356,18 @@ describe("the status of the trip", () => {
     const { passenger, booking } = await world();
     const { token } = await (await shareAs(passenger, booking.id)).json();
     const statusNow = async () => (await (await openLink(token)).json()).status;
+    const act = (path: string, limaTime: string) =>
+      appFor(passenger, { now: () => new Date(`${TRIP_DAY}T${limaTime}:00.000-05:00`) }).request(
+        `/bookings/${booking.id}/${path}`,
+        { method: "POST" },
+      );
 
     expect(await statusNow()).toBe("not_started");
 
-    await testDb
-      .update(seatBooking)
-      .set({ startedAt: new Date("2026-10-19T12:00:00.000Z") })
-      .where(eq(seatBooking.id, booking.id));
+    await act("board", "06:45");
     expect(await statusNow()).toBe("in_progress");
 
-    await testDb
-      .update(seatBooking)
-      .set({ arrivedAt: new Date("2026-10-19T13:00:00.000Z") })
-      .where(eq(seatBooking.id, booking.id));
+    await act("arrive", "07:55");
     expect(await statusNow()).toBe("arrived");
   });
 });
