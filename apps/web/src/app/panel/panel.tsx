@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import StandaloneHeader from "@/components/standalone-header";
 import EmptyState from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import { communitiesApi, type CommunitySummary, type PublicStats } from "@/lib/communities-api";
@@ -10,9 +11,9 @@ import { kg } from "@/lib/format";
 
 function Card({ label, value }: { label: string; value: string }) {
   return (
-    <div data-card className="rounded-2xl border bg-card p-4 shadow-sm">
+    <div data-card className="rounded-2xl border bg-card p-5 shadow-sm">
       <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="text-3xl font-extrabold">{value}</p>
+      <p className="text-[1.75rem] leading-tight font-bold tracking-tight">{value}</p>
     </div>
   );
 }
@@ -29,8 +30,8 @@ function Row({ label, value }: { label: string; value: string }) {
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
   const id = `block-${title.replaceAll(" ", "-").toLowerCase()}`;
   return (
-    <section aria-labelledby={id} className="space-y-3 rounded-2xl border bg-card p-4 shadow-sm">
-      <h2 id={id} className="text-lg font-extrabold">
+    <section aria-labelledby={id} className="space-y-3 rounded-2xl border bg-card p-5 shadow-sm">
+      <h2 id={id} className="text-lg font-semibold tracking-tight">
         {title}
       </h2>
       {children}
@@ -64,8 +65,9 @@ function Skeletons() {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="mx-auto w-full max-w-3xl space-y-6 px-4 py-10">
-      <h1 className="text-3xl font-extrabold">Impacto en vivo</h1>
+    <main className="mx-auto w-full max-w-3xl space-y-6 px-4 pt-5 pb-10">
+      <StandaloneHeader />
+      <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight">Impacto en vivo</h1>
       {children}
     </main>
   );
@@ -130,7 +132,7 @@ export default function Panel() {
   const selector =
     communities.length > 0 ? (
       <div className="flex items-end justify-between gap-3">
-        <label className="flex flex-col gap-1 text-sm font-semibold">
+        <label className="flex flex-col gap-1.5 text-sm font-medium">
           Comunidad
           <select
             value={slug ?? ""}
@@ -138,7 +140,7 @@ export default function Panel() {
               setStats(null);
               setSlug(event.target.value);
             }}
-            className="h-10 rounded-xl border bg-card px-3 text-base font-normal"
+            className="field w-auto min-w-56 font-normal"
           >
             {communities.map((community) => (
               <option key={community.id} value={community.slug}>
@@ -148,7 +150,7 @@ export default function Panel() {
           </select>
         </label>
         {isDemo ? (
-          <span className="rounded-full bg-brand-yellow px-3 py-1 text-sm font-bold text-brand-black">
+          <span className="rounded-full bg-brand-yellow px-3 py-1 text-sm font-semibold text-brand-black">
             Datos sintéticos
           </span>
         ) : null}
@@ -159,7 +161,7 @@ export default function Panel() {
     return (
       <Shell>
         {selector}
-        <div role="alert" className="space-y-3 rounded-2xl border bg-card p-4">
+        <div role="alert" className="space-y-3 rounded-2xl border bg-card p-5 shadow-sm">
           <p>No pudimos cargar el panel.</p>
           <Button type="button" onClick={() => setAttempt((count) => count + 1)}>
             Reintentar

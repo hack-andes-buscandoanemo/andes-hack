@@ -52,7 +52,7 @@ export default function NotifyForm() {
       }}
       className="space-y-4"
     >
-      <h2 id="notify-heading" className="text-xl font-bold">
+      <h2 id="notify-heading" className="text-lg font-semibold tracking-tight">
         Avísame cuando mi empresa esté
       </h2>
       <form.Field name="email">

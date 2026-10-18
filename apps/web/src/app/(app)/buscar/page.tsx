@@ -1,8 +1,11 @@
 "use client";
 
+import { Search01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useState } from "react";
 
 import EmptyState from "@/components/empty-state";
+import PageHeader from "@/components/page-header";
 import PlacePicker from "@/components/place-picker";
 import SearchRouteMap from "@/components/search-route-map";
 import { Button } from "@/components/ui/button";
@@ -19,8 +22,8 @@ import { FUEL_NOTE } from "@/components/fuel-estimate";
 
 import TripCard from "./trip-card";
 
-const selectClass =
-  "h-9 max-w-52 rounded-lg border border-input bg-background px-2 text-sm font-normal";
+const selectClass = "field font-normal";
+const fieldLabel = "flex flex-col gap-1.5 text-sm font-medium";
 
 type DayChoice = "today" | "tomorrow" | "other" | "days";
 
@@ -155,19 +158,16 @@ export default function SearchPage() {
   }
 
   return (
-    <main className="flex flex-col gap-4 px-4 py-4">
-      <header>
-        <h1 className="text-3xl font-extrabold">Buscar viaje</h1>
-        <p className="text-muted-foreground">Encuentra personas que van en tu dirección</p>
-      </header>
+    <main className="flex flex-col gap-6 px-4 pt-2 pb-6">
+      <PageHeader title="Buscar viaje" description="Encuentra personas que van en tu dirección" />
       {loadError ? (
         <p role="alert" className="text-sm font-medium text-destructive">
           {loadError}
         </p>
       ) : null}
-      <div className="flex flex-col gap-3 rounded-2xl border bg-card p-4 shadow-sm">
-        <div className="flex flex-col divide-y">
-          <div className="flex flex-col gap-3 pb-3">
+      <div className="flex flex-col gap-5 rounded-2xl border bg-card p-5 shadow-sm">
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-4">
             <PlacePicker
               id="origin-point"
               label="Dónde estás"
@@ -186,8 +186,8 @@ export default function SearchPage() {
               más cerca de tu destino. No guardamos tu dirección exacta.
             </p>
           </div>
-          <div className="flex flex-col gap-2 py-3">
-            <label className="flex items-center justify-between gap-3 text-sm font-bold">
+          <div className="flex flex-col gap-2 border-t pt-5">
+            <label className={fieldLabel}>
               Fecha
               <select
                 className={selectClass}
@@ -211,12 +211,12 @@ export default function SearchPage() {
               />
             ) : null}
             {dayChoice === "days" ? (
-              <div role="group" aria-label="Días" className="flex gap-1">
+              <div role="group" aria-label="Días" className="flex gap-1.5">
                 {WEEKDAYS.map((day) => (
                   <Button
                     key={day.iso}
                     type="button"
-                    size="sm"
+                    size="icon-sm"
                     variant={days.includes(day.iso) ? "default" : "outline"}
                     className="rounded-full"
                     aria-label={day.name}
@@ -236,13 +236,13 @@ export default function SearchPage() {
             ) : null}
             {dateError ? <p className="text-sm font-medium text-destructive">{dateError}</p> : null}
           </div>
-          <fieldset className="py-3">
+          <fieldset>
             <legend className="sr-only">Horario</legend>
-            <div className="flex items-center justify-between gap-3 text-sm">
-              <span aria-hidden className="font-bold">
+            <div className="flex flex-col gap-1.5 text-sm">
+              <span aria-hidden className="font-medium">
                 Horario
               </span>
-              <span className="flex items-center gap-2">
+              <span className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-muted-foreground">
                 <select
                   className={selectClass}
                   aria-label="Desde"
@@ -272,7 +272,7 @@ export default function SearchPage() {
             </div>
           </fieldset>
           {memberships.length > 1 ? (
-            <label className="flex items-center justify-between gap-3 py-3 text-sm font-bold">
+            <label className={fieldLabel}>
               Comunidad
               <select
                 className={selectClass}
@@ -291,7 +291,7 @@ export default function SearchPage() {
             </label>
           ) : null}
           {membership?.identifiesAsWoman ? (
-            <label className="flex items-center gap-2 py-3 text-sm font-bold">
+            <label className="flex items-center gap-2.5 text-sm font-medium">
               <input
                 type="checkbox"
                 checked={womenOnly}
@@ -300,10 +300,10 @@ export default function SearchPage() {
               Solo mujeres
             </label>
           ) : null}
-          <label className="flex flex-col gap-1 pt-3 text-sm font-bold">
+          <label className={`${fieldLabel} border-t pt-5`}>
             Si no encuentras viaje, ¿cómo irías?
             <select
-              className={`${selectClass} max-w-none`}
+              className={selectClass}
               value={fallbackMode}
               onChange={(event) => setFallbackMode(event.target.value as typeof fallbackMode)}
             >
@@ -318,10 +318,11 @@ export default function SearchPage() {
         <Button
           type="button"
           size="lg"
-          className="h-11 w-full rounded-xl text-sm font-bold"
+          className="w-full"
           disabled={searching}
           onClick={() => handleSearch()}
         >
+          <HugeiconsIcon icon={Search01Icon} className="size-5" aria-hidden />
           Buscar coincidencias
         </Button>
         {error ? (
@@ -330,11 +331,15 @@ export default function SearchPage() {
           </p>
         ) : null}
       </div>
-      {searching ? <p role="status">Buscando viajes compatibles…</p> : null}
+      {searching ? (
+        <p role="status" className="text-sm text-muted-foreground">
+          Buscando viajes compatibles…
+        </p>
+      ) : null}
       <section aria-live="polite" className="flex flex-col gap-3">
         {result ? (
           <>
-            <h2 className="text-lg font-extrabold">
+            <h2 className="text-lg font-semibold tracking-tight">
               {result.matches.length === 1
                 ? "1 coincidencia encontrada"
                 : `${result.matches.length} coincidencias encontradas`}
@@ -350,13 +355,7 @@ export default function SearchPage() {
               </EmptyState>
             ) : null}
             {result.matches.length === 0 ? (
-              <Button
-                type="button"
-                variant="outline"
-                className="h-10 rounded-xl"
-                disabled={searching}
-                onClick={widenWindow}
-              >
+              <Button type="button" variant="outline" disabled={searching} onClick={widenWindow}>
                 Ampliar horario 15 min
               </Button>
             ) : null}
@@ -364,7 +363,7 @@ export default function SearchPage() {
               const onMap =
                 result.matches.find((match) => match.offerId === mapOfferId) ?? result.matches[0];
               return onMap ? (
-                <div className="space-y-1 rounded-2xl border bg-card p-3 shadow-sm">
+                <div className="overflow-hidden rounded-2xl border bg-card p-1.5 shadow-sm">
                   <SearchRouteMap match={onMap} me={origin} destination={destination} />
                 </div>
               ) : null;

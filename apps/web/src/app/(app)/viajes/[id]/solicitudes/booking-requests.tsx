@@ -1,7 +1,11 @@
 "use client";
 
+import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import EmptyState from "@/components/empty-state";
 import ProfileAvatar from "@/components/profile-avatar";
 import { Button } from "@/components/ui/button";
 import { reasonOf } from "@/lib/api-error";
@@ -130,30 +134,67 @@ export default function BookingRequests({ offerId }: { offerId: string }) {
   if (!result) return <p role="status">Cargando solicitudes…</p>;
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-col gap-4 px-4 py-6">
-      <h1 className="text-2xl font-extrabold">Solicitudes</h1>
-      <p>{`${result.seatsTaken} de ${result.seatsTotal} asientos ocupados`}</p>
-      {result.seatsTaken >= result.seatsTotal ? <p role="status">Tu auto ya está lleno.</p> : null}
-      {result.bookings.length === 0 ? <p>Aún no hay solicitudes para este viaje.</p> : null}
+    <main className="flex flex-col gap-4 px-4 pt-2 pb-6">
+      <div className="space-y-3">
+        <Link
+          href={`/viajes/${offerId}`}
+          className="-ml-1 inline-flex min-h-9 items-center gap-1 rounded-lg px-1 text-sm font-medium text-muted-foreground hover:text-foreground"
+        >
+          <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4" aria-hidden />
+          Detalle del viaje
+        </Link>
+        <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight">Solicitudes</h1>
+        <p className="text-[0.9375rem] text-muted-foreground tabular-nums">{`${result.seatsTaken} de ${result.seatsTotal} asientos ocupados`}</p>
+      </div>
+      {result.seatsTaken >= result.seatsTotal ? (
+        <p
+          role="status"
+          className="rounded-xl bg-highlight px-4 py-3 text-sm font-medium text-highlight-foreground"
+        >
+          Tu auto ya está lleno.
+        </p>
+      ) : null}
+      {result.bookings.length === 0 ? (
+        <EmptyState>Aún no hay solicitudes para este viaje.</EmptyState>
+      ) : null}
       <ul className="space-y-3">
         {result.bookings.map((booking) => (
-          <li key={booking.id} className="space-y-2 rounded-2xl border p-4">
+          <li
+            key={booking.id}
+            className={`space-y-3 rounded-2xl border bg-card p-5 text-sm shadow-sm ${booking.recommended ? "ring-2 ring-brand-yellow" : ""}`}
+          >
             <div className="flex items-center gap-3">
               <ProfileAvatar
                 name={booking.passengerName}
                 photoUrl={booking.passengerPhotoUrl}
-                className="size-10"
+                className="size-11"
               />
-              <h2 className="font-bold">{booking.passengerName} · Miembro verificado</h2>
+              <h2 className="text-base font-semibold tracking-tight">
+                {booking.passengerName} · Miembro verificado
+              </h2>
             </div>
-            <p>{`Punto de encuentro: ${booking.meetingPointName}`}</p>
-            <p>{`Recogida ${booking.pickupAt}`}</p>
-            <p>{`+${booking.detourMinutes} min de desvío`}</p>
-            {booking.avoidsCar ? <p>Evita un viaje en auto</p> : null}
-            {booking.recommended ? <p>Recomendado</p> : null}
-            {booking.message ? <p>{`Mensaje: ${booking.message}`}</p> : null}
+            <div className="space-y-1">
+              <p>{`Punto de encuentro: ${booking.meetingPointName}`}</p>
+              <p className="tabular-nums">{`Recogida ${booking.pickupAt}`}</p>
+            </div>
+            <ul className="flex flex-wrap gap-1.5 text-xs font-medium">
+              <li className="rounded-full bg-secondary px-2.5 py-1">{`+${booking.detourMinutes} min de desvío`}</li>
+              {booking.avoidsCar ? (
+                <li className="rounded-full bg-success/15 px-2.5 py-1 text-success">
+                  Evita un viaje en auto
+                </li>
+              ) : null}
+              {booking.recommended ? (
+                <li className="rounded-full bg-brand-yellow px-2.5 py-1 text-brand-black">
+                  Recomendado
+                </li>
+              ) : null}
+            </ul>
+            {booking.message ? (
+              <p className="rounded-xl bg-muted px-3.5 py-2.5">{`Mensaje: ${booking.message}`}</p>
+            ) : null}
             {booking.status === "pending" ? (
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 gap-2 pt-1">
                 <Button
                   type="button"
                   disabled={Boolean(busyId) || result.seatsTaken >= result.seatsTotal}
@@ -219,8 +260,16 @@ export default function BookingRequests({ offerId }: { offerId: string }) {
           </li>
         ))}
       </ul>
-      {error ? <p role="alert">{error}</p> : null}
-      {notice ? <p role="status">{notice}</p> : null}
+      {error ? (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
+      {notice ? (
+        <p role="status" className="text-sm font-medium">
+          {notice}
+        </p>
+      ) : null}
     </main>
   );
 }

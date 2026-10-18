@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import EmptyState from "@/components/empty-state";
+import PageHeader from "@/components/page-header";
 import { CancelTripDialog } from "@/components/cancel-trip-dialog";
 import { pairReturns, type PairedReturn } from "@/components/return-pairs";
 import ReturnTripCard from "@/components/return-trip-card";
@@ -12,7 +13,7 @@ import ShareTrip from "@/components/share-trip";
 import TripProgress from "@/components/trip-progress";
 import TripSummaryCard from "@/components/trip-summary-card";
 import { FUEL_NOTE } from "@/components/fuel-estimate";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { communitiesApi, type MyTrip } from "@/lib/communities-api";
 
 function isLateTrip(trip: MyTrip): boolean {
@@ -88,7 +89,7 @@ function TripCard({
         {trip.role === "driver" && (trip.status === "active" || trip.status === "paused") ? (
           <Link
             href={`/viajes/${trip.offerId}/solicitudes`}
-            className="w-fit text-sm font-bold underline"
+            className={buttonVariants({ variant: "outline", size: "sm", className: "w-fit" })}
           >
             Solicitudes
           </Link>
@@ -240,9 +241,13 @@ export default function Viajes() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-col gap-4 px-4 py-4">
-      <h1 className="text-3xl font-extrabold">Viajes</h1>
-      <div role="tablist" aria-label="Periodo" className="grid grid-cols-2 gap-2">
+    <main className="flex flex-col gap-5 px-4 pt-2 pb-6">
+      <PageHeader title="Viajes" />
+      <div
+        role="tablist"
+        aria-label="Periodo"
+        className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1"
+      >
         {(
           [
             ["upcoming", "Próximos"],
@@ -265,7 +270,8 @@ export default function Viajes() {
                 .getElementById(`trips-tab-${value === "upcoming" ? "past" : "upcoming"}`)
                 ?.focus();
             }}
-            variant={scope === value ? "default" : "outline"}
+            variant="ghost"
+            className={`h-10 rounded-lg ${scope === value ? "bg-card text-foreground shadow-sm hover:bg-card" : "text-muted-foreground"}`}
             onClick={() => {
               decided.current = true;
               setScope(value);
@@ -287,7 +293,8 @@ export default function Viajes() {
             type="button"
             size="sm"
             aria-pressed={role === value}
-            variant={role === value ? "secondary" : "outline"}
+            variant="outline"
+            className="rounded-full"
             onClick={() => {
               decided.current = true;
               setRole(value);
@@ -314,16 +321,21 @@ export default function Viajes() {
           </p>
         ) : null}
         {failed ? (
-          <div role="alert" className="flex flex-col gap-2 rounded-2xl border bg-card p-4">
+          <div
+            role="alert"
+            className="flex flex-col gap-2 rounded-2xl border bg-card p-5 shadow-sm"
+          >
             <p>No pudimos cargar tus viajes.</p>
             <Button type="button" variant="outline" onClick={() => setAttempt((n) => n + 1)}>
               Reintentar
             </Button>
           </div>
         ) : trips === null ? (
-          <p role="status" className="text-muted-foreground">
-            Cargando viajes…
-          </p>
+          <div role="status" className="space-y-3">
+            <span className="sr-only">Cargando viajes…</span>
+            <div className="h-40 animate-pulse rounded-2xl bg-muted" />
+            <div className="h-40 animate-pulse rounded-2xl bg-muted" />
+          </div>
         ) : trips.length === 0 ? (
           <EmptyState>Aún no tienes viajes. Busca uno o publica el que ya haces.</EmptyState>
         ) : (

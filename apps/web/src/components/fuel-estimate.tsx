@@ -18,9 +18,9 @@ export function FuelEstimateDetail({ estimate }: { estimate: FuelEstimate }) {
   return (
     <section
       aria-labelledby="fuel-estimate"
-      className="space-y-1 rounded-2xl border bg-card p-4 text-sm shadow-sm"
+      className="space-y-1.5 rounded-2xl border bg-card p-5 text-sm shadow-sm"
     >
-      <h2 id="fuel-estimate" className="font-bold">
+      <h2 id="fuel-estimate" className="text-base font-semibold tracking-tight">
         Combustible estimado
       </h2>
       {estimate ? (
@@ -48,7 +48,7 @@ export function FuelEstimateDetail({ estimate }: { estimate: FuelEstimate }) {
 export function FuelShareLine({ estimate }: { estimate: FuelEstimate }) {
   if (!estimate) return <p className="text-xs text-muted-foreground">{FUEL_UNKNOWN}</p>;
   return (
-    <p className="text-sm">
+    <p className="text-sm text-muted-foreground">
       {`Aporte de combustible estimado: ${solesLabel(estimate.perOccupantSoles)} por persona`}
       <SourceInfo topic="impacto" />
     </p>

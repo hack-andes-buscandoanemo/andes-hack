@@ -9,7 +9,7 @@ import { communitiesApi, type MatchRunsResponse } from "@/lib/communities-api";
 
 import { clockLabel, dateLabel, limaToday } from "../../buscar/schedule";
 
-const selectClass = "h-9 rounded-lg border border-input bg-background px-2 text-sm font-normal";
+const selectClass = "field font-normal";
 
 function strategyLine(name: string, run: MatchRunsResponse["optimizer"]) {
   return `${name}: ${run.carTripsAvoided} viajes en auto evitados · ${run.passengersMatched} pasajeros · ${run.detourMinutes} min de desvío total`;
@@ -52,15 +52,15 @@ export default function Emparejamiento({ communityId }: { communityId: string })
   }
 
   return (
-    <main className="flex flex-col gap-4 px-4 py-4">
+    <main className="flex flex-col gap-5 px-4 pt-2 pb-6">
       <header>
-        <h1 className="text-3xl font-extrabold">Emparejamiento</h1>
+        <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight">Emparejamiento</h1>
         <p className="text-muted-foreground">
           Llena los asientos de una jornada. Cada conductor sigue decidiendo a quién acepta.
         </p>
       </header>
       <form
-        className="flex flex-col gap-3 rounded-2xl border bg-card p-4 shadow-sm"
+        className="flex flex-col gap-3 rounded-2xl border bg-card p-5 shadow-sm"
         onSubmit={(event) => {
           event.preventDefault();
           void run();
@@ -92,7 +92,7 @@ export default function Emparejamiento({ communityId }: { communityId: string })
             {error}
           </p>
         ) : null}
-        <Button type="submit" disabled={running} className="h-11 w-full rounded-xl font-bold">
+        <Button type="submit" disabled={running} className="w-full">
           Ejecutar emparejamiento
         </Button>
         {running ? (
@@ -104,10 +104,10 @@ export default function Emparejamiento({ communityId }: { communityId: string })
 
       {result ? (
         <section aria-labelledby="result" className="flex flex-col gap-3">
-          <h2 id="result" className="text-lg font-bold">
+          <h2 id="result" className="text-lg font-semibold tracking-tight">
             {`${result.direction === "outbound" ? "Ida" : "Regreso"} · ${dateLabel(result.date)}`}
           </h2>
-          <div className="flex flex-col gap-2 rounded-2xl bg-brand-yellow/15 p-3 text-sm">
+          <div className="flex flex-col gap-2 rounded-2xl bg-highlight p-3 text-sm">
             <p className="font-medium">{strategyLine("Optimizador", result.optimizer)}</p>
             <p className="text-muted-foreground">
               {strategyLine("Primero en llegar", result.firstComeFirstServed)}
@@ -116,7 +116,7 @@ export default function Emparejamiento({ communityId }: { communityId: string })
               {`${result.optimizer.offers} ofertas · ${result.optimizer.requests} necesidades · ${result.optimizer.unassigned} sin asiento`}
             </p>
           </div>
-          <h3 id="suggestions" className="font-bold">
+          <h3 id="suggestions" className="text-base font-semibold tracking-tight">
             Asignaciones recomendadas
           </h3>
           {result.suggestions.length === 0 ? (
@@ -137,7 +137,7 @@ export default function Emparejamiento({ communityId }: { communityId: string })
                     {`Desvío ${suggestion.detourMinutes} min · Caminata ${suggestion.walkMinutes} min`}
                   </p>
                   {suggestion.avoidsCarTrip ? (
-                    <p className="w-fit rounded-full bg-brand-yellow px-2.5 py-0.5 text-xs font-bold text-brand-black">
+                    <p className="w-fit rounded-full bg-brand-yellow px-2.5 py-1 text-xs font-semibold text-brand-black">
                       Evita un viaje en auto
                     </p>
                   ) : null}

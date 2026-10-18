@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { RowChevron } from "@/components/row-chevron";
 import { reasonOf } from "@/lib/api-error";
 import { communitiesApi, type TravelPreferences as Preferences } from "@/lib/communities-api";
 
@@ -29,9 +30,9 @@ export default function TravelPreferences({ communityId, ...initial }: TravelPre
   return (
     <section
       aria-labelledby="travel-preferences"
-      className="flex flex-col gap-3 rounded-xl border bg-card p-4"
+      className="flex flex-col gap-3 rounded-2xl border bg-card p-5 shadow-sm"
     >
-      <h2 id="travel-preferences" className="font-bold">
+      <h2 id="travel-preferences" className="text-base font-semibold tracking-tight">
         Preferencias de viaje
       </h2>
       <div className="flex items-center justify-between gap-3">
@@ -79,10 +80,10 @@ export default function TravelPreferences({ communityId, ...initial }: TravelPre
       {/* Upcoming trips list the person's saved offers and seat requests. */}
       <Link
         href="/viajes"
-        className="flex min-h-11 items-center justify-between rounded-lg bg-muted px-3 font-medium"
+        className="flex min-h-12 items-center justify-between rounded-xl bg-muted px-4 text-[0.9375rem] font-medium transition-colors hover:bg-secondary"
       >
         Rutas recurrentes
-        <span aria-hidden>›</span>
+        <RowChevron />
       </Link>
     </section>
   );

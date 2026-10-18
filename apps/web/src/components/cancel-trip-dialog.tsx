@@ -31,9 +31,9 @@ export function CancelTripDialog({
       role="dialog"
       aria-modal="true"
       aria-labelledby="cancel-trip-title"
-      className="space-y-4 rounded-2xl border bg-card p-4 shadow-md"
+      className="space-y-4 rounded-2xl border bg-card p-5 shadow-md"
     >
-      <h2 id="cancel-trip-title" className="text-xl font-bold">
+      <h2 id="cancel-trip-title" className="text-lg font-semibold tracking-tight">
         {title}
       </h2>
       <p className="text-sm text-muted-foreground">
@@ -62,7 +62,7 @@ export function CancelTripDialog({
       {isLate ? (
         <div
           role="status"
-          className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200"
+          className="rounded-xl border border-warning/30 bg-warning-surface p-3 text-sm text-warning"
         >
           <p className="font-semibold">Aviso de cancelación de último minuto</p>
           <p>

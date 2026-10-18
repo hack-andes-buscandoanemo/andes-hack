@@ -15,7 +15,7 @@ export default function SourceInfo({
     <Link
       href={`/datos#${topic}`}
       aria-label="De dónde sale esta cifra"
-      className="ml-1 inline-flex align-middle text-muted-foreground"
+      className="-my-1 ml-0.5 inline-flex size-6 items-center justify-center rounded-full align-middle text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
     >
       <HugeiconsIcon icon={InformationCircleIcon} className="size-4" aria-hidden />
     </Link>

@@ -31,7 +31,7 @@ export default function ProfileAvatar({
     <span
       role="img"
       aria-label={`Iniciales de ${name}`}
-      className={`${className} flex shrink-0 items-center justify-center rounded-full bg-brand-black font-bold text-white`}
+      className={`${className} flex shrink-0 items-center justify-center rounded-full bg-foreground text-[0.8125rem] font-semibold text-background`}
     >
       {initials}
     </span>

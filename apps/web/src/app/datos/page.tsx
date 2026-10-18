@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import StandaloneHeader from "@/components/standalone-header";
 import { Button } from "@/components/ui/button";
 import type { components } from "@/lib/api-schema";
 import { httpClient } from "@/lib/http-client";
@@ -68,16 +69,17 @@ export default function DataPage() {
   }, [attempt]);
 
   return (
-    <main className="mx-auto w-full max-w-3xl space-y-8 px-4 py-10">
+    <main className="mx-auto w-full max-w-3xl space-y-8 px-4 pt-5 pb-10">
+      <StandaloneHeader />
       <header className="space-y-2">
-        <h1 className="text-3xl font-extrabold">Datos y supuestos</h1>
+        <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight">Datos y supuestos</h1>
         <p className="text-muted-foreground">
           De dónde sale cada número de Te Jalo. Solo llamamos dato real a lo que tiene una fuente
           que puedes revisar; todo lo demás es un estimado del equipo.
         </p>
       </header>
       {failed ? (
-        <div className="space-y-3 rounded-2xl border bg-card p-4">
+        <div className="space-y-3 rounded-2xl border bg-card p-5 shadow-sm">
           <p role="alert" className="text-sm font-medium text-destructive">
             No pudimos cargar los datos.
           </p>
@@ -100,14 +102,14 @@ export default function DataPage() {
               aria-labelledby={`${topic.id}-heading`}
               className="scroll-mt-6 space-y-3"
             >
-              <h2 id={`${topic.id}-heading`} className="text-xl font-bold">
+              <h2 id={`${topic.id}-heading`} className="text-lg font-semibold tracking-tight">
                 {topic.title}
               </h2>
               <div className="overflow-x-auto rounded-2xl border bg-card">
-                <table className="w-full text-left text-sm">
-                  <thead className="text-xs text-muted-foreground">
+                <table className="w-full min-w-[40rem] text-left text-sm">
+                  <thead className="border-b bg-muted/50 text-xs text-muted-foreground">
                     <tr>
-                      <th className="p-3 font-semibold">Dato</th>
+                      <th className="w-[34%] p-3 font-semibold">Dato</th>
                       <th className="p-3 font-semibold">Valor</th>
                       <th className="p-3 font-semibold">Tipo</th>
                       <th className="p-3 font-semibold">Fuente</th>
@@ -116,12 +118,14 @@ export default function DataPage() {
                   <tbody>
                     {rows.map((source) => (
                       <tr key={source.id} id={source.id} className="border-t align-top">
-                        <td className="p-3 font-medium">{source.label}</td>
-                        <td className="p-3 whitespace-nowrap">{valueLabel(source)}</td>
-                        <td className="p-3">
+                        <td className="p-3 align-top font-medium">{source.label}</td>
+                        <td className="p-3 align-top whitespace-nowrap tabular-nums">
+                          {valueLabel(source)}
+                        </td>
+                        <td className="p-3 align-top">
                           <KindCell source={source} />
                         </td>
-                        <td className="p-3 text-muted-foreground">{source.source}</td>
+                        <td className="p-3 align-top text-muted-foreground">{source.source}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -132,7 +136,7 @@ export default function DataPage() {
         })
       )}
       <section id="no-medimos" aria-labelledby="no-medimos-heading" className="space-y-3">
-        <h2 id="no-medimos-heading" className="text-xl font-bold">
+        <h2 id="no-medimos-heading" className="text-lg font-semibold tracking-tight">
           Qué no medimos
         </h2>
         <ul className="list-disc space-y-1 pl-5 text-sm">

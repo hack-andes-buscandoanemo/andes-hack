@@ -88,12 +88,7 @@ export default function ShareTrip({
         <>
           <label className="block space-y-1 text-sm font-medium">
             Enlace para compartir
-            <input
-              ref={input}
-              readOnly
-              value={shared.url}
-              className="block w-full rounded-lg border border-input bg-background p-2 font-normal"
-            />
+            <input ref={input} readOnly value={shared.url} className="field font-normal" />
           </label>
           <p className="text-xs text-muted-foreground">
             El enlace vence al final del día del viaje.

@@ -21,11 +21,14 @@ export function TripPrice({
   paymentMethods: PaymentMethod[];
 }) {
   if (!priceCents) {
-    return <p className="text-sm font-medium">Sin precio fijado: lo acuerdan entre ustedes.</p>;
+    return (
+      <p className="text-sm text-muted-foreground">Sin precio fijado: lo acuerdan entre ustedes.</p>
+    );
   }
   return (
-    <p className="text-sm">
-      <span className="font-extrabold">{`${soles(priceCents)} por asiento`}</span>
+    <p className="text-sm text-muted-foreground">
+      <span className="text-base font-bold text-foreground tabular-nums">{soles(priceCents)}</span>
+      <span className="text-foreground"> por asiento</span>
       {paymentMethods.length > 0
         ? ` · se paga con ${paymentMethods.map((method) => methodLabels[method]).join(" o ")}`
         : ""}
@@ -36,8 +39,12 @@ export function TripPrice({
 // The badge of a trip whose driver is sharing the car right now.
 export function LiveBadge() {
   return (
-    <span className="w-fit rounded-full bg-brand-yellow px-2.5 py-0.5 text-xs font-bold text-brand-black">
-      ● En vivo
+    <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive">
+      <span aria-hidden className="relative flex size-2">
+        <span className="absolute inline-flex size-full animate-ping rounded-full bg-destructive opacity-60 motion-reduce:animate-none" />
+        <span className="relative inline-flex size-2 rounded-full bg-destructive" />
+      </span>
+      En vivo
     </span>
   );
 }

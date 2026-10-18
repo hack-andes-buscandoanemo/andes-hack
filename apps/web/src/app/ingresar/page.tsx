@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import StandaloneHeader from "@/components/standalone-header";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
@@ -157,8 +158,11 @@ export default function EnterPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-col gap-5 px-4 py-10">
-      <h1 className="text-center text-3xl font-extrabold">Ingresar con mi entidad</h1>
+    <main className="mx-auto flex w-full max-w-md flex-col gap-6 px-4 pt-5 pb-10">
+      <StandaloneHeader />
+      <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight">
+        Ingresar con mi entidad
+      </h1>
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="community-search">Elige tu comunidad</Label>
@@ -177,12 +181,12 @@ export default function EnterPage() {
                   type="button"
                   onClick={() => handleSelectCommunity(item.id)}
                   aria-pressed={isSelected}
-                  className={`flex w-full items-center justify-between rounded-xl border p-3 text-left transition ${
-                    isSelected ? "border-foreground bg-brand-yellow/20" : "bg-card"
+                  className={`flex min-h-14 w-full items-center justify-between rounded-xl border px-4 py-3 text-left shadow-xs transition-colors hover:border-foreground/30 ${
+                    isSelected ? "border-foreground bg-highlight" : "bg-card"
                   }`}
                 >
                   <div className="flex flex-col">
-                    <span className="font-bold">{item.name}</span>
+                    <span className="font-semibold">{item.name}</span>
                     <span className="text-xs text-muted-foreground">{KIND_LABELS[item.kind]}</span>
                   </div>
                   {item.isDemo && (
@@ -319,14 +323,14 @@ export default function EnterPage() {
         </form>
       )}
 
-      <div className="flex flex-col gap-2 pt-2">
-        <Link
-          href="/crear-cuenta"
-          className="flex min-h-12 items-center justify-center rounded-full bg-brand-yellow px-5 font-bold text-brand-black"
-        >
+      <div className="flex flex-col gap-2 border-t pt-6">
+        <Link href="/crear-cuenta" className={buttonVariants({ variant: "outline", size: "lg" })}>
           Crear cuenta
         </Link>
-        <Link href="/iniciar-sesion" className="text-center font-medium underline">
+        <Link
+          href="/iniciar-sesion"
+          className="inline-flex min-h-11 items-center justify-center text-sm font-semibold underline-offset-4 hover:underline"
+        >
           Ya tengo una cuenta
         </Link>
       </div>

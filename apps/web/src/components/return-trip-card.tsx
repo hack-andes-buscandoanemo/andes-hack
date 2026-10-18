@@ -45,8 +45,11 @@ export default function ReturnTripCard({
   // Nothing to prefill without a shared calendar, but the way back must stay reachable.
   if (!context || !calendar)
     return (
-      <section aria-label="¿Y el regreso?" className="space-y-3 rounded-2xl border bg-card p-4">
-        <h2 className="text-lg font-bold">¿Y el regreso?</h2>
+      <section
+        aria-label="¿Y el regreso?"
+        className="space-y-3 rounded-2xl border bg-card p-5 shadow-sm"
+      >
+        <h2 className="text-lg font-semibold tracking-tight">¿Y el regreso?</h2>
         <Link href="/buscar" className="text-sm font-bold underline">
           Buscar regreso
         </Link>
@@ -54,15 +57,18 @@ export default function ReturnTripCard({
     );
   const { date, days } = calendar;
   return (
-    <section aria-label="¿Y el regreso?" className="space-y-3 rounded-2xl border bg-card p-4">
-      <h2 className="text-lg font-bold">¿Y el regreso?</h2>
+    <section
+      aria-label="¿Y el regreso?"
+      className="space-y-3 rounded-2xl border bg-card p-5 shadow-sm"
+    >
+      <h2 className="text-lg font-semibold tracking-tight">¿Y el regreso?</h2>
       {returns.map(({ trip: acceptedReturn, label }) => (
         <section
           key={acceptedReturn.id}
           aria-label={`Ida y regreso: ${label}`}
           className="space-y-2 rounded-xl border p-3 text-sm"
         >
-          <h3 className="font-bold">{`Ida y regreso: ${label}`}</h3>
+          <h3 className="text-base font-semibold tracking-tight">{`Ida y regreso: ${label}`}</h3>
           <p>Ambos viajes aceptados para esta fecha o estos días.</p>
           <div className="flex flex-col gap-2 font-bold underline">
             <Link href={`/viajes/${trip.offerId}`}>

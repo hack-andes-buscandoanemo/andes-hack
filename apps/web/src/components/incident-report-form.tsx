@@ -65,14 +65,14 @@ export default function IncidentReportForm({
   return (
     <form
       onSubmit={(event) => void submit(event)}
-      className="space-y-3 rounded-2xl border bg-card p-4"
+      className="space-y-3 rounded-2xl border bg-card p-5 shadow-sm"
     >
       <label className="block space-y-1 text-sm font-medium">
         Tipo
         <select
           value={type}
           onChange={(event) => setType(event.target.value as CreateIncidentReportRequest["type"])}
-          className="block min-h-11 w-full rounded-lg border border-input bg-background px-3"
+          className="field"
         >
           {incidentTypes.map(([value, label]) => (
             <option key={value} value={value}>
@@ -87,7 +87,7 @@ export default function IncidentReportForm({
           <select
             value={reportedUserId}
             onChange={(event) => setReportedUserId(event.target.value)}
-            className="block min-h-11 w-full rounded-lg border border-input bg-background px-3"
+            className="field"
           >
             <option value="">No especificar</option>
             {reportedUsers.map((person) => (
@@ -104,7 +104,7 @@ export default function IncidentReportForm({
           value={description}
           maxLength={1000}
           onChange={(event) => setDescription(event.target.value)}
-          className="block min-h-24 w-full rounded-lg border border-input bg-background p-3 font-normal"
+          className="field font-normal"
         />
       </label>
       <p className="text-sm text-muted-foreground">

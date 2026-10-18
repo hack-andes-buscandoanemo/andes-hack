@@ -1,12 +1,16 @@
 "use client";
 
 import { CreateTripOfferBodySchema, CreateVehicleBodySchema } from "@andes-hack/api";
+import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { useForm } from "@tanstack/react-form";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import PlacePicker from "@/components/place-picker";
 import RouteMap from "@/components/route-map";
+import StandaloneHeader from "@/components/standalone-header";
 import { paymentMethodOptions } from "@/components/trip-price";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -204,7 +208,7 @@ export default function OfferPage() {
   if (!membership) {
     return (
       <main className="mx-auto flex w-full max-w-md flex-col items-center gap-4 px-4 py-10 text-center">
-        <h1 className="text-3xl font-extrabold">Ofrecer viaje</h1>
+        <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight">Ofrecer viaje</h1>
       </main>
     );
   }
@@ -212,12 +216,22 @@ export default function OfferPage() {
   const activeVehicle = vehicles[0] ?? null;
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-10">
-      <h1 className="text-3xl font-extrabold">Ofrecer viaje</h1>
+    <main className="mx-auto flex w-full max-w-md flex-col gap-6 px-4 pt-5 pb-10 md:max-w-xl">
+      <StandaloneHeader />
+      <div className="space-y-3">
+        <Link
+          href="/inicio"
+          className="-ml-1 inline-flex min-h-9 items-center gap-1 rounded-lg px-1 text-sm font-medium text-muted-foreground hover:text-foreground"
+        >
+          <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4" aria-hidden />
+          Volver al inicio
+        </Link>
+        <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight">Ofrecer viaje</h1>
+      </div>
 
       {!activeVehicle ? (
-        <section className="flex flex-col gap-4 rounded-2xl border bg-card p-4">
-          <h2 className="text-xl font-bold">Tu vehículo</h2>
+        <section className="flex flex-col gap-4 rounded-2xl border bg-card p-5 shadow-sm">
+          <h2 className="text-lg font-semibold tracking-tight">Tu vehículo</h2>
           <form
             noValidate
             onSubmit={(e) => {
@@ -296,7 +310,7 @@ export default function OfferPage() {
           </form>
         </section>
       ) : (
-        <div className="rounded-xl border bg-muted/40 p-3 text-sm font-medium">
+        <div className="rounded-xl border bg-muted px-4 py-3 text-sm font-medium">
           {`${activeVehicle.make} ${activeVehicle.model} · ${activeVehicle.plate} (${activeVehicle.color})`}
         </div>
       )}
@@ -364,7 +378,7 @@ export default function OfferPage() {
                   id="departure-time"
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value)}
-                  className="h-10 rounded-md border bg-background px-3 text-sm"
+                  className="field"
                 >
                   {TIME_SLOTS_15M.map((slot) => (
                     <option key={slot} value={slot}>
@@ -377,7 +391,7 @@ export default function OfferPage() {
           </offerForm.Field>
 
           <div className="flex flex-col gap-2">
-            <span className="text-sm font-semibold">Cuándo</span>
+            <span className="text-sm font-medium">Cuándo</span>
             <div className="flex gap-2">
               <Button
                 type="button"
@@ -414,7 +428,7 @@ export default function OfferPage() {
                               : [...field.state.value, day.iso].sort((a, b) => a - b);
                             field.handleChange(next);
                           }}
-                          className={`flex size-10 items-center justify-center rounded-full border text-sm font-bold ${
+                          className={`flex size-11 items-center justify-center rounded-full border text-sm font-semibold shadow-xs transition-colors ${
                             active
                               ? "border-foreground bg-brand-yellow text-brand-black"
                               : "bg-card"
@@ -463,7 +477,7 @@ export default function OfferPage() {
           <offerForm.Field name="maxDetourMinutes">
             {(field) => (
               <div className="flex flex-col gap-2">
-                <span className="text-sm font-semibold">Desvío máximo</span>
+                <span className="text-sm font-medium">Desvío máximo</span>
                 <div className="flex flex-col gap-1.5">
                   {DETOUR_OPTIONS.map((opt) => {
                     const selected = field.state.value === opt.value;
@@ -473,8 +487,8 @@ export default function OfferPage() {
                         type="button"
                         aria-pressed={selected}
                         onClick={() => field.handleChange(opt.value)}
-                        className={`rounded-xl border p-2.5 text-left text-sm font-medium ${
-                          selected ? "border-foreground bg-brand-yellow/20 font-bold" : "bg-card"
+                        className={`flex min-h-12 items-center rounded-xl border px-4 text-left text-sm font-medium shadow-xs transition-colors ${
+                          selected ? "border-foreground bg-highlight font-semibold" : "bg-card"
                         }`}
                       >
                         {opt.label}
@@ -528,7 +542,7 @@ export default function OfferPage() {
                 <offerForm.Field name="paymentMethods">
                   {(field) => (
                     <fieldset className="flex flex-col gap-2">
-                      <legend className="text-sm font-semibold">Cómo te pagan</legend>
+                      <legend className="text-sm font-medium">Cómo te pagan</legend>
                       <div className="flex gap-2">
                         {paymentMethodOptions.map((option) => {
                           const active = field.state.value.includes(option.value);
@@ -544,10 +558,8 @@ export default function OfferPage() {
                                     : [...field.state.value, option.value],
                                 )
                               }
-                              className={`rounded-xl border px-4 py-2 text-sm font-medium ${
-                                active
-                                  ? "border-foreground bg-brand-yellow/20 font-bold"
-                                  : "bg-card"
+                              className={`min-h-11 rounded-xl border px-5 text-sm font-medium shadow-xs transition-colors ${
+                                active ? "border-foreground bg-highlight font-semibold" : "bg-card"
                               }`}
                             >
                               {option.label}

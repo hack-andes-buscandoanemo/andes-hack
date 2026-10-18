@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 import { FUEL_NOTE, FuelShareLine } from "@/components/fuel-estimate";
 import ProfileAvatar from "@/components/profile-avatar";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { reasonOf } from "@/lib/api-error";
 import { communitiesApi, type MatchProposal } from "@/lib/communities-api";
 
@@ -57,11 +57,11 @@ export default function Proposals({ communityId }: { communityId: string }) {
   if (proposals.length === 0) return null;
 
   return (
-    <section aria-label="Propuestas para ti" className="flex flex-col gap-2">
+    <section aria-label="Propuestas para ti" className="flex flex-col gap-3">
       {proposals.map((proposal) => (
         <article
           key={proposal.suggestionId}
-          className="flex flex-col gap-1 rounded-2xl border-2 border-brand-yellow bg-card p-4 text-sm shadow-sm"
+          className="flex flex-col gap-1.5 rounded-2xl border bg-card p-5 text-sm shadow-sm ring-2 ring-brand-yellow"
         >
           <div className="flex items-center gap-3">
             <ProfileAvatar
@@ -69,7 +69,7 @@ export default function Proposals({ communityId }: { communityId: string }) {
               photoUrl={proposal.driverPhotoUrl}
               className="size-10"
             />
-            <p className="font-bold">{`Tenemos una propuesta para ti: viaje de ${proposal.driverName}`}</p>
+            <p className="font-semibold">{`Tenemos una propuesta para ti: viaje de ${proposal.driverName}`}</p>
           </div>
           <p className="text-muted-foreground">
             {`${proposal.direction === "outbound" ? "Ida" : "Regreso"} · ${dateLabel(proposal.date)}`}
@@ -86,17 +86,16 @@ export default function Proposals({ communityId }: { communityId: string }) {
               {`Solicitud enviada. Te avisaremos cuando ${proposal.driverName} responda.`}
             </p>
           ) : (
-            <div className="mt-2 grid grid-cols-2 gap-2">
+            <div className="mt-3 grid grid-cols-2 gap-2">
               <Link
                 href={`/viajes/${proposal.offerId}`}
-                className="flex min-h-11 items-center justify-center rounded-full border font-bold"
+                className={buttonVariants({ variant: "outline" })}
               >
                 Ver detalle
               </Link>
               <Button
                 type="button"
                 disabled={sending === proposal.suggestionId}
-                className="min-h-11 rounded-full font-bold"
                 onClick={() => void requestSeat(proposal)}
               >
                 Solicitar asiento

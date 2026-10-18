@@ -9,6 +9,7 @@ import z from "zod";
 import { authClient } from "@/lib/auth-client";
 
 import AuthField from "./auth-field";
+import StandaloneHeader from "./standalone-header";
 import { Button } from "./ui/button";
 
 const schema = z.object({
@@ -39,58 +40,61 @@ export default function SignInForm() {
   });
 
   return (
-    <div className="mx-auto w-full max-w-md px-4 py-10">
-      <h1 className="mb-6 text-center text-3xl font-extrabold">Iniciar sesión</h1>
-      <form
-        noValidate
-        onSubmit={(e) => {
-          e.preventDefault();
-          form.handleSubmit();
-        }}
-        className="space-y-4"
-      >
-        <form.Field name="email">
-          {(field) => (
-            <AuthField
-              name="email"
-              label="Correo electrónico"
-              type="email"
-              autoComplete="email"
-              value={field.state.value}
-              errors={field.state.meta.errors}
-              onChange={field.handleChange}
-              onBlur={field.handleBlur}
-            />
+    <div className="mx-auto flex min-h-svh w-full max-w-md flex-col gap-8 px-4 pt-5 pb-10">
+      <StandaloneHeader />
+      <div className="rounded-2xl border bg-card p-6 shadow-sm">
+        <h1 className="mb-6 text-2xl leading-tight font-bold tracking-tight">Iniciar sesión</h1>
+        <form
+          noValidate
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit();
+          }}
+          className="space-y-4"
+        >
+          <form.Field name="email">
+            {(field) => (
+              <AuthField
+                name="email"
+                label="Correo electrónico"
+                type="email"
+                autoComplete="email"
+                value={field.state.value}
+                errors={field.state.meta.errors}
+                onChange={field.handleChange}
+                onBlur={field.handleBlur}
+              />
+            )}
+          </form.Field>
+          <form.Field name="password">
+            {(field) => (
+              <AuthField
+                name="password"
+                label="Contraseña"
+                type="password"
+                autoComplete="current-password"
+                value={field.state.value}
+                errors={field.state.meta.errors}
+                onChange={field.handleChange}
+                onBlur={field.handleBlur}
+              />
+            )}
+          </form.Field>
+          {formError && (
+            <p role="alert" className="text-sm font-medium text-destructive">
+              {formError}
+            </p>
           )}
-        </form.Field>
-        <form.Field name="password">
-          {(field) => (
-            <AuthField
-              name="password"
-              label="Contraseña"
-              type="password"
-              autoComplete="current-password"
-              value={field.state.value}
-              errors={field.state.meta.errors}
-              onChange={field.handleChange}
-              onBlur={field.handleBlur}
-            />
-          )}
-        </form.Field>
-        {formError && (
-          <p role="alert" className="text-sm font-medium text-destructive">
-            {formError}
-          </p>
-        )}
-        <form.Subscribe selector={(state) => state.isSubmitting}>
-          {(isSubmitting) => (
-            <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
-              {isSubmitting ? "Iniciando sesión..." : "Iniciar sesión"}
-            </Button>
-          )}
-        </form.Subscribe>
-      </form>
-      <p className="mt-4 text-center">
+          <form.Subscribe selector={(state) => state.isSubmitting}>
+            {(isSubmitting) => (
+              <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
+                {isSubmitting ? "Iniciando sesión..." : "Iniciar sesión"}
+              </Button>
+            )}
+          </form.Subscribe>
+        </form>
+      </div>
+      <p className="text-center text-sm">
         <Link href="/crear-cuenta" className="font-medium underline">
           Crear cuenta
         </Link>

@@ -1,5 +1,12 @@
 "use client";
 
+import {
+  ArrowLeft01Icon,
+  CheckmarkBadge01Icon,
+  CheckmarkCircle02Icon,
+  Location01Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { isAxiosError } from "axios";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -15,7 +22,7 @@ import ShareTrip from "@/components/share-trip";
 import SourceInfo from "@/components/source-info";
 import ProfileAvatar from "@/components/profile-avatar";
 import RouteMap from "@/components/route-map";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { LiveBadge, TripPrice } from "@/components/trip-price";
 import { reasonOf } from "@/lib/api-error";
 import { communitiesApi, type OfferDetail } from "@/lib/communities-api";
@@ -80,10 +87,10 @@ export default function TripDetailPage() {
 
   if (loadError) {
     return (
-      <main className="mx-auto w-full max-w-md px-4 py-6">
+      <main className="px-4 pt-2 pb-6">
         <p
           role="alert"
-          className="rounded-2xl border bg-card p-4 text-sm font-medium text-destructive"
+          className="rounded-2xl border bg-card p-5 text-sm font-medium text-destructive"
         >
           {loadError}
         </p>
@@ -92,7 +99,7 @@ export default function TripDetailPage() {
   }
   if (!detail) {
     return (
-      <main className="mx-auto w-full max-w-md px-4 py-6">
+      <main className="px-4 pt-2 pb-6">
         <p role="status" className="text-sm text-muted-foreground">
           Cargando viaje…
         </p>
@@ -178,7 +185,7 @@ export default function TripDetailPage() {
         <div className="space-y-3">
           <Link
             href={`/viajes/${id}/solicitudes`}
-            className="flex h-11 w-full items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground hover:bg-primary/90"
+            className={buttonVariants({ size: "lg", className: "w-full" })}
           >
             Solicitudes
           </Link>
@@ -189,8 +196,8 @@ export default function TripDetailPage() {
           ) : null}
           <Button
             type="button"
-            variant="outline"
-            className="h-11 w-full rounded-xl font-bold text-destructive hover:text-destructive"
+            variant="destructive"
+            className="w-full"
             onClick={() => setShowCancelDialog(true)}
           >
             Cancelar viaje
@@ -230,25 +237,25 @@ export default function TripDetailPage() {
             <Button
               type="button"
               variant="outline"
-              className="w-full font-bold"
+              className="w-full"
               onClick={() => setShowAlternatives((prev) => !prev)}
             >
               {showAlternatives ? "Ocultar alternativas" : "Ver alternativas"}
             </Button>
             {showAlternatives ? (
               <div className="space-y-2 pt-2">
-                <h3 className="text-sm font-bold">Viajes alternativos disponibles</h3>
+                <h3 className="text-sm font-semibold">Viajes alternativos disponibles</h3>
                 {detail.alternatives.map((alt) => (
                   <div
                     key={alt.offerId}
-                    className="space-y-1 rounded-xl border bg-card p-3 shadow-sm"
+                    className="space-y-1 rounded-2xl border bg-card p-5 shadow-sm"
                   >
-                    <p className="font-bold">{alt.driverName}</p>
+                    <p className="font-semibold">{alt.driverName}</p>
                     <p className="text-sm text-muted-foreground">{`Salida: ${alt.departureTime.slice(0, 5)} · ${alt.meetingPointName}`}</p>
                     <p className="text-xs text-muted-foreground">{`${alt.seatsFree} asientos libres`}</p>
                     <Link
                       href={`/viajes/${alt.offerId}`}
-                      className="inline-block pt-1 text-sm font-bold underline"
+                      className="inline-block pt-1 text-sm font-semibold underline underline-offset-4"
                     >
                       Ver viaje
                     </Link>
@@ -273,8 +280,8 @@ export default function TripDetailPage() {
         ) : null}
         <Button
           type="button"
-          variant="outline"
-          className="h-11 w-full rounded-xl font-bold text-destructive hover:text-destructive"
+          variant="destructive"
+          className="w-full"
           onClick={() => setShowCancelDialog(true)}
         >
           Cancelar viaje
@@ -318,7 +325,7 @@ export default function TripDetailPage() {
         <Button
           type="button"
           variant="outline"
-          className="h-11 w-full rounded-xl font-bold"
+          className="w-full"
           onClick={() => void withdraw(pendingId)}
         >
           Retirar solicitud
@@ -345,7 +352,7 @@ export default function TripDetailPage() {
             value={message}
             maxLength={280}
             onChange={(event) => setMessage(event.target.value)}
-            className="block w-full rounded-lg border border-input bg-background p-2 font-normal"
+            className="field font-normal"
           />
         </label>
         {error ? (
@@ -353,7 +360,7 @@ export default function TripDetailPage() {
             {error}
           </p>
         ) : null}
-        <Button type="submit" disabled={sending} className="h-11 w-full rounded-xl font-bold">
+        <Button type="submit" size="lg" disabled={sending} className="w-full">
           {sending ? "Enviando…" : "Solicitar asiento"}
         </Button>
       </form>
@@ -364,43 +371,58 @@ export default function TripDetailPage() {
   const to = outbound ? detail.destinationName : detail.originZoneName;
   const { match } = detail;
   return (
-    <main className="mx-auto w-full max-w-md space-y-4 px-4 py-6">
-      <h1 className="text-2xl font-extrabold">Detalle del viaje</h1>
-      <section className="flex items-center gap-3 rounded-2xl border bg-card p-4 shadow-sm">
+    <main className="space-y-4 px-4 pt-2 pb-6">
+      <div className="space-y-3">
+        <Link
+          href="/viajes"
+          className="-ml-1 inline-flex min-h-9 items-center gap-1 rounded-lg px-1 text-sm font-medium text-muted-foreground hover:text-foreground"
+        >
+          <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4" aria-hidden />
+          Viajes
+        </Link>
+        <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight">Detalle del viaje</h1>
+      </div>
+      <section className="flex items-center gap-4 rounded-2xl border bg-card p-5 shadow-sm">
         <ProfileAvatar
           name={detail.driverName}
           photoUrl={detail.driverPhotoUrl}
-          className="size-12"
+          className="size-14"
         />
-        <div>
-          <p className="font-bold">{detail.driverName}</p>
-          <p className="w-fit rounded-full bg-brand-yellow px-2.5 py-0.5 text-xs font-bold text-brand-black">
+        <div className="min-w-0 space-y-0.5">
+          <p className="text-lg font-semibold tracking-tight">{detail.driverName}</p>
+          <p className="inline-flex items-center gap-1 text-sm font-medium text-success">
+            <HugeiconsIcon icon={CheckmarkBadge01Icon} className="size-4" aria-hidden />
             Miembro verificado
           </p>
-          <p className="text-xs text-muted-foreground">{detail.communityName}</p>
+          <p className="text-[0.8125rem] text-muted-foreground">{detail.communityName}</p>
         </div>
       </section>
-      <section className="space-y-1 rounded-2xl border bg-card p-4 shadow-sm">
-        <p className="font-semibold">{`${from} → ${to}`}</p>
+      <section className="space-y-3 rounded-2xl border bg-card p-5 shadow-sm">
+        <p className="text-[0.9375rem] font-semibold">{`${from} → ${to}`}</p>
         <RouteMap route={detail.routeMap} livePosition={livePosition} dropOff={dropOff} />
-        {detail.daysOfWeek ? (
-          <p className="text-sm">{`Viaje recurrente: ${daysLabel(detail.daysOfWeek)}`}</p>
-        ) : detail.date ? (
-          <p className="text-sm">{dateLabel(detail.date)}</p>
-        ) : null}
-        <p className="text-sm">{`Salida: ${clockLabel(detail.departureTime.slice(0, 5))}`}</p>
-        {match ? (
-          <>
-            <p className="text-sm">
+        <div className="space-y-1 text-sm">
+          {detail.daysOfWeek ? (
+            <p className="text-muted-foreground">{`Viaje recurrente: ${daysLabel(detail.daysOfWeek)}`}</p>
+          ) : detail.date ? (
+            <p className="text-muted-foreground">{dateLabel(detail.date)}</p>
+          ) : null}
+          <p className="font-medium tabular-nums">{`Salida: ${clockLabel(detail.departureTime.slice(0, 5))}`}</p>
+          {match ? (
+            <p className="tabular-nums">
               {`Llegada estimada: ${clockLabel(match.arrivalAt)}`}
               <SourceInfo topic="tiempos" />
             </p>
-            <div className="rounded-xl bg-brand-yellow/30 p-2 text-sm">
-              <p className="text-xs font-bold">Tu punto de encuentro</p>
-              <p>{match.meetingPointName}</p>
-              <p>{`Recogida: ${clockLabel(match.pickupAt)}`}</p>
+          ) : null}
+        </div>
+        {match ? (
+          <div className="flex gap-3 rounded-xl bg-highlight p-4 text-sm text-highlight-foreground">
+            <HugeiconsIcon icon={Location01Icon} className="mt-0.5 size-5 shrink-0" aria-hidden />
+            <div className="space-y-0.5">
+              <p className="text-xs font-semibold tracking-wide uppercase">Tu punto de encuentro</p>
+              <p className="font-medium">{match.meetingPointName}</p>
+              <p className="tabular-nums">{`Recogida: ${clockLabel(match.pickupAt)}`}</p>
             </div>
-          </>
+          </div>
         ) : null}
       </section>
       <LiveTrip
@@ -417,7 +439,7 @@ export default function TripDetailPage() {
         onPosition={setLivePosition}
       />
       {detail.isOwn ? null : <DropOffSuggestion route={detail.routeMap} onSuggest={setDropOff} />}
-      <section className="space-y-1 rounded-2xl border bg-card p-4 text-sm shadow-sm">
+      <section className="space-y-1.5 rounded-2xl border bg-card p-5 text-sm shadow-sm">
         {detail.live ? <LiveBadge /> : null}
         <TripPrice priceCents={detail.priceCents} paymentMethods={detail.paymentMethods} />
         <p>
@@ -443,24 +465,49 @@ export default function TripDetailPage() {
         ) : null}
       </section>
       <FuelEstimateDetail estimate={detail.fuelEstimate} />
-      <section className="space-y-2 rounded-2xl border bg-card p-4 text-sm shadow-sm">
-        <h2 className="font-bold">Seguridad del viaje</h2>
-        <ul className="flex flex-wrap items-start gap-3">
-          <li>Miembro verificado</li>
-          {detail.vehicle ? <li>Vehículo registrado</li> : null}
-          {detail.vehicle ? <li>Info del vehículo disponible</li> : null}
+      <section className="space-y-2 rounded-2xl border bg-card p-5 text-sm shadow-sm">
+        <h2 className="text-base font-semibold tracking-tight">Seguridad del viaje</h2>
+        <ul className="flex flex-wrap items-start gap-x-4 gap-y-2">
+          <li className="inline-flex items-center gap-1.5">
+            <HugeiconsIcon
+              icon={CheckmarkCircle02Icon}
+              className="size-4 text-success"
+              aria-hidden
+            />
+            Miembro verificado
+          </li>
+          {detail.vehicle ? (
+            <li className="inline-flex items-center gap-1.5">
+              <HugeiconsIcon
+                icon={CheckmarkCircle02Icon}
+                className="size-4 text-success"
+                aria-hidden
+              />
+              Vehículo registrado
+            </li>
+          ) : null}
+          {detail.vehicle ? (
+            <li className="inline-flex items-center gap-1.5">
+              <HugeiconsIcon
+                icon={CheckmarkCircle02Icon}
+                className="size-4 text-success"
+                aria-hidden
+              />
+              Info del vehículo disponible
+            </li>
+          ) : null}
           {detail.booking?.status === "accepted" && !withdrawn ? (
             <li className="contents">
               <ShareTrip tile bookingId={detail.booking.id} label="Compartir detalles del viaje" />
             </li>
           ) : (
-            <li className="flex flex-col items-center gap-1 text-center">
+            <li className="flex w-full flex-col gap-1">
               <Button
                 type="button"
                 variant="outline"
                 disabled
                 aria-describedby="share-unavailable"
-                className="h-auto rounded-2xl px-3 py-2 whitespace-normal"
+                className="w-full whitespace-normal"
               >
                 Compartir detalles del viaje
               </Button>
@@ -472,8 +519,8 @@ export default function TripDetailPage() {
         </ul>
       </section>
       {detail.note ? (
-        <section className="rounded-2xl border bg-card p-4 text-sm shadow-sm">
-          <h2 className="font-bold">Nota del conductor</h2>
+        <section className="rounded-2xl border bg-card p-5 text-sm shadow-sm">
+          <h2 className="text-base font-semibold tracking-tight">Nota del conductor</h2>
           <p>{detail.note}</p>
         </section>
       ) : null}
@@ -496,11 +543,11 @@ export default function TripDetailPage() {
         )
       ) : null}
       {action}
-      <EmptyState>
+      <p className="space-y-1 rounded-2xl bg-muted p-4 text-sm text-muted-foreground">
         <span className="block">Espera máxima: 3 min</span>
         <span className="block">Te Jalo no cobra: el pago se hace con el conductor</span>
         <span className="block">Puedes cancelar cuando quieras</span>
-      </EmptyState>
+      </p>
     </main>
   );
 }
