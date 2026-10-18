@@ -2740,6 +2740,8 @@ export interface components {
                 message: string | null;
                 avoidsCar: boolean;
                 recommended: boolean;
+                /** @enum {string|null} */
+                today: "not_started" | "in_progress" | "arrived" | "no_show" | null;
             }[];
         };
         CancelBookingResponse: {

@@ -841,3 +841,49 @@ describe("a trip that leaves just after midnight", () => {
     expect((await nextDay.json()).details.code).toBe("trip_not_today");
   });
 });
+
+describe("the driver's list of passengers", () => {
+  it("says where each accepted passenger is today", async () => {
+    const org = await seedWorld();
+    const driver = await createMember(org.id, "driver", "Carlos Quispe Huamán");
+    const aboard = await createMember(org.id, "aboard", "Ana Aboard");
+    const absent = await createMember(org.id, "absent", "Luis Ausente");
+    const waiting = await createMember(org.id, "waiting", "Rosa Waiting");
+    const offer = await createOffer(org.id, driver.id, { daysOfWeek: [1] });
+    const inCar = await book(offer, aboard.id);
+    const missed = await book(offer, absent.id);
+    await book(offer, waiting.id, { status: "pending" });
+    await post(aboard, `/bookings/${inCar.id}/board`, at("06:45"));
+    await post(driver, `/bookings/${missed.id}/no-show`, at("07:45"));
+
+    const reply = await appAt(driver, at("07:50")).request(`/offers/${offer.id}/bookings`);
+
+    const { bookings } = (await reply.json()) as any;
+    expect(
+      bookings.map((booking: any) => [booking.id, booking.status, booking.today]).sort(),
+    ).toEqual(
+      [
+        [inCar.id, "accepted", "in_progress"],
+        [missed.id, "accepted", "no_show"],
+        [bookings.find((b: any) => b.status === "pending").id, "pending", null],
+      ].sort(),
+    );
+  });
+
+  it("starts a weekly passenger from scratch the next week", async () => {
+    const org = await seedWorld();
+    const driver = await createMember(org.id, "driver", "Carlos Quispe Huamán");
+    const absent = await createMember(org.id, "absent", "Luis Ausente");
+    const offer = await createOffer(org.id, driver.id, { daysOfWeek: [1] });
+    const missed = await book(offer, absent.id);
+    await post(driver, `/bookings/${missed.id}/no-show`, atDay("2026-10-19", "07:45"));
+
+    const reply = await appAt(driver, atDay("2026-10-26", "06:00")).request(
+      `/offers/${offer.id}/bookings`,
+    );
+
+    expect(((await reply.json()) as any).bookings.map((booking: any) => booking.today)).toEqual([
+      "not_started",
+    ]);
+  });
+});

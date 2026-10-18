@@ -1303,6 +1303,8 @@ export const listOfferBookingsRoute = createRoute({
                   message: z.string().nullable(),
                   avoidsCar: z.boolean(),
                   recommended: z.boolean(),
+                  // Where the passenger is on today's trip (US-025); null while the seat is not accepted.
+                  today: z.enum(["not_started", "in_progress", "arrived", "no_show"]).nullable(),
                 }),
               ),
             })
