@@ -364,13 +364,11 @@ describe("Panel", () => {
     visibility.mockRestore();
   });
 
-  it("announces the figures politely to screen readers", async () => {
+  it("announces only the update time politely, not the whole panel on every refresh", async () => {
     render(<Panel />);
-    await screen.findByText("Personas inscritas");
+    const stamp = await screen.findByText("Actualizado a las 10:04:05 (hora del servidor)");
 
-    expect(screen.getByText("Personas inscritas").closest("[aria-live]")).toHaveAttribute(
-      "aria-live",
-      "polite",
-    );
+    expect(stamp).toHaveAttribute("aria-live", "polite");
+    expect(screen.getByText("Personas inscritas").closest("[aria-live]")).toBeNull();
   });
 });

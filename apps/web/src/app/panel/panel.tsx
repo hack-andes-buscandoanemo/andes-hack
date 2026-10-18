@@ -193,7 +193,7 @@ export default function Panel() {
   return (
     <Shell>
       {selector}
-      <div aria-live="polite" className="space-y-6">
+      <div className="space-y-6">
         {!hasActivity ? (
           <EmptyState>Aún no hay actividad en esta comunidad.</EmptyState>
         ) : (
@@ -276,7 +276,7 @@ export default function Panel() {
         )}
       </div>
       <p className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
-        <span>{`Actualizado a las ${limaClock.format(new Date(stats.updatedAt))} (hora del servidor)`}</span>
+        <span aria-live="polite">{`Actualizado a las ${limaClock.format(new Date(stats.updatedAt))} (hora del servidor)`}</span>
         <Link href="/datos" className="font-semibold underline">
           ¿Cómo calculamos esto?
         </Link>
