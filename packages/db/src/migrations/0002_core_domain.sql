@@ -78,7 +78,8 @@ CREATE TABLE "seat_booking" (
 	"started_at" timestamp with time zone,
 	"arrived_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "seat_booking_passenger_required_check" CHECK ("seat_booking"."passenger_id" IS NOT NULL OR "seat_booking"."status" NOT IN ('pending', 'accepted'))
 );
 --> statement-breakpoint
 CREATE TABLE "trip_offer" (

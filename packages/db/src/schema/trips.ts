@@ -167,6 +167,11 @@ export const seatBooking = pgTable(
     uniqueIndex("seat_booking_active_passenger_idx")
       .on(table.offerId, table.passengerId)
       .where(sql`${table.status} IN ('pending', 'accepted')`),
+    // Only a closed booking can lose its passenger, so the index above always applies.
+    check(
+      "seat_booking_passenger_required_check",
+      sql`${table.passengerId} IS NOT NULL OR ${table.status} NOT IN ('pending', 'accepted')`,
+    ),
   ],
 );
 

@@ -246,6 +246,22 @@ describe("active seat bookings", () => {
     },
   );
 
+  it("rejects an active booking without a passenger", async () => {
+    const seat = await givenPassengerForOffer();
+
+    await expect(requestSeat({ ...seat, passengerId: null })).rejects.toMatchObject(
+      checkViolation("seat_booking_passenger_required_check"),
+    );
+  });
+
+  it("keeps a completed booking without a passenger as anonymised history", async () => {
+    const seat = await givenPassengerForOffer();
+
+    await expect(
+      requestSeat({ ...seat, passengerId: null, status: "completed" }),
+    ).resolves.toMatchObject({ passengerId: null, status: "completed" });
+  });
+
   it("rejects a new request from a passenger the driver already accepted", async () => {
     const seat = await givenPassengerForOffer();
     const earlier = await requestSeat(seat);

@@ -1,5 +1,5 @@
 {
-  "id": "d15aae87-3c7b-434e-bfcc-17d3d6bd4f04",
+  "id": "eb189365-21aa-42bc-a61a-39bd36360970",
   "prevId": "09a06024-4fa7-4879-9098-89738cb90bfa",
   "version": "7",
   "dialect": "postgresql",
@@ -910,7 +910,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "seat_booking_passenger_required_check": {
+          "name": "seat_booking_passenger_required_check",
+          "value": "\"seat_booking\".\"passenger_id\" IS NOT NULL OR \"seat_booking\".\"status\" NOT IN ('pending', 'accepted')"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.trip_offer": {
