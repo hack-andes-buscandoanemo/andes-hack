@@ -9,6 +9,7 @@ import {
   listCommunityZonesRoute,
   listVehiclesRoute,
   OPENAPI_DOCUMENT_CONFIG,
+  searchTripsRoute,
   updateMembershipRoute,
   updateOfferStatusRoute,
   verifyEmailCommunityRoute,
@@ -35,6 +36,7 @@ import {
   type RateLimitCheck,
   type SessionResolver,
 } from "./middleware";
+import { searchTrips } from "./search";
 import { ApiError } from "./utils/api-response";
 import { errorHandler, validationHook } from "./utils/error-handler";
 
@@ -221,6 +223,11 @@ export function createApp(deps: AppDeps = {}) {
   );
   openApiApp.use(
     "/communities/:id/offers",
+    requireSession(deps.getSession),
+    requireOnboardedMember((c) => c.req.param("id") ?? "", checkOnboarded),
+  );
+  openApiApp.use(
+    "/communities/:id/search",
     requireSession(deps.getSession),
     requireOnboardedMember((c) => c.req.param("id") ?? "", checkOnboarded),
   );
@@ -849,6 +856,15 @@ export function createApp(deps: AppDeps = {}) {
         message: "Viaje publicado.",
       },
       201,
+    );
+  });
+
+  openApiApp.openapi(searchTripsRoute, async (c) => {
+    const { id: communityId } = c.req.valid("param");
+    const body = c.req.valid("json");
+    return c.json(
+      await searchTrips(database, { communityId, userId: c.get("user").id, body }),
+      200,
     );
   });
 
