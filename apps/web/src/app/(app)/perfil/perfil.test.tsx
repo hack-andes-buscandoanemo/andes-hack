@@ -14,6 +14,9 @@ import { serverError } from "@/test/server-error";
 const push = vi.fn();
 const signOut = vi.fn();
 const updateTravelPreferences = vi.fn();
+const getMyImpact = vi.fn();
+const listVehicles = vi.fn();
+const updateMembership = vi.fn();
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("@/lib/auth-client", () => ({
@@ -22,6 +25,9 @@ vi.mock("@/lib/auth-client", () => ({
 vi.mock("@/lib/communities-api", () => ({
   communitiesApi: {
     updateTravelPreferences: (...args: unknown[]) => updateTravelPreferences(...args),
+    getMyImpact: (...args: unknown[]) => getMyImpact(...args),
+    listVehicles: (...args: unknown[]) => listVehicles(...args),
+    updateMembership: (...args: unknown[]) => updateMembership(...args),
     ...profilePhotoApi,
   },
 }));
@@ -38,6 +44,166 @@ beforeEach(() => {
   profilePhotoApi.uploadProfilePhoto.mockReset();
   profilePhotoApi.confirmProfilePhoto.mockReset();
   profilePhotoApi.deleteMyProfilePhoto.mockReset();
+  getMyImpact.mockReset().mockReturnValue(new Promise(() => {}));
+  listVehicles.mockReset().mockResolvedValue([]);
+  updateMembership.mockReset();
+});
+
+const MEMBERSHIP = {
+  communityId: COMMUNITY_ID,
+  communityName: "Comunidad Alfa",
+  alias: "Ana T.",
+  verificationMethod: "join_code" as const,
+  usualMode: "drove_alone",
+  travelRole: "passenger" as const,
+};
+
+describe("perfil: cabecera (US-035)", () => {
+  it("shows the alias, the community and how the membership was verified", () => {
+    render(<Perfil name="Ana Torres" email="ana@alfa.pe" membership={MEMBERSHIP} />);
+
+    expect(screen.getByText("Ana T.")).toBeInTheDocument();
+    expect(screen.getByText("Comunidad Alfa")).toBeInTheDocument();
+    expect(screen.getByText("Miembro verificado · Código de acceso")).toBeInTheDocument();
+    expect(screen.getByText("Perfil completo 100 %")).toBeInTheDocument();
+  });
+
+  it("counts the vehicle in the completeness of someone who drives", async () => {
+    render(
+      <Perfil
+        name="Carlos Quispe"
+        email="carlos@alfa.pe"
+        membership={{ ...MEMBERSHIP, travelRole: "both" }}
+      />,
+    );
+
+    expect(await screen.findByText("Perfil completo 75 %")).toBeInTheDocument();
+  });
+});
+
+describe("perfil: seguridad (US-035)", () => {
+  it("shows the validated membership and the vehicle as declared, never as verified", async () => {
+    listVehicles.mockResolvedValue([
+      { id: "v-1", plate: "ABC-123", make: "Toyota", model: "Yaris", color: "Gris", seats: 4 },
+    ]);
+    render(
+      <Perfil
+        name="Carlos Quispe"
+        email="carlos@alfa.pe"
+        membership={{ ...MEMBERSHIP, travelRole: "driver" }}
+      />,
+    );
+
+    const security = screen.getByRole("region", { name: "Seguridad" });
+    expect(within(security).getByText("Pertenencia validada")).toBeInTheDocument();
+    expect(await within(security).findByText("Vehículo registrado: Declarado")).toBeInTheDocument();
+    expect(within(security).getByRole("link", { name: "Historial de viajes" })).toHaveAttribute(
+      "href",
+      "/viajes?tab=historial",
+    );
+    expect(screen.queryByText(/Verificado$/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Documento validado")).not.toBeInTheDocument();
+    expect(screen.queryByText("Métodos de pago")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Notificaciones/)).not.toBeInTheDocument();
+  });
+});
+
+describe("perfil: editar perfil (US-035)", () => {
+  it("saves the alias and the usual mode without asking for consent again", async () => {
+    updateMembership.mockResolvedValue({});
+    render(<Perfil name="Ana Torres" email="ana@alfa.pe" membership={MEMBERSHIP} />);
+    const user = userEvent.setup();
+
+    const edit = screen.getByRole("region", { name: "Editar perfil" });
+    await user.clear(within(edit).getByLabelText("Nombre visible"));
+    await user.type(within(edit).getByLabelText("Nombre visible"), "Anita");
+    await user.selectOptions(
+      within(edit).getByLabelText("Modo habitual"),
+      "En transporte público (bus, corredor, tren, Metropolitano, colectivo)",
+    );
+    await user.click(within(edit).getByRole("button", { name: "Guardar cambios" }));
+
+    expect(await screen.findByText("Cambios guardados.")).toBeInTheDocument();
+    expect(updateMembership).toHaveBeenCalledWith(COMMUNITY_ID, {
+      alias: "Anita",
+      usualMode: "public_transport",
+    });
+    expect(screen.getByText("Anita")).toBeInTheDocument();
+  });
+
+  it("says the changes could not be saved and keeps the previous alias", async () => {
+    updateMembership.mockRejectedValue(serverError(500, "Ocurrió un error inesperado."));
+    render(<Perfil name="Ana Torres" email="ana@alfa.pe" membership={MEMBERSHIP} />);
+    const user = userEvent.setup();
+
+    const edit = screen.getByRole("region", { name: "Editar perfil" });
+    await user.clear(within(edit).getByLabelText("Nombre visible"));
+    await user.type(within(edit).getByLabelText("Nombre visible"), "Anita");
+    await user.click(within(edit).getByRole("button", { name: "Guardar cambios" }));
+
+    expect(
+      await screen.findByText("No pudimos guardar tus cambios. Inténtalo de nuevo."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Cambios guardados.")).not.toBeInTheDocument();
+    expect(screen.getByText("Ana T.")).toBeInTheDocument();
+  });
+});
+
+describe("perfil: centro de ayuda (US-035)", () => {
+  it("answers why the app does not charge", async () => {
+    render(<Perfil name="Ana Torres" email="ana@alfa.pe" membership={MEMBERSHIP} />);
+
+    const help = screen.getByRole("region", { name: "Centro de ayuda" });
+    await userEvent.setup().click(within(help).getByText("¿Por qué Te Jalo no cobra?"));
+
+    expect(
+      within(help).getByText(
+        "Te Jalo no procesa pagos ni cobra comisión. Quienes viajan comparten el gasto de combustible con quien maneja, sin ganancia comercial.",
+      ),
+    ).toBeVisible();
+  });
+});
+
+describe("perfil: mi impacto (US-035)", () => {
+  it("shows three shared trips and three car trips avoided, with the CO₂ marked as estimated", async () => {
+    getMyImpact.mockResolvedValue({
+      sharedTrips: 3,
+      carTripsAvoided: 3,
+      co2Kg: 9.74,
+      fromPublicTransport: 0,
+    });
+    render(<Perfil name="Ana Torres" email="ana@alfa.pe" membership={MEMBERSHIP} />);
+
+    const impact = await screen.findByRole("region", { name: "Mi impacto" });
+    expect(await within(impact).findByText("Viajes compartidos")).toBeInTheDocument();
+    expect(within(impact).getByText("Viajes compartidos").nextSibling).toHaveTextContent("3");
+    expect(within(impact).getByText("Viajes en auto evitados").nextSibling).toHaveTextContent("3");
+    expect(within(impact).getByText("CO₂ evitado (estimado)").nextSibling).toHaveTextContent(
+      "9,7 kg",
+    );
+    expect(getMyImpact).toHaveBeenCalledWith(COMMUNITY_ID);
+    expect(
+      within(impact).queryByText("Mejoraste tu viaje; no cuenta como auto evitado"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("explains to a passenger who came by bus that the trip does not count as a car avoided", async () => {
+    getMyImpact.mockResolvedValue({
+      sharedTrips: 3,
+      carTripsAvoided: 0,
+      co2Kg: 0,
+      fromPublicTransport: 3,
+    });
+    render(<Perfil name="Rosa Huamán" email="rosa@alfa.pe" membership={MEMBERSHIP} />);
+
+    const impact = await screen.findByRole("region", { name: "Mi impacto" });
+    expect(await within(impact).findByText("Viajes compartidos")).toBeInTheDocument();
+    expect(within(impact).getByText("Viajes compartidos").nextSibling).toHaveTextContent("3");
+    expect(within(impact).getByText("Viajes en auto evitados").nextSibling).toHaveTextContent("0");
+    expect(
+      within(impact).getByText("Mejoraste tu viaje; no cuenta como auto evitado"),
+    ).toBeInTheDocument();
+  });
 });
 
 describe("perfil: preferencias de viaje (US-026)", () => {
@@ -151,6 +317,24 @@ describe("perfil: preferencias de viaje (US-026)", () => {
 
     expect(await screen.findByText("No perteneces a esta comunidad.")).toBeInTheDocument();
     expect(screen.getByRole("switch", { name: "Solo mujeres" })).not.toBeChecked();
+  });
+});
+
+describe("perfil: rutas recurrentes (US-035)", () => {
+  it("links the travel preferences to the saved routes", () => {
+    render(
+      <Perfil
+        name="Lucía"
+        email="lucia@alfa.pe"
+        preferences={{ communityId: COMMUNITY_ID, identifiesAsWoman: false, womenOnly: false }}
+      />,
+    );
+
+    const preferences = screen.getByRole("region", { name: "Preferencias de viaje" });
+    expect(within(preferences).getByRole("link", { name: "Rutas recurrentes" })).toHaveAttribute(
+      "href",
+      "/viajes",
+    );
   });
 });
 
