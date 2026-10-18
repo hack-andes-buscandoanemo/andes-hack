@@ -102,31 +102,32 @@ export default function PlacePicker({
       <label htmlFor={id} className="text-sm font-medium">
         {label}
       </label>
-      <form
-        className="flex gap-2"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void search();
-        }}
-      >
+      <div className="flex gap-2">
         <input
           id={id}
           value={query}
           maxLength={120}
           placeholder={placeholder}
           onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              void search();
+            }
+          }}
           className="field min-w-0 flex-1"
         />
         <Button
-          type="submit"
+          type="button"
           variant="outline"
           className="shrink-0 px-3.5 sm:px-4"
           disabled={busy || !query.trim()}
+          onClick={() => void search()}
         >
           <HugeiconsIcon icon={Search01Icon} aria-hidden />
           <span className="sr-only sm:not-sr-only">{busy ? "Buscando…" : "Buscar"}</span>
         </Button>
-      </form>
+      </div>
       {withLocation ? (
         <Button
           type="button"

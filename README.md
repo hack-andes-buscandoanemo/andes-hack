@@ -338,21 +338,21 @@ bun --cwd packages/infra deploy
 <details>
 <summary><b>📋 Todos los comandos</b></summary>
 
-| Comando           | Descripción                                                 |
-| :---------------- | :---------------------------------------------------------- |
-| `bun dev`         | Inicia web y API en modo desarrollo                         |
-| `bun dev:web`     | Inicia solo `apps/web`                                      |
-| `bun dev:server`  | Inicia solo `apps/server`                                   |
-| `bun build`       | Compila todo para producción                                |
-| `bun run test`    | Ejecuta las pruebas con Vitest                              |
+| Comando                              | Descripción                                                   |
+| :----------------------------------- | :------------------------------------------------------------ |
+| `bun dev`                            | Inicia web y API en modo desarrollo                           |
+| `bun dev:web`                        | Inicia solo `apps/web`                                        |
+| `bun dev:server`                     | Inicia solo `apps/server`                                     |
+| `bun build`                          | Compila todo para producción                                  |
+| `bun run test`                       | Ejecuta las pruebas con Vitest                                |
 | `bun run --filter server test:smoke` | Valida manualmente el flujo crítico contra la API configurada |
-| `bun check`       | Linter (`oxlint`) y formateador (`oxfmt`)                   |
-| `bun check-types` | Verifica los tipos de TypeScript en todo el monorepo        |
-| `bun db:push`     | Aplica el esquema Drizzle sin migraciones (solo desarrollo) |
-| `bun db:studio`   | Abre Drizzle Studio                                         |
-| `bun db:generate` | Genera una migración SQL a partir del esquema               |
-| `bun db:migrate`  | Ejecuta las migraciones pendientes                          |
-| `bun db:seed`     | Carga los lugares reales de Lima y la comunidad demo        |
+| `bun check`                          | Linter (`oxlint`) y formateador (`oxfmt`)                     |
+| `bun check-types`                    | Verifica los tipos de TypeScript en todo el monorepo          |
+| `bun db:push`                        | Aplica el esquema Drizzle sin migraciones (solo desarrollo)   |
+| `bun db:studio`                      | Abre Drizzle Studio                                           |
+| `bun db:generate`                    | Genera una migración SQL a partir del esquema                 |
+| `bun db:migrate`                     | Ejecuta las migraciones pendientes                            |
+| `bun db:seed`                        | Carga los lugares reales de Lima y la comunidad demo          |
 
 </details>
 

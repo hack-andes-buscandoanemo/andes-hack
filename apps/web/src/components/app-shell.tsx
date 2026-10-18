@@ -11,6 +11,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
+import type { Route } from "next";
 import { usePathname } from "next/navigation";
 
 import LiveAlerts from "@/components/live-alerts";
@@ -98,7 +99,7 @@ export default function AppShell({
             return (
               <li key={href} className="flex-1">
                 <Link
-                  href={href}
+                  href={href as Route}
                   aria-current={active ? "page" : undefined}
                   aria-label={short === label ? undefined : label}
                   className={`group flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl text-[0.6875rem] tracking-wide transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-ring ${
