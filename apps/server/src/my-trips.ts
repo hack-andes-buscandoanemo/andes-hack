@@ -1,4 +1,3 @@
-import type { TripStatusSchema } from "@andes-hack/api";
 import type { db as defaultDb } from "@andes-hack/db";
 import { user as userTable } from "@andes-hack/db/schema/auth";
 import { community, communityMember } from "@andes-hack/db/schema/community";
@@ -7,41 +6,20 @@ import { seatBooking, tripOffer } from "@andes-hack/db/schema/trips";
 import { vehicle } from "@andes-hack/db/schema/vehicle";
 import { places } from "@andes-hack/matching";
 import { and, desc, eq, inArray } from "drizzle-orm";
-import type { z } from "zod";
 
 import { destinationOf } from "./search";
+import {
+  canSeePlate,
+  displayName,
+  hasPassed,
+  limaClock,
+  passengerStatus,
+  seatsFree,
+} from "./trip-rules";
 
 type Database = typeof defaultDb;
 
 type TripScope = "upcoming" | "past";
-type TripStatus = z.infer<typeof TripStatusSchema>;
-
-function passengerStatus(
-  status: (typeof seatBooking.$inferSelect)["status"],
-  offerStatus: (typeof tripOffer.$inferSelect)["status"],
-): TripStatus {
-  if (status === "cancelled_by_passenger" || status === "cancelled_by_driver") return "cancelled";
-  // A cancelled trip releases everyone who was still waiting or going.
-  if (offerStatus === "cancelled" && (status === "pending" || status === "accepted")) {
-    return "cancelled";
-  }
-  return status;
-}
-
-// Lima has no daylight saving time, so UTC-5 all year.
-function limaClock(now = new Date()) {
-  const iso = new Date(now.getTime() - 5 * 60 * 60 * 1000).toISOString();
-  return { today: iso.slice(0, 10), time: iso.slice(11, 19) };
-}
-
-// A weekly trip never ends by itself; a one-off one ends after its date and time.
-function hasPassed(
-  trip: { date: string | null; time: string },
-  clock: ReturnType<typeof limaClock>,
-) {
-  if (!trip.date) return false;
-  return trip.date < clock.today || (trip.date === clock.today && trip.time < clock.time);
-}
 
 // Only a request still waiting or accepted can be ahead of the person.
 const isOpen = (status: string) => status === "pending" || status === "accepted";
@@ -69,7 +47,7 @@ async function passengerTrips(database: Database, userId: string, scope: TripSco
     .innerJoin(community, eq(tripOffer.communityId, community.id))
     .innerJoin(zone, eq(tripOffer.originZoneId, zone.id))
     .innerJoin(userTable, eq(tripOffer.driverId, userTable.id))
-    .innerJoin(
+    .leftJoin(
       communityMember,
       and(
         eq(communityMember.userId, tripOffer.driverId),
@@ -82,12 +60,11 @@ async function passengerTrips(database: Database, userId: string, scope: TripSco
 
   const clock = limaClock();
   return rows
-    .map((row) => ({ ...row, derived: passengerStatus(row.status, row.offerStatus) }))
-    .filter(
-      (row) =>
-        (isOpen(row.derived) && !hasPassed({ date: row.date, time: row.pickupAt }, clock)) ===
-        (scope === "upcoming"),
-    )
+    .map((row) => {
+      const passed = hasPassed({ date: row.date, time: row.pickupAt }, clock);
+      return { ...row, passed, derived: passengerStatus({ ...row, passed }) };
+    })
+    .filter((row) => (isOpen(row.derived) && !row.passed) === (scope === "upcoming"))
     .map((row) => ({
       id: row.id,
       offerId: row.offerId,
@@ -105,8 +82,15 @@ async function passengerTrips(database: Database, userId: string, scope: TripSco
       // The other person is revealed only once the request is accepted.
       driver:
         row.derived === "accepted"
-          ? { alias: row.driverAlias ?? row.accountName, plate: row.plate }
+          ? {
+              alias: displayName(row.driverAlias, row.accountName),
+              plate: canSeePlate({ ...row, isOwn: false, bookingStatus: row.status })
+                ? row.plate
+                : null,
+            }
           : null,
+      seatsTotal: null,
+      seatsFree: null,
       pendingRequests: null,
       acceptedPassengers: null,
     }));
@@ -122,6 +106,7 @@ async function driverTrips(database: Database, userId: string, scope: TripScope)
       date: tripOffer.date,
       daysOfWeek: tripOffer.daysOfWeek,
       departureTime: tripOffer.departureTime,
+      seatsTotal: tripOffer.seatsTotal,
       originZoneName: zone.name,
       destinationName: community.destinationName,
     })
@@ -164,7 +149,9 @@ async function driverTrips(database: Database, userId: string, scope: TripScope)
   return offers
     .map((offer) => {
       const status = driverStatus(offer, clock);
-      const mine = bookings.filter((booking) => booking.offerId === offer.id);
+      // A cancelled offer reveals nobody: its requests were released.
+      const mine =
+        status === "cancelled" ? [] : bookings.filter((booking) => booking.offerId === offer.id);
       return {
         id: offer.id,
         offerId: offer.id,
@@ -178,11 +165,16 @@ async function driverTrips(database: Database, userId: string, scope: TripScope)
         destinationName: destinationOf({ destinationName: offer.destinationName }).name,
         meetingPointName: null,
         driver: null,
+        seatsTotal: offer.seatsTotal,
+        seatsFree: seatsFree(
+          offer.seatsTotal,
+          mine.filter((booking) => booking.status === "accepted").length,
+        ),
         pendingRequests: mine.filter((booking) => booking.status === "pending").length,
         // Aliases only, and only of people the driver already accepted.
         acceptedPassengers: mine
           .filter((booking) => booking.status === "accepted")
-          .map((booking) => booking.alias ?? booking.accountName),
+          .map((booking) => displayName(booking.alias, booking.accountName)),
       };
     })
     .filter(

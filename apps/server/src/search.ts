@@ -15,6 +15,7 @@ import { and, asc, eq, inArray, ne, type SQL } from "drizzle-orm";
 import type { z } from "zod";
 
 import { logEvent } from "./lib/logger";
+import { displayName, seatsFree } from "./trip-rules";
 import { ApiError } from "./utils/api-response";
 
 type Database = typeof defaultDb;
@@ -288,13 +289,13 @@ export async function searchTrips(
       const offer = byId.get(match.offerId)!;
       return {
         offerId: match.offerId,
-        driverName: offer.driverName ?? offer.accountName,
+        driverName: displayName(offer.driverName, offer.accountName),
         originZoneName: offer.originZoneName,
         destinationName: destination.name,
         direction: offer.direction,
         departureTime: offer.departureTime,
         // Same count the engine uses for its seat check: accepted passengers.
-        seatsFree: offer.seatsTotal - (acceptedByOffer.get(offer.id)?.length ?? 0),
+        seatsFree: seatsFree(offer.seatsTotal, acceptedByOffer.get(offer.id)?.length ?? 0),
         meetingPointName: meetingPointNames.get(match.meetingPointId) ?? match.meetingPointId,
         pickupAt: match.pickupAt,
         arrivalAt: match.arrivalAt,
