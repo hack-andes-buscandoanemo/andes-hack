@@ -31,9 +31,7 @@ describe("GET /public/data-sources (US-032)", () => {
 
   it("gives the price range of gasoline in Lima as real data and its middle as an estimate", async () => {
     const { body } = await dataSources();
-    const gasoline = body.sources.filter((row: { id: string }) =>
-      row.id.startsWith("gasolinePrice"),
-    );
+    const gasoline = body.sources.filter((row) => row.id.startsWith("gasolinePrice"));
 
     expect(gasoline).toEqual([
       {

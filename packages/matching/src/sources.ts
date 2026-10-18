@@ -9,18 +9,22 @@ export type SourceKind = "dato" | "estimado";
 // The section of /datos a constant belongs to, so an estimated figure can link to it.
 export type SourceTopic = "tiempos" | "impacto" | "contexto";
 
-export interface Source {
+interface SourceFields {
   label: string;
   // A rule rather than a number, like the interpolation, is written as text.
   value: number | string;
   unit: string;
-  kind: SourceKind;
   topic: SourceTopic;
   source: string;
-  // Where anyone can check a `dato`; an assumption of the team has none.
-  url: string | null;
+  // The day the team consulted the source, not the day it was published.
   date: string;
 }
+
+// A `dato` cannot be written without the link where anyone can check it; an assumption of
+// the team has none.
+export type Source =
+  | (SourceFields & { kind: "dato"; url: string })
+  | (SourceFields & { kind: "estimado"; url: null });
 
 const tomtom = "TomTom Traffic Index 2025, Lima, curva de lunes a viernes";
 const tomtomUrl = "https://www.tomtom.com/traffic-index/city/lima/";

@@ -1213,21 +1213,36 @@ export interface components {
     DataSourcesResponse: {
       sources: components["schemas"]["DataSource"][];
     };
-    DataSource: {
-      id: string;
-      /** @enum {string} */
-      topic: "tiempos" | "impacto" | "contexto";
-      label: string;
-      value: number | string;
-      unit: string;
-      /** @enum {string} */
-      kind: "dato" | "estimado";
-      source: string;
-      /** Format: uri */
-      url: string | null;
-      /** Format: date */
-      date: string;
-    };
+    DataSource:
+      | {
+          id: string;
+          /** @enum {string} */
+          topic: "tiempos" | "impacto" | "contexto";
+          label: string;
+          value: number | string;
+          unit: string;
+          source: string;
+          /** Format: date */
+          date: string;
+          /** @enum {string} */
+          kind: "dato";
+          /** Format: uri */
+          url: string;
+        }
+      | {
+          id: string;
+          /** @enum {string} */
+          topic: "tiempos" | "impacto" | "contexto";
+          label: string;
+          value: number | string;
+          unit: string;
+          source: string;
+          /** Format: date */
+          date: string;
+          /** @enum {string} */
+          kind: "estimado";
+          url: null;
+        };
   };
   responses: never;
   parameters: never;
