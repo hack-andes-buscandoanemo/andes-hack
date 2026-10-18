@@ -268,6 +268,26 @@ describe("seats of a day assigned to maximise the car trips avoided", () => {
     ]);
   });
 
+  it("says what each passenger adds to the driver's final route", () => {
+    // With Sofía at the plaza, the municipalidad is on the way: 1 + 6 + 16 = 23 min with
+    // Pedro or without him. Without Sofía it is 22: she adds 1 × 1.72 = 1.7 min.
+    const plan = optimizeDay(
+      {
+        date: monday,
+        offers: [offer({ maxDetourMinutes: 10 })],
+        requests: [request("pedro"), request("sofia", { originZoneId: "la-molina" })],
+      },
+      model,
+    );
+
+    expect(
+      plan.assignments.map(({ passengerId, detourMinutes }) => [passengerId, detourMinutes]),
+    ).toEqual([
+      ["pedro", 0],
+      ["sofia", 2],
+    ]);
+  });
+
   it("scores the plan by car trips avoided, passengers, then the drivers' detour and the walk", () => {
     const plan = optimizeDay(
       {

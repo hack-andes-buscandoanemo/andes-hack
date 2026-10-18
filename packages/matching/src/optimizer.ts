@@ -53,6 +53,7 @@ export interface Assignment {
   position: number;
   pickupAt: string;
   arrivalAt: string;
+  // How much shorter the driver's final route would be without this passenger.
   detourMinutes: number;
   walkMinutes: number;
   avoidsCarTrip: boolean;
@@ -100,10 +101,9 @@ function byFallback(requests: readonly DayRequest[]): ByFallback {
   return { wouldDrive, publicTransport, other: requests.length - wouldDrive - publicTransport };
 }
 
-// Someone the plan seats, with what their insertion cost.
+// Someone the plan seats, with the minutes they walk to their stop.
 interface Rider {
   request: DayRequest;
-  detourMinutes: number;
   walkMinutes: number;
 }
 
@@ -194,12 +194,12 @@ export function optimizeDay(
   }
 
   function seat(current: Car, request: DayRequest, insertion: Insertion): Car {
-    const { meetingPointId, position, detourMinutes, walkMinutes } = insertion;
+    const { meetingPointId, position, walkMinutes } = insertion;
     const { windowStart, windowEnd } = request;
     const stop = { meetingPointId, windowStart, windowEnd };
     return car(
       { ...current.route, passengers: current.route.passengers.toSpliced(position, 0, stop) },
-      current.riders.toSpliced(position, 0, { request, detourMinutes, walkMinutes }),
+      current.riders.toSpliced(position, 0, { request, walkMinutes }),
     );
   }
 
@@ -214,17 +214,12 @@ export function optimizeDay(
   function* withPair(current: Car, first: DayRequest, second: DayRequest): Generator<Car> {
     const { passengers, seatsTotal } = current.route;
     if (passengers.length + 2 > seatsTotal) return;
-    const before = timeRoute(current.route, date, model).minutes;
     const { windowStart, windowEnd } = first;
     for (const point of model.walkableMeetingPoints(first.originZoneId, first.maxWalkMinutes)) {
       for (let position = 0; position <= passengers.length; position++) {
         const stop = { meetingPointId: point.meetingPointId, windowStart, windowEnd };
         const route = { ...current.route, passengers: passengers.toSpliced(position, 0, stop) };
-        const rider = {
-          request: first,
-          detourMinutes: Math.round(timeRoute(route, date, model).minutes - before),
-          walkMinutes: Math.round(point.walkMinutes),
-        };
+        const rider = { request: first, walkMinutes: Math.round(point.walkMinutes) };
         const both = withRider(car(route, current.riders.toSpliced(position, 0, rider)), second);
         if (both) yield both;
       }
@@ -377,7 +372,9 @@ export function optimizeDay(
     const timing = timeRoute(route, date, model);
     riders.forEach((rider, position) => {
       if (!rider) return;
-      const { request, detourMinutes, walkMinutes } = rider;
+      const { request, walkMinutes } = rider;
+      const without = { ...route, passengers: route.passengers.toSpliced(position, 1) };
+      const detourMinutes = Math.round(timing.minutes - timeRoute(without, date, model).minutes);
       seated.set(request, {
         requestId: request.id,
         passengerId: request.passengerId,
