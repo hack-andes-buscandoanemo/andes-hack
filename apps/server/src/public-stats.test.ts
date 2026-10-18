@@ -558,6 +558,29 @@ describe("GET /public/communities/{slug}/stats", () => {
     expect(writes).toHaveLength(1);
   });
 
+  it("rejects a slug that no community can have", async () => {
+    const limit = vi.fn(allowEverything);
+    for (const slug of ["Alfa", "a_b", `a${"b".repeat(64)}`]) {
+      const response = await statsApp({ limit }).request(`/public/communities/${slug}/stats`);
+      expect(response.status).toBe(422);
+    }
+  });
+
+  it("remembers an unknown community for 30 seconds, so scans do not reach the database", async () => {
+    const clock = { now: NOW };
+    const app = statsApp({ cache: fakeCache(clock), now: () => clock.now });
+    expect((await app.request("/public/communities/alfa/stats")).status).toBe(404);
+
+    await seedCommunity();
+    clock.now = new Date(NOW.getTime() + 29_000);
+    const remembered = await app.request("/public/communities/alfa/stats");
+    expect(remembered.status).toBe(404);
+    expect(await remembered.json()).toMatchObject({ details: { code: "community_not_found" } });
+
+    clock.now = new Date(NOW.getTime() + 31_000);
+    expect((await app.request("/public/communities/alfa/stats")).status).toBe(200);
+  });
+
   it("serves the second call within 30 seconds from the cache and recomputes after", async () => {
     const org = await seedCommunity();
     await addMember(org.id, "ana");

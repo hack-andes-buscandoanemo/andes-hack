@@ -27,6 +27,11 @@ export interface StatsCache {
 
 // One shared answer per community: the panel is the same for everyone who looks at it.
 const CACHE_TTL_SECONDS = 30;
+// An unknown slug is remembered just as long, so scanning slugs does not reach the database.
+const NOT_FOUND_TTL_SECONDS = 30;
+const NOT_FOUND = "not_found";
+const notFound = () =>
+  new ApiError(404, "Comunidad no encontrada.", { code: "community_not_found" });
 
 export interface PublicStatsDeps {
   // Any Postgres driver: Neon in production, PGlite in tests.
@@ -64,11 +69,21 @@ export function createPublicStatsRoutes(deps: PublicStatsDeps = {}) {
       return checkPublicStatsRateLimit(identifier);
     });
 
+  // Not awaited: the answer is already computed, so a slow Redis must not delay it.
+  const saveToCache = (key: string, value: unknown, ttlSeconds: number) => {
+    void (async () => cache.set(key, value, ttlSeconds))().catch(() => {
+      logEvent("public_stats_cache_unavailable", { operation: "set" });
+    });
+  };
   const inFlight = new Map<string, Promise<PublicStats>>();
   const compute = async (slug: string, cacheKey: string): Promise<PublicStats> => {
     const db = await getDb();
     const [org] = await db.select().from(community).where(eq(community.slug, slug)).limit(1);
-    if (!org) throw new ApiError(404, "Comunidad no encontrada.", { code: "community_not_found" });
+    if (!org) {
+      // A scan of made-up slugs would otherwise reach the database on every request.
+      saveToCache(cacheKey, NOT_FOUND, NOT_FOUND_TTL_SECONDS);
+      throw notFound();
+    }
     const members = await db
       .select({ travelRole: communityMember.travelRole })
       .from(communityMember)
@@ -125,10 +140,7 @@ export function createPublicStatsRoutes(deps: PublicStatsDeps = {}) {
         net: impact.netCarTripsAvoided,
       },
     };
-    // Not awaited: the answer is already computed, so a slow Redis must not delay it.
-    void (async () => cache.set(cacheKey, stats, CACHE_TTL_SECONDS))().catch(() => {
-      logEvent("public_stats_cache_unavailable", { operation: "set" });
-    });
+    saveToCache(cacheKey, stats, CACHE_TTL_SECONDS);
     return stats;
   };
 
@@ -157,7 +169,10 @@ export function createPublicStatsRoutes(deps: PublicStatsDeps = {}) {
       logEvent("public_stats_cache_unavailable", { operation: "get" });
       return null;
     });
-    if (cached) return c.json(cached as PublicStats, 200);
+    if (cached) {
+      if (cached === NOT_FOUND) throw notFound();
+      return c.json(cached as PublicStats, 200);
+    }
 
     // After an expiry every waiting request would recompute the same figures: they share one.
     let pending = inFlight.get(slug);

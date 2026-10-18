@@ -1219,6 +1219,15 @@ export interface paths {
             "application/json": components["schemas"]["ApiError"];
           };
         };
+        /** @description El identificador de la comunidad no es válido */
+        422: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
         /** @description Demasiadas consultas desde la misma IP */
         429: {
           headers: {

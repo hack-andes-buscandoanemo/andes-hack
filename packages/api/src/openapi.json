@@ -2812,7 +2812,10 @@
         "parameters": [
           {
             "schema": {
-              "type": "string"
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[a-z0-9-]+$"
             },
             "required": true,
             "name": "slug",
@@ -2832,6 +2835,16 @@
           },
           "404": {
             "description": "Comunidad no encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "El identificador de la comunidad no es válido",
             "content": {
               "application/json": {
                 "schema": {
