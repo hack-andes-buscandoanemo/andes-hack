@@ -103,4 +103,22 @@ export const sources = {
       "Mediana sobre los pares a más de 1 km de la matriz OSRM (© OpenStreetMap, ODbL), calculada por scripts/build-travel-matrix.ts",
     date: "2026-10-17",
   },
+  fuelEconomy: {
+    label: "Rendimiento de un auto a gasolina, para el CO₂ evitado",
+    value: 35,
+    unit: "km por galón",
+    kind: "estimado",
+    source:
+      "Supuesto del equipo: un auto particular a gasolina en Lima. Convierte los km evitados en galones no quemados.",
+    date: "2026-10-17",
+  },
+  gasolineCo2: {
+    label: "CO₂ que emite un galón de gasolina",
+    value: 8.887,
+    unit: "kg de CO₂ por galón",
+    kind: "dato",
+    source:
+      "EPA, Greenhouse Gas Emissions from a Typical Passenger Vehicle: 8887 g de CO₂ por galón (https://www.epa.gov/greenvehicles/greenhouse-gas-emissions-typical-passenger-vehicle)",
+    date: "2026-10-17",
+  },
 } as const satisfies Record<string, Source>;
