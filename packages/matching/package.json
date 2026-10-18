@@ -14,6 +14,7 @@
     "compare:strategies": "bun scripts/compare-strategies.ts",
     "matrix:build": "bun scripts/build-travel-matrix.ts",
     "optima:build": "bun scripts/exhaustive-optima.ts",
+    "shapes:build": "bun scripts/build-route-shapes.ts",
     "test": "vitest run"
   },
   "devDependencies": {
