@@ -14,6 +14,7 @@ import {
   community,
   communityMember,
   seatBooking,
+  seatBookingDay,
   tripMessage,
   tripOffer,
   tripRequest,
@@ -764,6 +765,249 @@ export async function seedMockData(db: Database): Promise<MockReport> {
     report.messages += created.length;
   }
   return report;
+}
+
+export interface MockPassengerReport {
+  needs: number;
+  seatRequests: number;
+  pastTrips: number;
+  messages: number;
+  travelRole: string | null;
+}
+
+// The ids of what the mock passenger gets: the same account always gets the same ones, so it
+// can be loaded twice and taken out again.
+const passengerIds = (uid: string) => ({
+  needOut: idFor(`passenger:${uid}:need-out`),
+  needBack: idFor(`passenger:${uid}:need-back`),
+  seatOut: idFor(`passenger:${uid}:seat-out`),
+  seatBack: idFor(`passenger:${uid}:seat-back`),
+  message: (index: number) => idFor(`passenger:${uid}:message:${index}`),
+});
+
+// Gives a real account the life of a passenger on top of the mock trips: the daily searches
+// from home to the office and back, a seat accepted on the morning car with its chat and a week
+// of trips already done, and a seat still waiting for an answer on the way back.
+export async function seedMockPassenger(db: Database, email: string): Promise<MockPassengerReport> {
+  const [person] = await db
+    .select({ id: user.id, name: user.name })
+    .from(user)
+    .where(eq(user.email, email.toLowerCase()))
+    .limit(1);
+  if (!person) throw new Error(`No hay una cuenta con ${email}. Regístrala en la app primero.`);
+
+  const [alfa] = await db
+    .select({ id: community.id })
+    .from(community)
+    .where(eq(community.slug, COMMUNITY_SLUG))
+    .limit(1);
+  if (!alfa) throw new Error("No existe Comunidad Alfa: ejecuta antes `bun db:seed`.");
+  const [member] = await db
+    .select({ travelRole: communityMember.travelRole, woman: communityMember.identifiesAsWoman })
+    .from(communityMember)
+    .where(and(eq(communityMember.communityId, alfa.id), eq(communityMember.userId, person.id)))
+    .limit(1);
+  if (!member)
+    throw new Error(`${email} no es miembro de Comunidad Alfa: únete con el código primero.`);
+
+  const offerRows = await db
+    .select()
+    .from(tripOffer)
+    .where(inArray(tripOffer.id, [idFor("offer:camila-ida"), idFor("offer:camila-vuelta")]));
+  const offerOut = offerRows.find((row) => row.id === idFor("offer:camila-ida"));
+  const offerBack = offerRows.find((row) => row.id === idFor("offer:camila-vuelta"));
+  if (!offerOut || !offerBack)
+    throw new Error("Faltan los viajes de prueba: ejecuta antes `bun run db:seed:mock`.");
+
+  const ids = passengerIds(person.id);
+  const now = new Date();
+  const report: MockPassengerReport = {
+    needs: 0,
+    seatRequests: 0,
+    pastTrips: 0,
+    messages: 0,
+    travelRole: member.travelRole,
+  };
+
+  const home = placeOf("san-borja-municipalidad");
+  const office = placeOf("cer");
+
+  // One open need per direction: if the account already has one, the seat hangs from it.
+  async function need(
+    id: string,
+    direction: "outbound" | "return",
+    from: ReturnType<typeof placeOf>,
+    to: ReturnType<typeof placeOf>,
+    window: [string, string],
+  ) {
+    const created = await db
+      .insert(tripRequest)
+      .values({
+        id,
+        communityId: alfa!.id,
+        passengerId: person!.id,
+        direction,
+        originZoneId: from.zoneId,
+        originLat: from.lat,
+        originLng: from.lng,
+        originLabel: from.label,
+        destLat: to.lat,
+        destLng: to.lng,
+        destLabel: to.label,
+        windowStart: window[0],
+        windowEnd: window[1],
+        daysOfWeek: WEEK,
+        maxWalkMinutes: 15,
+        fallbackMode: "taxi_app",
+        womenOnly: false,
+        hadResults: true,
+      })
+      .onConflictDoNothing()
+      .returning({ id: tripRequest.id });
+    report.needs += created.length;
+    if (created.length > 0) return id;
+    const [existing] = await db
+      .select({ id: tripRequest.id })
+      .from(tripRequest)
+      .where(
+        and(
+          eq(tripRequest.communityId, alfa!.id),
+          eq(tripRequest.passengerId, person!.id),
+          eq(tripRequest.direction, direction),
+          eq(tripRequest.status, "open"),
+        ),
+      )
+      .limit(1);
+    return existing?.id ?? id;
+  }
+
+  async function seat(
+    id: string,
+    requestId: string,
+    offer: typeof offerOut & {},
+    from: ReturnType<typeof placeOf>,
+    to: ReturnType<typeof placeOf>,
+    window: [string, string],
+    status: "accepted" | "pending",
+  ) {
+    const freeOffer: FreeOffer = {
+      id: offer.id,
+      path: offer.routePath ?? [],
+      minutes: offer.routeMinutes ?? 0,
+      departureTime: offer.departureTime.slice(0, 5),
+      date: offer.date,
+      daysOfWeek: offer.daysOfWeek,
+      seatsFree: 1,
+      womenOnly: offer.womenOnly,
+    };
+    const outcome = matchFreeOffer(
+      {
+        origin: from,
+        destination: to,
+        windowStart: window[0],
+        windowEnd: window[1],
+        date: null,
+        daysOfWeek: WEEK,
+        maxWalkMinutes: 15,
+        womenOnly: false,
+        passengerIsWoman: member!.woman,
+      },
+      freeOffer,
+    );
+    if (!("match" in outcome)) return null;
+    const match = outcome.match;
+    const created = await db
+      .insert(seatBooking)
+      .values({
+        id,
+        offerId: offer.id,
+        requestId,
+        passengerId: person!.id,
+        pickupLat: match.pickup.lat,
+        pickupLng: match.pickup.lng,
+        pickupLabel: `Cerca de ${from.label}`.slice(0, 160),
+        dropoffLat: match.dropoff.lat,
+        dropoffLng: match.dropoff.lng,
+        dropoffLabel: `Cerca de ${to.label}`.slice(0, 160),
+        pickupAt: match.pickupAt,
+        detourMinutes: 0,
+        walkMinutes: match.walkMinutes,
+        status,
+        decidedAt: status === "accepted" ? now : null,
+      })
+      .onConflictDoNothing()
+      .returning({ id: seatBooking.id });
+    report.seatRequests += created.length;
+    return created.length > 0 ? match : null;
+  }
+
+  const needOut = await need(ids.needOut, "outbound", home, office, ["07:15", "07:45"]);
+  const needBack = await need(ids.needBack, "return", office, home, ["17:45", "18:30"]);
+  await seat(ids.seatOut, needOut, offerOut, home, office, ["07:15", "07:45"], "accepted");
+  await seat(ids.seatBack, needBack, offerBack, office, home, ["17:45", "18:30"], "pending");
+
+  // The last five working days of the morning trip, already done.
+  const done: { date: string }[] = [];
+  for (let back = 1; done.length < 5 && back < 15; back += 1) {
+    const date = limaDate(-back);
+    const weekday = new Date(`${date}T12:00:00Z`).getUTCDay();
+    if (weekday >= 1 && weekday <= 5) done.push({ date });
+  }
+  for (const { date } of done) {
+    // Lima is UTC-5 all year: 07:22 there is 12:22 UTC.
+    const days = await db
+      .insert(seatBookingDay)
+      .values({
+        bookingId: ids.seatOut,
+        tripDate: date,
+        startedAt: new Date(`${date}T12:22:00Z`),
+        arrivedAt: new Date(`${date}T12:52:00Z`),
+        outcome: "completed",
+      })
+      .onConflictDoNothing()
+      .returning({ bookingId: seatBookingDay.bookingId });
+    report.pastTrips += days.length;
+  }
+
+  // The coordination chat of the morning car, with this person in it.
+  const first = person.name.split(" ")[0] ?? person.name;
+  const lines: ["driver" | "passenger", string][] = [
+    ["passenger", `Hola Camila, soy ${first}. Estaré en la Municipalidad de San Borja`],
+    ["driver", "Hola, paso por ahí a las 7:25"],
+    ["passenger", "Estoy en el punto de encuentro"],
+    ["driver", "Llego en 5 min"],
+  ];
+  const rows = lines.map(([who, body], index) => ({
+    id: ids.message(index),
+    offerId: offerOut.id,
+    senderId: who === "driver" ? userId("camila") : person.id,
+    kind: QUICK.has(body) ? ("quick" as const) : ("text" as const),
+    body,
+    createdAt: new Date(now.getTime() - (lines.length - index) * 3 * 60 * 1000),
+  }));
+  const messages = await db
+    .insert(tripMessage)
+    .values(rows)
+    .onConflictDoNothing()
+    .returning({ id: tripMessage.id });
+  report.messages = messages.length;
+  return report;
+}
+
+// Takes out what `seedMockPassenger` gave an account, and only that.
+export async function removeMockPassenger(db: Database, email: string) {
+  const [person] = await db
+    .select({ id: user.id })
+    .from(user)
+    .where(eq(user.email, email.toLowerCase()))
+    .limit(1);
+  if (!person) return { removed: false };
+  const ids = passengerIds(person.id);
+  await db.delete(tripMessage).where(inArray(tripMessage.id, [0, 1, 2, 3].map(ids.message)));
+  // The days of the seat go with it (cascade).
+  await db.delete(seatBooking).where(inArray(seatBooking.id, [ids.seatOut, ids.seatBack]));
+  await db.delete(tripRequest).where(inArray(tripRequest.id, [ids.needOut, ids.needBack]));
+  return { removed: true };
 }
 
 // Takes out every row of the mock accounts, and only theirs.
