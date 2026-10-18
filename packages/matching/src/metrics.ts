@@ -4,7 +4,7 @@ import { sources } from "./sources";
 // passengers in Lima come from public transport and take no car off the road. The panel
 // (US-031), the profile (US-035) and the optimizer (US-017) read every figure from here.
 
-// The same values as the enums of @andes-hack/db.
+// The same values as the enums in packages/db/src/schema (trips.ts and community.ts).
 export type BookingStatus =
   | "pending"
   | "accepted"
@@ -58,6 +58,8 @@ export interface CommunityActivity {
 
 export interface CarTripsAvoided {
   trips: number;
+  // Both are estimates: the km come from each zone, and the CO₂ rests on
+  // sources.fuelEconomy and sources.gasolineCo2, which /datos explains.
   km: number;
   co2Kg: number;
 }
@@ -99,31 +101,42 @@ const acceptedSeats = (offer: OfferActivity) =>
 // Null rather than NaN when there is nothing to divide by.
 const ratio = (part: number, whole: number) => (whole > 0 ? part / whole : null);
 
-function carTripsAvoided(seats: readonly SeatActivity[]): CarTripsAvoided {
-  const avoided = seats.filter(avoidsCarTrip);
-  // Every detour is driven, even one for a passenger who takes no car off the road.
+// The car trips among `trips`, and the km they save once the detour to every one of
+// `pickups` is driven, even for a passenger who takes no car off the road.
+function carTripsAvoided(
+  trips: readonly SeatActivity[],
+  pickups: readonly SeatActivity[],
+): CarTripsAvoided {
+  const avoided = trips.filter(avoidsCarTrip);
   const km =
     avoided.reduce((sum, seat) => sum + seat.distanceKm, 0) -
-    seats.reduce((sum, seat) => sum + seat.detourKm, 0);
+    pickups.reduce((sum, seat) => sum + seat.detourKm, 0);
   // The gasoline a car would burn over those km.
   const co2Kg = (km / sources.fuelEconomy.value) * sources.gasolineCo2.value;
   return { trips: avoided.length, km, co2Kg };
 }
 
 export function measureImpact(activity: CommunityActivity): ImpactMetrics {
-  const offers = activity.offers.filter((offer) => !offer.driverIsTeam);
-  const seats = offers.flatMap(acceptedSeats);
-  const potential = carTripsAvoided(seats);
-  const tripsTaken = offers.filter((offer) => acceptedSeats(offer).length > 0);
+  const offers = activity.offers
+    .filter((offer) => !offer.driverIsTeam)
+    .map((offer) => ({ ...offer, seats: acceptedSeats(offer) }));
+  const seats = offers.flatMap((offer) => offer.seats);
+  const potential = carTripsAvoided(seats, seats);
+  const tripsTaken = offers.filter((offer) => offer.seats.length > 0);
   const induced = tripsTaken.filter((offer) => !madeTripByCar(offer.driverUsualMode)).length;
   const openNeeds = activity.openNeeds.filter((need) => !need.passengerIsTeam);
   // A trip completed today is due already, though its date has not passed.
   const due = seats.filter((seat) => seat.datePassed || seat.status === "completed");
+  const completed = seats.filter((seat) => seat.status === "completed");
+  // The driver went to the meeting point of a passenger who did not show up all the same.
+  const pickedUpOrMissed = seats.filter(
+    (seat) => seat.status === "completed" || seat.status === "no_show",
+  );
   return {
     peopleTransported: seats.length,
     carTripsAvoided: {
       potential,
-      verified: carTripsAvoided(seats.filter((seat) => seat.status === "completed")),
+      verified: carTripsAvoided(completed, pickedUpOrMissed),
     },
     carTripsInduced: induced,
     netCarTripsAvoided: potential.trips - induced,

@@ -167,6 +167,32 @@ describe("impact of a community's shared trips", () => {
     expect(metrics.carTripsAvoided.verified.co2Kg).toBeCloseTo(5.078, 3);
   });
 
+  it("subtracts from the verified km the detour driven for a passenger who did not show up", () => {
+    const metrics = measureImpact({
+      offers: [
+        offer([
+          seat({ status: "completed", datePassed: true, distanceKm: 25, detourKm: 0 }),
+          seat({ status: "no_show", datePassed: true, distanceKm: 30, detourKm: 4 }),
+        ]),
+      ],
+      openNeeds: [],
+    });
+
+    expect(metrics.carTripsAvoided.verified.trips).toBe(1);
+    expect(metrics.carTripsAvoided.verified.km).toBeCloseTo(21);
+  });
+
+  it("reports negative km and CO₂ when the detours outweigh the car trips avoided", () => {
+    const metrics = measureImpact({
+      offers: [offer([seat({ fallbackMode: "public_transport", detourKm: 3.5 })])],
+      openNeeds: [],
+    });
+
+    // 3.5 km of detour is a tenth of a gallon: 0.8887 kg of CO₂ more, not less.
+    expect(metrics.carTripsAvoided.potential.km).toBeCloseTo(-3.5);
+    expect(metrics.carTripsAvoided.potential.co2Kg).toBeCloseTo(-0.8887, 4);
+  });
+
   it("averages 2 passengers over 3 trips with 1, 2 and 3, leaving out a trip nobody took", () => {
     const metrics = measureImpact({
       offers: [
