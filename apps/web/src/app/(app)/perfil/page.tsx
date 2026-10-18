@@ -15,6 +15,7 @@ export default async function ProfilePage() {
       email={access.user.email}
       role={access.role}
       preferences={access.preferences}
+      membership={access.membership}
     />
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { reasonOf } from "@/lib/api-error";
@@ -75,6 +76,14 @@ export default function TravelPreferences({ communityId, ...initial }: TravelPre
         </div>
       </div>
       {message ? <p role="status">{message}</p> : null}
+      {/* Upcoming trips list the person's saved offers and seat requests. */}
+      <Link
+        href="/viajes"
+        className="flex min-h-11 items-center justify-between rounded-lg bg-muted px-3 font-medium"
+      >
+        Rutas recurrentes
+        <span aria-hidden>›</span>
+      </Link>
     </section>
   );
 }

@@ -1,11 +1,18 @@
 import { authClient } from "@/lib/auth-client";
+import type { UsualMode } from "@/lib/usual-modes";
 
-type Membership = {
+export type ProfileMembership = {
   communityId: string;
   communityName: string;
+  alias: string | null;
+  verificationMethod: "join_code" | "email_domain";
+  usualMode: UsualMode | null;
+  travelRole: "driver" | "passenger" | "both" | null;
+};
+
+type Membership = ProfileMembership & {
   role: "member" | "admin";
   consentAt: string | null;
-  usualMode: string | null;
   identifiesAsWoman: boolean;
   womenOnly: boolean;
 };
@@ -20,6 +27,8 @@ export type AppAccess =
       role?: "member" | "admin";
       // The person's own "Solo mujeres" settings; only their profile shows them.
       preferences?: { communityId: string; identifiesAsWoman: boolean; womenOnly: boolean };
+      // What the profile header and "Editar perfil" show (US-035).
+      membership?: ProfileMembership;
     };
 
 async function fetchMemberships(headers: Headers, serverUrl: string) {
@@ -69,6 +78,14 @@ export async function resolveAppAccess({
       communityId: membership.communityId,
       identifiesAsWoman: membership.identifiesAsWoman,
       womenOnly: membership.womenOnly,
+    },
+    membership: {
+      communityId: membership.communityId,
+      communityName: membership.communityName,
+      alias: membership.alias,
+      verificationMethod: membership.verificationMethod,
+      usualMode: membership.usualMode,
+      travelRole: membership.travelRole,
     },
   };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { TravelRoleSchema, UpdateMembershipBodySchema, UsualModeSchema } from "@andes-hack/api";
+import { TravelRoleSchema, UpdateMembershipBodySchema } from "@andes-hack/api";
 import { useForm } from "@tanstack/react-form";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -10,21 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { communitiesApi, type MembershipSummary } from "@/lib/communities-api";
+import { USUAL_MODE_OPTIONS, type UsualMode } from "@/lib/usual-modes";
 
-type UsualMode = z.infer<typeof UsualModeSchema>;
 type TravelRole = z.infer<typeof TravelRoleSchema>;
-
-const USUAL_MODE_OPTIONS: Array<{ value: UsualMode; label: string }> = [
-  { value: "drove_alone", label: "En mi auto, solo/a" },
-  { value: "drove_with_others", label: "En mi auto, con otras personas" },
-  { value: "car_passenger", label: "En auto de alguien conocido" },
-  {
-    value: "public_transport",
-    label: "En transporte público (bus, corredor, tren, Metropolitano, colectivo)",
-  },
-  { value: "taxi_app", label: "En taxi o app (Uber, Cabify, InDrive, etc.)" },
-  { value: "other", label: "En bici, caminando u otro" },
-];
 
 const TRAVEL_ROLE_OPTIONS: Array<{ value: TravelRole; label: string }> = [
   { value: "driver", label: "Tengo vehículo y puedo llevar gente" },

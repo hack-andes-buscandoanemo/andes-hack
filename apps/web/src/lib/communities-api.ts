@@ -23,6 +23,7 @@ export type MyTrip = components["schemas"]["MyTrip"];
 export type MyTripsResponse = components["schemas"]["MyTripsResponse"];
 export type RequestSeatRequest = components["schemas"]["RequestSeatRequest"];
 export type RequestSeatResponse = components["schemas"]["RequestSeatResponse"];
+export type MyImpact = components["schemas"]["MyImpact"];
 export type CancelBookingResponse = components["schemas"]["CancelBookingResponse"];
 export type RunMatchingRequest = components["schemas"]["RunMatchingRequest"];
 export type MatchRunsResponse = components["schemas"]["MatchRunsResponse"];
@@ -189,6 +190,12 @@ export const communitiesApi = {
     const response = await httpClient.post(
       `/offers/${offerId}/bookings` as "/offers/{id}/bookings",
       payload,
+    );
+    return response.data;
+  },
+  async getMyImpact(communityId: string): Promise<MyImpact> {
+    const response = await httpClient.get(
+      `/communities/${communityId}/me/impact` as "/communities/{id}/me/impact",
     );
     return response.data;
   },
