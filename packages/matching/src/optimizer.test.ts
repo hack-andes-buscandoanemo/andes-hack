@@ -33,14 +33,18 @@ const freeFlow: Record<string, number> = {
 };
 
 const ids = places.map((place) => place.id);
-const matrix = {
-  ids,
-  minutes: ids.map((from) =>
-    ids.map((to) => (from === to ? 0 : (freeFlow[`${from}>${to}`] ?? null))),
-  ),
-};
 
-const model = createTravelTimeModel({ places, matrix, meetingPointIds });
+function modelWith(minutes: Record<string, number>) {
+  const matrix = {
+    ids,
+    minutes: ids.map((from) =>
+      ids.map((to) => (from === to ? 0 : (minutes[`${from}>${to}`] ?? null))),
+    ),
+  };
+  return createTravelTimeModel({ places, matrix, meetingPointIds });
+}
+
+const model = modelWith(freeFlow);
 
 // 19 October 2026 is a Monday.
 const monday = "2026-10-19";
@@ -147,6 +151,34 @@ describe("seats of a day assigned to maximise the car trips avoided", () => {
     expect(plan.assignments.map(({ passengerId, offerId }) => [passengerId, offerId])).toEqual([
       ["ana", "lucia"],
       ["bruno", "carlos"],
+    ]);
+  });
+
+  it("seats together two passengers the driver would bring too early one by one", () => {
+    // With 7 min from the plaza to the municipalidad, Carlos arrives at 7:00 + 22 × 1.72 =
+    // 7:38 with Pedro alone and at 7:40 with Sofía alone, both before 7:40:00; with Sofía
+    // and then Pedro, 1 + 7 + 16 = 24 min, at 7:41, and 4 × 1.72 = 6.9 min of detour.
+    const slowerPlaza = modelWith({
+      ...freeFlow,
+      "la-molina-plaza-de-armas>san-borja-municipalidad": 7,
+    });
+    const late = { windowStart: "07:40", windowEnd: "08:00" };
+
+    const plan = optimizeDay(
+      {
+        date: monday,
+        offers: [offer({ maxDetourMinutes: 10 })],
+        requests: [
+          request("pedro", late),
+          request("sofia", { ...late, originZoneId: "la-molina" }),
+        ],
+      },
+      slowerPlaza,
+    );
+
+    expect(plan.assignments.map(({ passengerId, position }) => [passengerId, position])).toEqual([
+      ["pedro", 1],
+      ["sofia", 0],
     ]);
   });
 

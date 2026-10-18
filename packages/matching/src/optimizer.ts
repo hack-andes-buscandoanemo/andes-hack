@@ -179,6 +179,29 @@ export function optimizeDay(
     return insertion.feasible ? seat(current, request, insertion) : null;
   }
 
+  // Two passengers who would each reach the destination too early alone may fit together:
+  // the first goes to every stop and position, and the second's insertion checks the whole
+  // route, the first's window included.
+  function* withPair(current: Car, first: DayRequest, second: DayRequest): Generator<Car> {
+    const { passengers, seatsTotal } = current.route;
+    if (passengers.length + 2 > seatsTotal) return;
+    const before = timeRoute(current.route, date, model).minutes;
+    const { windowStart, windowEnd } = first;
+    for (const point of model.walkableMeetingPoints(first.originZoneId, first.maxWalkMinutes)) {
+      for (let position = 0; position <= passengers.length; position++) {
+        const stop = { meetingPointId: point.meetingPointId, windowStart, windowEnd };
+        const route = { ...current.route, passengers: passengers.toSpliced(position, 0, stop) };
+        const rider = {
+          request: first,
+          detourMinutes: Math.round(timeRoute(route, date, model).minutes - before),
+          walkMinutes: Math.round(point.walkMinutes),
+        };
+        const both = withRider(car(route, current.riders.toSpliced(position, 0, rider)), second);
+        if (both) yield both;
+      }
+    }
+  }
+
   // Null when the others no longer fit without them, say because the car now arrives
   // before someone's window opens.
   function withoutRider(current: Car, request: DayRequest): Car | null {
@@ -247,6 +270,17 @@ export function optimizeDay(
             const moved = withRider(cars.get(other.id)!, rider.request);
             if (moved) yield [replaced, moved];
           }
+        }
+      }
+    }
+    const left = waiting();
+    for (const [index, first] of left.entries()) {
+      for (const offer of reachable.get(first)!) {
+        // Alone they would have been seated by now.
+        if (withRider(cars.get(offer.id)!, first)) continue;
+        for (const second of left.slice(index + 1)) {
+          if (!reachable.get(second)!.includes(offer)) continue;
+          for (const both of withPair(cars.get(offer.id)!, first, second)) yield [both];
         }
       }
     }
