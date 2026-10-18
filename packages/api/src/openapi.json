@@ -894,6 +894,13 @@
           "driverName": {
             "type": "string"
           },
+          "driverPhotoUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          },
           "originZoneName": {
             "type": "string"
           },
@@ -935,6 +942,7 @@
         "required": [
           "offerId",
           "driverName",
+          "driverPhotoUrl",
           "originZoneName",
           "destinationName",
           "direction",
@@ -1059,6 +1067,13 @@
           "driverName": {
             "type": "string"
           },
+          "driverPhotoUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          },
           "communityName": {
             "type": "string"
           },
@@ -1130,6 +1145,9 @@
           "isOwn": {
             "type": "boolean"
           },
+          "hasOpenNeed": {
+            "type": "boolean"
+          },
           "match": {
             "type": [
               "object",
@@ -1196,6 +1214,7 @@
           "offerId",
           "status",
           "driverName",
+          "driverPhotoUrl",
           "communityName",
           "originZoneName",
           "destinationName",
@@ -1207,6 +1226,7 @@
           "vehicle",
           "note",
           "isOwn",
+          "hasOpenNeed",
           "match",
           "booking",
           "fuelEstimate"
@@ -1878,6 +1898,13 @@
           "driverName": {
             "type": "string"
           },
+          "driverPhotoUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          },
           "direction": {
             "type": "string",
             "enum": [
@@ -1908,6 +1935,7 @@
           "suggestionId",
           "offerId",
           "driverName",
+          "driverPhotoUrl",
           "direction",
           "date",
           "meetingPointName",

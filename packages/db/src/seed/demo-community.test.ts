@@ -31,7 +31,7 @@ function migratedDatabase() {
     await migrate(db, {
       migrationsFolder: fileURLToPath(new URL("../migrations", import.meta.url)),
     });
-  });
+  }, 30_000);
   afterAll(async () => {
     await db.$client.close();
   });

@@ -11,6 +11,7 @@ import {
   type ListObjectsV2CommandInput,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { env } from "@andes-hack/env/server";
 
 /**
  * Cloudflare R2 client for file storage (S3-compatible)
@@ -18,14 +19,25 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
  */
 export const r2Client = new S3Client({
   region: "auto",
-  endpoint: `https://${process.env.R2_ACCOUNT_ID!}.r2.cloudflarestorage.com`,
+  endpoint: `https://${env.R2_ACCOUNT_ID ?? "not-configured"}.r2.cloudflarestorage.com`,
   credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+    accessKeyId: env.R2_ACCESS_KEY_ID ?? "not-configured",
+    secretAccessKey: env.R2_SECRET_ACCESS_KEY ?? "not-configured",
   },
 });
 
-const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
+const BUCKET_NAME = env.R2_BUCKET_NAME ?? "";
+
+function requireR2Config() {
+  if (
+    !env.R2_ACCOUNT_ID ||
+    !env.R2_ACCESS_KEY_ID ||
+    !env.R2_SECRET_ACCESS_KEY ||
+    !env.R2_BUCKET_NAME
+  ) {
+    throw new Error("Cloudflare R2 is not configured.");
+  }
+}
 
 /**
  * Storage utilities for common R2 operations
@@ -42,6 +54,7 @@ export async function uploadFile(
     metadata?: Record<string, string>;
   },
 ): Promise<{ key: string; etag?: string }> {
+  requireR2Config();
   const input: PutObjectCommandInput = {
     Bucket: BUCKET_NAME,
     Key: key,
@@ -68,6 +81,7 @@ export async function downloadFile(key: string): Promise<{
   contentLength?: number;
   metadata?: Record<string, string>;
 }> {
+  requireR2Config();
   const input: GetObjectCommandInput = {
     Bucket: BUCKET_NAME,
     Key: key,
@@ -88,6 +102,7 @@ export async function downloadFile(key: string): Promise<{
  * Download file as Buffer
  */
 export async function downloadFileAsBuffer(key: string): Promise<Buffer> {
+  requireR2Config();
   const input: GetObjectCommandInput = {
     Bucket: BUCKET_NAME,
     Key: key,
@@ -108,6 +123,7 @@ export async function downloadFileAsBuffer(key: string): Promise<Buffer> {
  * Delete a file from R2
  */
 export async function deleteFile(key: string): Promise<void> {
+  requireR2Config();
   const command = new DeleteObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
@@ -137,6 +153,7 @@ export async function listFiles(
   isTruncated: boolean;
   nextContinuationToken?: string;
 }> {
+  requireR2Config();
   const input: ListObjectsV2CommandInput = {
     Bucket: BUCKET_NAME,
     Prefix: prefix,
@@ -162,6 +179,7 @@ export async function listFiles(
  * Check if a file exists
  */
 export async function fileExists(key: string): Promise<boolean> {
+  requireR2Config();
   try {
     const command = new HeadObjectCommand({
       Bucket: BUCKET_NAME,
@@ -184,6 +202,7 @@ export async function getFileMetadata(key: string): Promise<{
   lastModified?: Date;
   metadata?: Record<string, string>;
 } | null> {
+  requireR2Config();
   try {
     const command = new HeadObjectCommand({
       Bucket: BUCKET_NAME,
@@ -210,6 +229,7 @@ export async function copyFile(
   sourceKey: string,
   destinationKey: string,
 ): Promise<{ key: string; etag?: string }> {
+  requireR2Config();
   const command = new CopyObjectCommand({
     Bucket: BUCKET_NAME,
     CopySource: `${BUCKET_NAME}/${sourceKey}`,
@@ -246,6 +266,7 @@ export async function getUploadUrl(
     contentType?: string;
   },
 ): Promise<string> {
+  requireR2Config();
   const command = new PutObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
@@ -267,6 +288,7 @@ export async function getDownloadUrl(
     responseContentDisposition?: string;
   },
 ): Promise<string> {
+  requireR2Config();
   const command = new GetObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
@@ -284,10 +306,11 @@ export async function getDownloadUrl(
  * @param customDomain - Optional custom domain for public access (e.g., "files.example.com")
  */
 export function getPublicUrl(key: string, customDomain?: string): string {
+  requireR2Config();
   if (customDomain) {
     return `https://${customDomain}/${key}`;
   }
   // R2 public buckets use the format: https://pub-<hash>.r2.dev/<key>
   // This requires setting up public access in Cloudflare dashboard
-  return `https://${BUCKET_NAME}.${process.env.R2_ACCOUNT_ID}.r2.dev/${key}`;
+  return `https://${BUCKET_NAME}.${env.R2_ACCOUNT_ID}.r2.dev/${key}`;
 }

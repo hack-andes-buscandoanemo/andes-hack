@@ -423,6 +423,7 @@ describe("GET /communities/{id}/proposals (US-019)", () => {
           suggestionId: expect.any(String),
           offerId: offer.id,
           driverName: "Mateo Q.",
+          driverPhotoUrl: null,
           direction: "outbound",
           date: MONDAY,
           meetingPointName: "Estación San Borja Sur (Línea 1)",
@@ -443,6 +444,36 @@ describe("GET /communities/{id}/proposals (US-019)", () => {
     });
     expect(requested.status).toBe(201);
     expect(await proposalsFor(lucia, alfa.id)).toEqual({ proposals: [] });
+  });
+
+  it("returns the recommended driver's photo signed for the passenger's community", async () => {
+    const alfa = await createCommunity();
+    const admin = await createMember(alfa.id, "u-admin", "Admin", { role: "admin" });
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const lucia = await createMember(alfa.id, "u-lucia", "Lucía");
+    const offer = await seedOffer(alfa.id, driver.id);
+    await seedNeed(alfa.id, lucia.id);
+    const photoKey = `profile-photos/${driver.id}/11111111-1111-4111-8111-111111111111.jpg`;
+    await testDb.update(user).set({ image: photoKey }).where(eq(user.id, driver.id));
+    await runMatching(admin, alfa.id);
+
+    const photoStorage = {
+      getUploadUrl: async () => "https://r2.example/upload",
+      getFileMetadata: async () => null,
+      downloadFileAsBuffer: async () => Buffer.from([]),
+      getDownloadUrl: async () => "https://r2.example/mateo.jpg?signature=read",
+      deleteFile: async () => undefined,
+    };
+    const response = await appAs(lucia, { profilePhotoStorage: photoStorage }).request(
+      `/communities/${alfa.id}/proposals`,
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      proposals: [
+        { offerId: offer.id, driverPhotoUrl: "https://r2.example/mateo.jpg?signature=read" },
+      ],
+    });
   });
 
   it("drops a proposal once its day has passed or the need is no longer open", async () => {

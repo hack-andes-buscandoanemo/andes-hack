@@ -88,7 +88,7 @@ export async function loadCommunityActivity(
       date: tripOffer.date,
       zoneLat: zone.lat,
       zoneLng: zone.lng,
-      driverIsTeam: communityMember.isTeam,
+      driverIsTeam: tripOffer.driverWasTeam,
       driverUsualMode: communityMember.usualMode,
     })
     .from(tripOffer)
@@ -102,16 +102,7 @@ export async function loadCommunityActivity(
     )
     .where(eq(tripOffer.communityId, community.id));
 
-  const passenger = db
-    .$with("passenger")
-    .as(
-      db
-        .select({ userId: communityMember.userId, isTeam: communityMember.isTeam })
-        .from(communityMember)
-        .where(eq(communityMember.communityId, community.id)),
-    );
   const seatRows = await db
-    .with(passenger)
     .select({
       offerId: seatBooking.offerId,
       status: seatBooking.status,
@@ -119,20 +110,24 @@ export async function loadCommunityActivity(
       fallbackMode: tripRequest.fallbackMode,
       zoneLat: zone.lat,
       zoneLng: zone.lng,
-      passengerIsTeam: passenger.isTeam,
+      passengerIsTeam: seatBooking.passengerWasTeam,
     })
     .from(seatBooking)
     .innerJoin(tripRequest, eq(tripRequest.id, seatBooking.requestId))
     .innerJoin(zone, eq(zone.id, tripRequest.originZoneId))
-    .leftJoin(passenger, eq(passenger.userId, seatBooking.passengerId))
     .innerJoin(tripOffer, eq(tripOffer.id, seatBooking.offerId))
     .where(eq(tripOffer.communityId, community.id));
 
   const needRows = await db
-    .with(passenger)
-    .select({ hadResults: tripRequest.hadResults, passengerIsTeam: passenger.isTeam })
+    .select({ hadResults: tripRequest.hadResults, passengerIsTeam: communityMember.isTeam })
     .from(tripRequest)
-    .leftJoin(passenger, eq(passenger.userId, tripRequest.passengerId))
+    .leftJoin(
+      communityMember,
+      and(
+        eq(communityMember.communityId, tripRequest.communityId),
+        eq(communityMember.userId, tripRequest.passengerId),
+      ),
+    )
     .where(and(eq(tripRequest.communityId, community.id), eq(tripRequest.status, "open")));
 
   const offers: OfferActivity[] = offerRows.map((offer) => {

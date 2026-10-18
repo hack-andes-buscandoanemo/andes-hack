@@ -219,6 +219,7 @@ describe("POST /communities/{id}/search (US-013)", () => {
       {
         offerId: offer!.id,
         driverName: "Mateo",
+        driverPhotoUrl: null,
         originZoneName: "La Molina",
         destinationName: "Centro Empresarial Real",
         direction: "outbound",
@@ -497,6 +498,39 @@ describe("POST /communities/{id}/search (US-013)", () => {
     const body = (await res.json()) as { matches: { driverName: string }[] };
     expect(body.matches.map((match) => match.driverName)).toEqual(["Mateo Q."]);
     expect(JSON.stringify(body)).not.toContain("mateo@alfa.pe");
+  });
+
+  it("returns a signed driver photo only for the searched community", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    await createZones();
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const photoKey = `profile-photos/${driver.id}/11111111-1111-4111-8111-111111111111.jpg`;
+    await testDb.update(user).set({ image: photoKey }).where(eq(user.id, driver.id));
+    const passenger = await createMember(alfa.id, "u-lucia", "Lucía");
+    await morningOffer(alfa.id, driver.id);
+
+    const app = createApp({
+      db: testDb as never,
+      getSession: async () => ({ user: passenger }) as never,
+      rateLimit: async () => ({ success: true, reset: 0 }),
+      profilePhotoStorage: {
+        getUploadUrl: async () => "https://r2.example/upload",
+        getFileMetadata: async () => null,
+        downloadFileAsBuffer: async () => Buffer.from([]),
+        getDownloadUrl: async () => "https://r2.example/mateo.jpg?signature=community",
+        deleteFile: async () => undefined,
+      },
+    });
+    const res = await app.request(`/communities/${alfa.id}/search`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(weekdayMorning),
+    });
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({
+      matches: [{ driverPhotoUrl: "https://r2.example/mateo.jpg?signature=community" }],
+    });
   });
 
   it("refuses people who do not belong to the community, and people who are not signed in", async () => {
