@@ -557,6 +557,82 @@ describe("POST /bookings/{id}/accept (US-020)", () => {
     expect(detailBody.booking.status).toBe("accepted");
     expect(detailBody.vehicle.plate).toBe("ABC123");
   });
+
+  it("rejects accept and reject calls from non-drivers with 403", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const passenger = await createMember(alfa.id, "u-lucia", "Lucía");
+    const outsider = await createMember(alfa.id, "u-rosa", "Rosa");
+    const offer = await seedOffer(alfa.id, driver.id);
+    const booking = await bookSeat(offer, passenger.id, "pending");
+
+    const passengerAccept = await requestAs(passenger, `/bookings/${booking.id}/accept`, {
+      method: "POST",
+    });
+    expect(passengerAccept.status).toBe(403);
+    expect(((await passengerAccept.json()) as { error: string }).error).toBe(
+      "No puedes gestionar esta solicitud.",
+    );
+
+    const outsiderReject = await requestAs(outsider, `/bookings/${booking.id}/reject`, {
+      method: "POST",
+    });
+    expect(outsiderReject.status).toBe(403);
+    expect(((await outsiderReject.json()) as { error: string }).error).toBe(
+      "No puedes gestionar esta solicitud.",
+    );
+  });
+
+  it("returns 409 when trying to accept or reject a cancelled or withdrawn request", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const passenger = await createMember(alfa.id, "u-lucia", "Lucía");
+    const offer = await seedOffer(alfa.id, driver.id);
+    const booking = await bookSeat(offer, passenger.id, "pending");
+
+    const cancelRes = await requestAs(passenger, `/bookings/${booking.id}/cancel`, {
+      method: "POST",
+    });
+    expect(cancelRes.status).toBe(200);
+
+    const acceptRes = await requestAs(driver, `/bookings/${booking.id}/accept`, {
+      method: "POST",
+    });
+    expect(acceptRes.status).toBe(409);
+    expect(((await acceptRes.json()) as { error: string }).error).toBe(
+      "Esta solicitud ya no está disponible.",
+    );
+
+    const rejectRes = await requestAs(driver, `/bookings/${booking.id}/reject`, {
+      method: "POST",
+    });
+    expect(rejectRes.status).toBe(409);
+    expect(((await rejectRes.json()) as { error: string }).error).toBe(
+      "Esta solicitud ya no está disponible.",
+    );
+  });
+
+  it("returns 404 when trying to accept or reject an unknown booking", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const unknownId = "00000000-0000-4000-8000-000000000000";
+
+    const acceptRes = await requestAs(driver, `/bookings/${unknownId}/accept`, {
+      method: "POST",
+    });
+    expect(acceptRes.status).toBe(404);
+    expect(((await acceptRes.json()) as { error: string }).error).toBe(
+      "Esta solicitud ya no está disponible.",
+    );
+
+    const rejectRes = await requestAs(driver, `/bookings/${unknownId}/reject`, {
+      method: "POST",
+    });
+    expect(rejectRes.status).toBe(404);
+    expect(((await rejectRes.json()) as { error: string }).error).toBe(
+      "Esta solicitud ya no está disponible.",
+    );
+  });
 });
 
 describe("GET and POST /offers/{id}/messages (US-024)", () => {
