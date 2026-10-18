@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -270,5 +270,40 @@ describe("Viajes", () => {
 
     expect(await screen.findByText("Pausado")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reactivar" })).toBeEnabled();
+  });
+
+  it("wires each tab to the panel that holds its trips", async () => {
+    render(<Viajes />);
+    await screen.findByRole("listitem");
+
+    const panel = screen.getByRole("tabpanel");
+    const selected = screen.getByRole("tab", { name: "Próximos" });
+
+    expect(selected).toHaveAttribute("aria-controls", panel.id);
+    expect(panel).toHaveAttribute("aria-labelledby", selected.id);
+    expect(within(panel).getByRole("listitem")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Historial" })).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("moves between the tabs with the arrow keys", async () => {
+    render(<Viajes />);
+    await screen.findByRole("listitem");
+
+    screen.getByRole("tab", { name: "Próximos" }).focus();
+    await userEvent.keyboard("{ArrowRight}");
+
+    expect(screen.getByRole("tab", { name: "Historial" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Historial" })).toHaveFocus();
+  });
+
+  it("switches to Historial when the link changes while already on Viajes", async () => {
+    const { rerender } = render(<Viajes />);
+    await screen.findByRole("listitem");
+
+    tab = "historial";
+    rerender(<Viajes />);
+
+    await waitFor(() => expect(listMyTrips).toHaveBeenLastCalledWith("passenger", "past"));
+    expect(screen.getByRole("tab", { name: "Historial" })).toHaveAttribute("aria-selected", "true");
   });
 });

@@ -97,9 +97,14 @@ export default function Viajes() {
   const [role, setRole] = useState<"passenger" | "driver">(linkedRole ?? "passenger");
   // The smart default (driver view when only that has trips) applies once, before the person chooses.
   const decided = useRef(linkedRole !== null);
+  const tabParam = searchParams?.get("tab");
   const [scope, setScope] = useState<"upcoming" | "past">(
-    searchParams?.get("tab") === "historial" ? "past" : "upcoming",
+    tabParam === "historial" ? "past" : "upcoming",
   );
+  // The Perfil link can change the param while this screen is already open.
+  useEffect(() => {
+    setScope(tabParam === "historial" ? "past" : "upcoming");
+  }, [tabParam]);
   const [failed, setFailed] = useState(false);
   const [toggleFailed, setToggleFailed] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -167,7 +172,18 @@ export default function Viajes() {
             key={value}
             type="button"
             role="tab"
+            id={`trips-tab-${value}`}
+            aria-controls="trips-panel"
             aria-selected={scope === value}
+            tabIndex={scope === value ? 0 : -1}
+            onKeyDown={(event) => {
+              if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+              decided.current = true;
+              setScope(value === "upcoming" ? "past" : "upcoming");
+              document
+                .getElementById(`trips-tab-${value === "upcoming" ? "past" : "upcoming"}`)
+                ?.focus();
+            }}
             variant={scope === value ? "default" : "outline"}
             onClick={() => {
               decided.current = true;
@@ -200,31 +216,38 @@ export default function Viajes() {
           </Button>
         ))}
       </div>
-      {toggleFailed ? (
-        <p role="alert" className="text-sm text-destructive">
-          No pudimos actualizar el viaje. Inténtalo de nuevo.
-        </p>
-      ) : null}
-      {failed ? (
-        <div role="alert" className="flex flex-col gap-2 rounded-2xl border bg-card p-4">
-          <p>No pudimos cargar tus viajes.</p>
-          <Button type="button" variant="outline" onClick={() => setAttempt((n) => n + 1)}>
-            Reintentar
-          </Button>
-        </div>
-      ) : trips === null ? (
-        <p role="status" className="text-muted-foreground">
-          Cargando viajes…
-        </p>
-      ) : trips.length === 0 ? (
-        <EmptyState>Aún no tienes viajes. Busca uno o publica el que ya haces.</EmptyState>
-      ) : (
-        <ul className="space-y-3">
-          {trips.map((trip) => (
-            <TripCard key={trip.id} trip={trip} busy={togglingId === trip.id} onToggle={toggle} />
-          ))}
-        </ul>
-      )}
+      <div
+        role="tabpanel"
+        id="trips-panel"
+        aria-labelledby={`trips-tab-${scope}`}
+        className="flex flex-col gap-4"
+      >
+        {toggleFailed ? (
+          <p role="alert" className="text-sm text-destructive">
+            No pudimos actualizar el viaje. Inténtalo de nuevo.
+          </p>
+        ) : null}
+        {failed ? (
+          <div role="alert" className="flex flex-col gap-2 rounded-2xl border bg-card p-4">
+            <p>No pudimos cargar tus viajes.</p>
+            <Button type="button" variant="outline" onClick={() => setAttempt((n) => n + 1)}>
+              Reintentar
+            </Button>
+          </div>
+        ) : trips === null ? (
+          <p role="status" className="text-muted-foreground">
+            Cargando viajes…
+          </p>
+        ) : trips.length === 0 ? (
+          <EmptyState>Aún no tienes viajes. Busca uno o publica el que ya haces.</EmptyState>
+        ) : (
+          <ul className="space-y-3">
+            {trips.map((trip) => (
+              <TripCard key={trip.id} trip={trip} busy={togglingId === trip.id} onToggle={toggle} />
+            ))}
+          </ul>
+        )}
+      </div>
     </main>
   );
 }
