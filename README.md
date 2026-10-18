@@ -63,7 +63,7 @@ El transporte diario en Lima enfrenta una crisis multidimensional que afecta la 
     </td>
     <td width="50%" valign="top">
       <h3>🚦 4. Reducción Real del Tráfico</h3>
-      <p>Si <b>4 personas con automóvil</b> comparten una ruta coincidente en un solo vehículo, <b>se retiran 3 vehículos de circulación</b> inmediatamente. Al escalar en múltiples instituciones, el impacto en la descongestión vial y huella de carbono es exponencial.</p>
+      <p>Si <b>4 personas que manejaban solas</b> comparten un solo vehículo, <b>se retiran 3 autos de circulación</b> (de 4 autos a 1). Si solo <b>3 de las 4</b> comparten, se retiran 2 (de 4 autos a 2). Quien venía en bus, combi, Corredor o metro gana seguridad y tiempo, pero no resta autos: por eso medimos los <b>viajes en auto evitados</b> aparte de las <b>personas transportadas</b>. El impacto crece con cada institución que se suma.</p>
     </td>
   </tr>
 </table>
@@ -101,7 +101,7 @@ flowchart LR
 | **Costo por Viaje**       |            🟢 Bajo            |           🔴 Alto            | 🔴 Alto (Gasolina/Mant.) |    🟢 **Bajo (Gasto Compartido)**    |
 | **Tiempo de Espera**      | 🔴 Alto (Colas en hora punta) |           🟢 Bajo            |         🟢 Nulo          |   🟢 **Bajo (Horario Coordinado)**   |
 | **Comodidad**             |     🔴 Baja (Saturación)      |           🟢 Alta            |         🟢 Alta          |  🟢 **Alta (Asiento Garantizado)**   |
-| **Impacto en el Tráfico** |          🟢 Positivo          |         🔴 Negativo          |     🔴 Muy Negativo      | 🟢 **Positivo (-3 autos por grupo)** |
+| **Impacto en el Tráfico** |          🟢 Positivo          |         🔴 Negativo          |     🔴 Muy Negativo      | 🟢 **Positivo (hasta -3 por grupo)** |
 
 ---
 
