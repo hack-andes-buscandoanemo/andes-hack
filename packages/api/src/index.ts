@@ -532,7 +532,11 @@ export const InfeasibleReasonSchema = z.enum([
   "detour_exceeded",
 ]);
 
-const clockTime = z.string().regex(/^\d{2}:\d{2}$/, "Ingresa una hora válida.");
+const clockTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Ingresa una hora válida.");
+
+// Calendar date in Lima (UTC−5, no daylight saving time); en-CA formats as YYYY-MM-DD.
+const todayInLima = () =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "America/Lima" }).format(new Date());
 
 export const SearchTripsBodySchema = z
   .object({
@@ -540,10 +544,17 @@ export const SearchTripsBodySchema = z
     originZoneId: z.string().min(1, "Selecciona tu zona."),
     windowStart: clockTime,
     windowEnd: clockTime,
-    daysOfWeek: z.array(z.number().int().min(1).max(7)).min(1).nullable().optional(),
+    daysOfWeek: z
+      .array(z.number().int().min(1).max(7))
+      .min(1)
+      .max(7)
+      .refine((days) => new Set(days).size === days.length, "No repitas los días.")
+      .nullable()
+      .optional(),
     date: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, "Ingresa una fecha válida.")
+      .refine((date) => date >= todayInLima(), "La fecha no puede ser anterior a hoy.")
       .nullable()
       .optional(),
     maxWalkMinutes: z.number().int().min(1).max(30).default(15),

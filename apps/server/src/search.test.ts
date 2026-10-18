@@ -548,3 +548,28 @@ describe("POST /communities/{id}/search (US-013)", () => {
     expect(elapsed).toBeLessThan(1000);
   });
 });
+
+describe("POST /communities/{id}/search validation (US-013)", () => {
+  async function statusOf(body: Record<string, unknown>) {
+    const alfa = await createCommunity("comunidad-alfa");
+    await createZones();
+    const passenger = await createMember(alfa.id, "u-lucia", "Lucía");
+    return (await searchAs(passenger, alfa.id, { ...weekdayMorning, ...body })).status;
+  }
+
+  it("rejects a time of day that does not exist", async () => {
+    expect(await statusOf({ windowEnd: "24:30" })).toBe(422);
+  });
+
+  it("rejects repeated days", async () => {
+    expect(await statusOf({ daysOfWeek: [1, 1, 2] })).toBe(422);
+  });
+
+  it("rejects a date that already passed", async () => {
+    expect(await statusOf({ daysOfWeek: null, date: "2020-01-01" })).toBe(422);
+  });
+
+  it("rejects a window that ends when it starts", async () => {
+    expect(await statusOf({ windowStart: "07:30", windowEnd: "07:30" })).toBe(422);
+  });
+});
