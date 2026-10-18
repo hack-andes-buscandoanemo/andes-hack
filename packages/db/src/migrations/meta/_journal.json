@@ -57,6 +57,13 @@
       "when": 1792303555982,
       "tag": "0007_shallow_jazinda",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792307050095,
+      "tag": "0008_clammy_obadiah_stane",
+      "breakpoints": true
     }
   ]
 }
