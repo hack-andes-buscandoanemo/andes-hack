@@ -292,6 +292,91 @@ describe("search page /buscar (US-013)", () => {
     );
   });
 
+  it("searches the return with the Solo mujeres saved on the linked community, not the first one", async () => {
+    const betaId = "55555555-5555-4555-8555-555555555555";
+    getMe.mockResolvedValue({
+      ...ME,
+      memberships: [
+        membership({ identifiesAsWoman: true, womenOnly: false }),
+        membership({
+          communityId: betaId,
+          communityName: "Beta",
+          destinationName: "Campus Beta",
+          identifiesAsWoman: true,
+          womenOnly: true,
+        }),
+      ],
+    });
+    window.history.replaceState(
+      {},
+      "",
+      `/buscar?direction=return&communityId=${betaId}&originZoneId=san-borja&windowStart=18:00&windowEnd=18:30&fallbackMode=public_transport&date=2026-11-02`,
+    );
+    searchTrips.mockResolvedValue({ requestId: "r", matches: [], reason: "women_only" });
+    const user = userEvent.setup();
+    render(<BuscarPage />);
+    await screen.findByRole("option", { name: "San Borja" });
+    expect(screen.getByRole("checkbox", { name: "Solo mujeres" })).toBeChecked();
+    await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
+    await waitFor(() =>
+      expect(searchTrips).toHaveBeenCalledWith(
+        betaId,
+        expect.objectContaining({ direction: "return", womenOnly: true }),
+      ),
+    );
+  });
+
+  it.each([
+    ["is not a valid search", "windowStart=19:00&windowEnd=18:00&originZoneId=san-borja"],
+    [
+      "names a zone the community does not have",
+      "windowStart=18:00&windowEnd=18:30&originZoneId=nowhere",
+    ],
+  ])("tells the user when the return link %s", async (_name, query) => {
+    window.history.replaceState(
+      {},
+      "",
+      `/buscar?direction=return&communityId=${COMMUNITY_ID}&${query}&fallbackMode=public_transport&date=2026-11-02`,
+    );
+    render(<BuscarPage />);
+    await screen.findByRole("option", { name: "San Borja" });
+    expect(
+      await screen.findByText(
+        "No pudimos aplicar el regreso del enlace. Completa tu búsqueda para continuar.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Mi zona")).toHaveValue("");
+  });
+
+  it("tells the user when they switch community before the link's zones arrive", async () => {
+    const betaId = "55555555-5555-4555-8555-555555555555";
+    getMe.mockResolvedValue({
+      ...ME,
+      memberships: [
+        membership(),
+        membership({ communityId: betaId, communityName: "Beta", destinationName: "Campus Beta" }),
+      ],
+    });
+    let release: (zones: typeof ZONES) => void = () => {};
+    listCommunityZones.mockImplementation((communityId: string) =>
+      communityId === betaId ? new Promise((resolve) => (release = resolve)) : ZONES,
+    );
+    window.history.replaceState(
+      {},
+      "",
+      `/buscar?direction=return&communityId=${betaId}&originZoneId=san-borja&windowStart=18:00&windowEnd=18:30&fallbackMode=public_transport&date=2026-11-02`,
+    );
+    const user = userEvent.setup();
+    render(<BuscarPage />);
+    await user.selectOptions(await screen.findByLabelText("Comunidad"), COMMUNITY_ID);
+    release(ZONES);
+    expect(
+      await screen.findByText(
+        "No pudimos aplicar el regreso del enlace. Completa tu búsqueda para continuar.",
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("lists the matches with the engine's factors instead of a percentage", async () => {
     searchTrips.mockResolvedValue({
       requestId: "33333333-3333-4333-8333-333333333333",
@@ -513,10 +598,10 @@ describe("search page /buscar (US-013)", () => {
     );
   });
 
-  it("offers Solo mujeres only to who turned that preference on, and sends it", async () => {
+  it("offers Solo mujeres only to who identifies as a woman, and sends it", async () => {
     getMe.mockResolvedValue({
       ...ME,
-      memberships: [membership({ identifiesAsWoman: true, womenOnly: true })],
+      memberships: [membership({ identifiesAsWoman: true, womenOnly: false })],
     });
     searchTrips.mockResolvedValue({
       requestId: "33333333-3333-4333-8333-333333333333",
@@ -530,6 +615,26 @@ describe("search page /buscar (US-013)", () => {
     await user.click(screen.getByRole("checkbox", { name: "Solo mujeres" }));
     await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
 
+    expect(searchTrips).toHaveBeenCalledWith(
+      COMMUNITY_ID,
+      expect.objectContaining({ womenOnly: true }),
+    );
+  });
+
+  it("starts with Solo mujeres on when the profile has it on (US-026)", async () => {
+    getMe.mockResolvedValue({
+      ...ME,
+      memberships: [membership({ identifiesAsWoman: true, womenOnly: true })],
+    });
+    searchTrips.mockResolvedValue({
+      requestId: "33333333-3333-4333-8333-333333333333",
+      matches: [],
+      reason: "women_only",
+    });
+
+    await searchFromSanBorja();
+
+    expect(screen.getByRole("checkbox", { name: "Solo mujeres" })).toBeChecked();
     expect(searchTrips).toHaveBeenCalledWith(
       COMMUNITY_ID,
       expect.objectContaining({ womenOnly: true }),

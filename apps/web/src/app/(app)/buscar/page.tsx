@@ -13,6 +13,7 @@ import {
 
 import { addDays, clockLabel, limaToday, shiftClock, TIME_SLOTS, WEEKDAYS } from "./schedule";
 import { FALLBACK_FOR_USUAL_MODE, FALLBACK_OPTIONS, REASON_MESSAGES } from "./reasons";
+import { parseReturnPrefill, type ReturnPrefill } from "./return-prefill";
 import TripCard from "./trip-card";
 
 const selectClass =
@@ -21,7 +22,7 @@ const selectClass =
 type DayChoice = "today" | "tomorrow" | "other" | "days";
 
 export default function SearchPage() {
-  const initialSearch = useRef<URLSearchParams | null>(null);
+  const initialSearch = useRef<ReturnPrefill | null>(null);
   const [memberships, setMemberships] = useState<MembershipSummary[]>([]);
   const [communityId, setCommunityId] = useState("");
   const [zones, setZones] = useState<ZoneSummary[]>([]);
@@ -44,6 +45,7 @@ export default function SearchPage() {
   const [error, setError] = useState<string | null>(null);
   const [dateError, setDateError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [prefillNotice, setPrefillNotice] = useState(false);
 
   const membership = memberships.find((item) => item.communityId === communityId) ?? null;
 
@@ -59,11 +61,14 @@ export default function SearchPage() {
           (item) => item.communityId === query.get("communityId"),
         );
         const selected = linkedMembership ?? first;
-        initialSearch.current =
-          linkedMembership && query.get("direction") === "return" ? query : null;
+        const linkedReturn = linkedMembership && query.get("direction") === "return";
+        initialSearch.current = linkedReturn ? parseReturnPrefill(query) : null;
+        if (linkedReturn && !initialSearch.current) setPrefillNotice(true);
         setMemberships(me.memberships);
         setCommunityId(selected.communityId);
         setFallbackMode(FALLBACK_FOR_USUAL_MODE[selected.usualMode ?? "other"] ?? "other");
+        // The saved "Solo mujeres" of the membership the search opens on (US-026).
+        setWomenOnly(selected.womenOnly);
       })
       .catch(() => {
         if (active) setLoadError("No pudimos cargar tu cuenta. Inténtalo de nuevo.");
@@ -81,44 +86,24 @@ export default function SearchPage() {
       .then((list) => {
         if (!active) return;
         setZones(list);
-        const query = initialSearch.current;
+        const prefill = initialSearch.current;
         initialSearch.current = null;
+        if (!prefill) return;
         if (
-          !query ||
-          query.get("communityId") !== communityId ||
-          !list.some((zone) => zone.id === query.get("originZoneId"))
-        )
+          prefill.communityId !== communityId ||
+          !list.some((zone) => zone.id === prefill.originZoneId)
+        ) {
+          setPrefillNotice(true);
           return;
-        const start = query.get("windowStart") ?? "";
-        const end = query.get("windowEnd") ?? "";
-        const fallback = FALLBACK_OPTIONS.find(
-          (option) => option.value === query.get("fallbackMode"),
-        );
-        const date = query.get("date") ?? "";
-        const weekdayValue = query.get("daysOfWeek") ?? "";
-        if (query.has("date") === query.has("daysOfWeek")) return;
-        const weekdays = weekdayValue.split(",").map(Number);
-        const validSchedule = date
-          ? /^\d{4}-\d{2}-\d{2}$/.test(date) &&
-            Number.isFinite(Date.parse(`${date}T12:00:00Z`)) &&
-            new Date(`${date}T12:00:00Z`).toISOString().slice(0, 10) === date
-          : /^[1-7](,[1-7])*$/.test(weekdayValue) && new Set(weekdays).size === weekdays.length;
-        if (
-          !/^([01]\d|2[0-3]):[0-5]\d$/.test(start) ||
-          !/^([01]\d|2[0-3]):[0-5]\d$/.test(end) ||
-          start >= end ||
-          !fallback ||
-          !validSchedule
-        )
-          return;
+        }
         setOutbound(false);
-        setZoneId(query.get("originZoneId")!);
-        setWindowStart(start);
-        setWindowEnd(end);
-        setFallbackMode(fallback.value);
-        setDayChoice(date ? "other" : "days");
-        setOtherDate(date);
-        setDays(date ? [] : weekdays);
+        setZoneId(prefill.originZoneId);
+        setWindowStart(prefill.windowStart);
+        setWindowEnd(prefill.windowEnd);
+        setFallbackMode(prefill.fallbackMode);
+        setDayChoice(prefill.date ? "other" : "days");
+        setOtherDate(prefill.date ?? "");
+        setDays(prefill.days);
       })
       .catch(() => {
         if (active) setLoadError("No pudimos cargar tus zonas. Inténtalo de nuevo.");
@@ -193,6 +178,11 @@ export default function SearchPage() {
         <h1 className="text-3xl font-extrabold">Buscar viaje</h1>
         <p className="text-muted-foreground">Encuentra personas que van en tu dirección</p>
       </header>
+      {prefillNotice ? (
+        <p role="status" className="text-sm font-medium">
+          No pudimos aplicar el regreso del enlace. Completa tu búsqueda para continuar.
+        </p>
+      ) : null}
       {loadError ? (
         <p role="alert" className="text-sm font-medium text-destructive">
           {loadError}

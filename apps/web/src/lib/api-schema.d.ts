@@ -228,6 +228,74 @@ export interface paths {
     };
     trace?: never;
   };
+  "/communities/{id}/preferences": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: {
+        content: {
+          "application/json": components["schemas"]["TravelPreferences"];
+        };
+      };
+      responses: {
+        /** @description Preferencias de viaje guardadas */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["TravelPreferencesResponse"];
+          };
+        };
+        /** @description No hay sesión iniciada (`unauthorized`) */
+        401: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description No es miembro de la comunidad (`community_membership_required`) */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+        /** @description Solo mujeres sin confirmar que se identifica como mujer (`women_only_requires_declaration`), o datos no válidos (`validation_error`) */
+        422: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["ApiError"];
+          };
+        };
+      };
+    };
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/vehicles": {
     parameters: {
       query?: never;
@@ -1294,6 +1362,25 @@ export interface components {
       travelRole: "driver" | "passenger" | "both";
       alias?: string;
     };
+    TravelPreferencesResponse: components["schemas"]["TravelPreferences"] & {
+      message: string;
+    };
+    TravelPreferences: {
+      identifiesAsWoman: boolean;
+      womenOnly: boolean;
+    };
+    ApiError: {
+      /** @enum {boolean} */
+      success: false;
+      status: number;
+      error: string;
+      details?: {
+        code: string;
+        fields?: string[];
+      } & {
+        [key: string]: unknown;
+      };
+    };
     VehiclesResponse: {
       vehicles: components["schemas"]["VehicleSummary"][];
     };
@@ -1405,18 +1492,6 @@ export interface components {
       detourMinutes: number;
       walkMinutes: number;
     };
-    ApiError: {
-      /** @enum {boolean} */
-      success: false;
-      status: number;
-      error: string;
-      details?: {
-        code: string;
-        fields?: string[];
-      } & {
-        [key: string]: unknown;
-      };
-    };
     SearchTripsRequest: {
       /** @enum {string} */
       direction: "outbound" | "return";
@@ -1429,8 +1504,7 @@ export interface components {
       maxWalkMinutes: number;
       /** @enum {string} */
       fallbackMode: "drive_alone" | "taxi_app" | "public_transport" | "picked_up" | "other";
-      /** @default false */
-      womenOnly: boolean;
+      womenOnly?: boolean;
     };
     OfferDetail: {
       /** Format: uuid */

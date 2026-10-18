@@ -8,7 +8,10 @@ import { clockLabel, dateLabel, daysLabel } from "@/app/(app)/buscar/schedule";
 import { Button } from "@/components/ui/button";
 import type { MyTrip } from "@/lib/communities-api";
 
-function commonCalendar(...calendars: Pick<MyTrip, "date" | "daysOfWeek">[]) {
+import type { PairedReturn } from "./return-pairs";
+
+// The date or weekdays two calendars share, or null when they never meet.
+export function commonCalendar(...calendars: Pick<MyTrip, "date" | "daysOfWeek">[]) {
   const date = calendars.find((calendar) => calendar.date)?.date ?? null;
   if (date) {
     const day = new Date(`${date}T12:00:00Z`).getUTCDay() || 7;
@@ -24,7 +27,13 @@ function commonCalendar(...calendars: Pick<MyTrip, "date" | "daysOfWeek">[]) {
   return days?.length ? { date: null, days } : null;
 }
 
-export default function ReturnTripCard({ trip, trips = [] }: { trip: MyTrip; trips?: MyTrip[] }) {
+export default function ReturnTripCard({
+  trip,
+  returns = [],
+}: {
+  trip: MyTrip;
+  returns?: PairedReturn[];
+}) {
   const router = useRouter();
   const context = trip.passengerRequest;
   const [start, setStart] = useState(context?.returnWindow?.start ?? "");
@@ -40,24 +49,6 @@ export default function ReturnTripCard({ trip, trips = [] }: { trip: MyTrip; tri
   const calendar = commonCalendar(trip, context);
   if (!calendar) return null;
   const { date, days } = calendar;
-  const returns = trips.flatMap((candidate) => {
-    const request = candidate.passengerRequest;
-    if (
-      candidate.role !== "passenger" ||
-      candidate.status !== "accepted" ||
-      candidate.direction !== "return" ||
-      candidate.time.slice(0, 5) <= trip.time.slice(0, 5) ||
-      !request ||
-      request.communityId !== context.communityId ||
-      request.originZoneId !== context.originZoneId
-    )
-      return [];
-    const shared = commonCalendar(trip, context, candidate, request);
-    return shared
-      ? [{ trip: candidate, label: shared.date ? dateLabel(shared.date) : daysLabel(shared.days) }]
-      : [];
-  });
-
   return (
     <section aria-label="¿Y el regreso?" className="space-y-3 rounded-2xl border bg-card p-4">
       <h2 className="text-lg font-bold">¿Y el regreso?</h2>
@@ -105,7 +96,6 @@ export default function ReturnTripCard({ trip, trips = [] }: { trip: MyTrip; tri
             <label className="text-sm">
               Desde
               <input
-                aria-label="Desde"
                 type="time"
                 required
                 value={start}
@@ -116,7 +106,6 @@ export default function ReturnTripCard({ trip, trips = [] }: { trip: MyTrip; tri
             <label className="text-sm">
               Hasta
               <input
-                aria-label="Hasta"
                 type="time"
                 required
                 value={end}

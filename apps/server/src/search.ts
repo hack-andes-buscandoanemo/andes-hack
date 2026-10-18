@@ -144,7 +144,7 @@ export async function loadOfferRoutes(
 type NeedFields = Pick<
   typeof tripRequest.$inferSelect,
   "direction" | "originZoneId" | "windowStart" | "windowEnd" | "maxWalkMinutes"
-> & { date?: string | null; daysOfWeek?: number[] | null };
+> & { date?: string | null; daysOfWeek?: number[] | null; womenOnly?: boolean };
 
 type MatchOfferInput = {
   offerId: string;
@@ -184,11 +184,10 @@ export async function matchOfferForNeed(database: Database, input: MatchOfferInp
     communityId,
     destination: input.destination,
   });
-  // ponytail: the saved need does not store the "Solo mujeres" preference; the offer's own flag still applies.
   const request = toRideRequest(need, {
     userId,
     communityId,
-    womenOnly: false,
+    womenOnly: need.womenOnly ?? false,
     passengerIsWoman: input.passengerIsWoman,
   });
   return rankOffersForRequest(request, routes, model).matches[0] ?? null;
@@ -210,7 +209,10 @@ export async function searchTrips(
   const destination = destinationOf(destinationRow);
 
   const [passenger] = await database
-    .select({ identifiesAsWoman: communityMember.identifiesAsWoman })
+    .select({
+      identifiesAsWoman: communityMember.identifiesAsWoman,
+      womenOnly: communityMember.womenOnly,
+    })
     .from(communityMember)
     .where(and(eq(communityMember.communityId, communityId), eq(communityMember.userId, userId)))
     .limit(1);
@@ -221,7 +223,8 @@ export async function searchTrips(
     });
   }
 
-  if (body.womenOnly && !passenger.identifiesAsWoman) {
+  const womenOnly = body.womenOnly ?? passenger.womenOnly;
+  if (womenOnly && !passenger.identifiesAsWoman) {
     throw new ApiError(
       403,
       "Esta preferencia solo está disponible para quienes la activaron en su perfil.",
@@ -247,6 +250,7 @@ export async function searchTrips(
     date: body.date ?? null,
     maxWalkMinutes: body.maxWalkMinutes,
     fallbackMode: body.fallbackMode,
+    womenOnly,
   };
   const { rows, routes, acceptedByOffer } = await loadOfferRoutes(database, {
     communityId,
@@ -262,7 +266,7 @@ export async function searchTrips(
   const request = toRideRequest(body, {
     userId,
     communityId,
-    womenOnly: body.womenOnly,
+    womenOnly,
     passengerIsWoman: passenger.identifiesAsWoman,
   });
 
