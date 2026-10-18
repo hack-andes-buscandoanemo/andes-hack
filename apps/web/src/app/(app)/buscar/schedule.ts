@@ -32,6 +32,42 @@ export const WEEKDAYS = [
   { iso: 7, name: "Domingo" },
 ];
 
+// ISO weekdays [1,2,3,4,5] -> "Lunes a viernes"; [1,3,5] -> "Lunes, miércoles y viernes".
+export function daysLabel(days: number[]) {
+  const sorted = [...days].sort((x, y) => x - y);
+  const names = sorted.map((iso) => WEEKDAYS.find((day) => day.iso === iso)!.name.toLowerCase());
+  const consecutive = sorted.every((iso, index) => index === 0 || iso === sorted[index - 1]! + 1);
+  const text =
+    consecutive && names.length > 2
+      ? `${names[0]} a ${names.at(-1)}`
+      : names.length > 1
+        ? `${names.slice(0, -1).join(", ")} y ${names.at(-1)}`
+        : names[0]!;
+  return text[0]!.toUpperCase() + text.slice(1);
+}
+
+const MONTHS = [
+  "enero",
+  "febrero",
+  "marzo",
+  "abril",
+  "mayo",
+  "junio",
+  "julio",
+  "agosto",
+  "septiembre",
+  "octubre",
+  "noviembre",
+  "diciembre",
+];
+
+// "2026-10-20" -> "Martes 20 de octubre" (a calendar date, so no time zone shift applies).
+export function dateLabel(date: string) {
+  const day = new Date(`${date}T12:00:00Z`);
+  const weekday = WEEKDAYS[(day.getUTCDay() + 6) % 7]!.name;
+  return `${weekday} ${day.getUTCDate()} de ${MONTHS[day.getUTCMonth()]}`;
+}
+
 // Moves a time of day, staying inside the slots the selects offer.
 export function shiftClock(time: string, minutes: number) {
   const total = Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5)) + minutes;
