@@ -135,7 +135,7 @@ function daysMatch(route: OfferRoute, request: RideRequest) {
 }
 
 // Reasons that need no travel time, checked before any route is timed.
-function ruleBreak(route: OfferRoute, request: RideRequest): InfeasibleReason | null {
+function firstBrokenRule(route: OfferRoute, request: RideRequest): InfeasibleReason | null {
   if (route.communityId !== request.communityId) return "different_community";
   if (!daysMatch(route, request)) return "days_mismatch";
   // "Solo mujeres" binds both ways: the driver's offer and the passenger's preference.
@@ -169,7 +169,7 @@ function bestCandidate(
 ): Candidate | InfeasibleReason {
   if (route.direction !== request.direction)
     throw new Error("La oferta y la necesidad van en sentidos distintos");
-  const reason = ruleBreak(route, request);
+  const reason = firstBrokenRule(route, request);
   if (reason) return reason;
 
   const day = timingDay(request);
@@ -177,8 +177,9 @@ function bestCandidate(
   const departure = minutesOfDay(route.departureTime);
   const middle = (minutesOfDay(request.windowStart) + minutesOfDay(request.windowEnd)) / 2;
   const current = route.passengers.map((passenger) => passenger.meetingPointId);
-  const currentEnd = stopTimes(route, current, day, model).at(-1)!;
-  const straightEnd = stopTimes(route, [], day, model).at(-1)!;
+  const tripEnd = (stops: readonly string[]) => stopTimes(route, stops, day, model).at(-1)!;
+  const currentEnd = tripEnd(current);
+  const straightEnd = tripEnd([]);
 
   let best: Candidate | undefined;
   // If some insertion keeps within the detour, the timetable is what fails.

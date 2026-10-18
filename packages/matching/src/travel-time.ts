@@ -18,7 +18,8 @@ export interface FreeFlowMatrix {
 export interface TravelTimeData {
   places: readonly PlacePoint[];
   matrix: FreeFlowMatrix;
-  // The places, among `places`, where a passenger can be picked up or dropped off.
+  // The places, among `places`, where a passenger can be picked up or dropped off. Left
+  // out, the model knows no meeting points and no passenger can be matched.
   meetingPointIds?: readonly string[];
 }
 
