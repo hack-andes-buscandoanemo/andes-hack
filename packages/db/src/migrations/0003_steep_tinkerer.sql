@@ -1,0 +1,2 @@
+ALTER TABLE "trip_request" ADD COLUMN "had_results" boolean;--> statement-breakpoint
+CREATE UNIQUE INDEX "trip_request_open_need_idx" ON "trip_request" USING btree ("community_id","passenger_id","direction") WHERE "trip_request"."status" = 'open';

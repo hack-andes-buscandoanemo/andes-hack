@@ -78,30 +78,6 @@ export async function searchTrips(
     maxWalkMinutes: body.maxWalkMinutes,
     fallbackMode: body.fallbackMode,
   };
-  // One open need per person and direction. ponytail: no unique index, so two searches at the same instant could save two.
-  const [open] = await database
-    .select({ id: tripRequest.id })
-    .from(tripRequest)
-    .where(
-      and(
-        eq(tripRequest.communityId, communityId),
-        eq(tripRequest.passengerId, userId),
-        eq(tripRequest.direction, body.direction),
-        eq(tripRequest.status, "open"),
-      ),
-    )
-    .limit(1);
-  const [saved] = open
-    ? await database
-        .update(tripRequest)
-        .set(need)
-        .where(eq(tripRequest.id, open.id))
-        .returning({ id: tripRequest.id })
-    : await database
-        .insert(tripRequest)
-        .values({ ...need, communityId, passengerId: userId, direction: body.direction })
-        .returning({ id: tripRequest.id });
-
   const rows = await database
     .select({
       id: tripOffer.id,
@@ -213,11 +189,23 @@ export async function searchTrips(
   }));
 
   const ranking = rankOffersForRequest(request, routes, model);
+  const hadResults = ranking.matches.length > 0;
+  // One open need per person and direction, enforced by a partial unique index: searching again updates it.
+  const [saved] = await database
+    .insert(tripRequest)
+    .values({ ...need, hadResults, communityId, passengerId: userId, direction: body.direction })
+    .onConflictDoUpdate({
+      target: [tripRequest.communityId, tripRequest.passengerId, tripRequest.direction],
+      targetWhere: eq(tripRequest.status, "open"),
+      set: { ...need, hadResults },
+    })
+    .returning({ id: tripRequest.id });
+
   const byId = new Map(rows.map((row) => [row.id, row]));
   const meetingPointNames = new Map(places.meetingPoints.map((point) => [point.id, point.name]));
 
   // For the coverage panel (US-030, US-031): only the outcome, never who searched or from where.
-  logEvent("search.completed", { communityId, hadResults: ranking.matches.length > 0 });
+  logEvent("search.completed", { communityId, hadResults });
 
   return {
     requestId: saved!.id,
