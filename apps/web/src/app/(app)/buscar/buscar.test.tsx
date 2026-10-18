@@ -204,7 +204,7 @@ describe("search page /buscar (US-013)", () => {
     render(<BuscarPage />);
     await pickSanBorja(user);
 
-    await user.selectOptions(screen.getByLabelText("Fecha"), "Días de la semana");
+    await user.selectOptions(screen.getByLabelText("Fecha"), "Días");
     await user.click(screen.getByRole("button", { name: "Lunes" }));
     await user.click(screen.getByRole("button", { name: "Miércoles" }));
     await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
@@ -428,7 +428,7 @@ describe("search page /buscar (US-013)", () => {
     render(<BuscarPage />);
     await pickSanBorja(user);
 
-    await user.selectOptions(screen.getByLabelText("Fecha"), "Días de la semana");
+    await user.selectOptions(screen.getByLabelText("Fecha"), "Días");
     await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
 
     expect(screen.getByText("Elige al menos un día.")).toBeInTheDocument();
@@ -447,5 +447,19 @@ describe("search page /buscar (US-013)", () => {
 
     expect(searchTrips).toHaveBeenCalledTimes(1);
     expect(button).toBeDisabled();
+  });
+
+  it("never reveals that a driver turned the person down", async () => {
+    searchTrips.mockResolvedValue({
+      requestId: "33333333-3333-4333-8333-333333333333",
+      matches: [],
+      reason: "previously_rejected",
+    });
+
+    await searchFromSanBorja();
+
+    expect(
+      await screen.findByText("No encontramos más viajes disponibles para este recorrido."),
+    ).toBeInTheDocument();
   });
 });

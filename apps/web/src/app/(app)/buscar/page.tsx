@@ -222,7 +222,7 @@ export default function SearchPage() {
             <option value="today">Hoy</option>
             <option value="tomorrow">Mañana</option>
             <option value="other">Otra fecha</option>
-            <option value="days">Días de la semana</option>
+            <option value="days">Días</option>
           </select>
         </label>
         {dayChoice === "other" ? (

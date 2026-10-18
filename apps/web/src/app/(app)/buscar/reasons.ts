@@ -10,7 +10,7 @@ export const REASON_MESSAGES: Record<Reason, string> = {
   no_walkable_meeting_point: "No hay un punto de encuentro a una distancia caminable",
   days_mismatch: "Ningún conductor sale en esos días",
   women_only: "No hay viajes Solo mujeres que coincidan con tu búsqueda",
-  previously_rejected: "Los conductores de estos viajes ya no pueden recibirte",
+  previously_rejected: "No encontramos más viajes disponibles para este recorrido.",
   different_community: "No encontramos viajes compatibles",
 };
 
