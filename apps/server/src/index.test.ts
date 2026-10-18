@@ -383,6 +383,14 @@ it("does not publish the example private route in OpenAPI", async () => {
   const response = await app.request("/openapi.json");
 
   expect(response.status).toBe(200);
-  const document = (await response.json()) as { paths: Record<string, unknown> };
+  const document = (await response.json()) as {
+    paths: Record<string, { get?: { tags?: string[] } }>;
+    servers: Array<{ url: string; description: string }>;
+  };
   expect(document.paths).not.toHaveProperty("/private");
+  expect(document.paths["/health"]?.get?.tags).toEqual(["Público"]);
+  expect(document.servers).toContainEqual({
+    url: "https://andes-hack-server-diego.diegorafaelcisnerostafur.workers.dev",
+    description: "Production server",
+  });
 });

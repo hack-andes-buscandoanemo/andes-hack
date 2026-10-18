@@ -11,6 +11,7 @@
   },
   "scripts": {
     "check-types": "tsc --noEmit",
+    "openapi:generate": "bun src/generate-openapi.ts",
     "openapi:verify": "bun src/verify-openapi.ts",
     "test": "vitest run --passWithNoTests"
   },
@@ -18,7 +19,7 @@
     "@andes-hack/auth": "workspace:*",
     "@andes-hack/db": "workspace:*",
     "@andes-hack/env": "workspace:*",
-    "@asteasolutions/zod-to-openapi": "^8.5.0",
+    "@hono/zod-openapi": "^1.6.3",
     "dotenv": "catalog:",
     "hono": "catalog:",
     "zod": "catalog:"
