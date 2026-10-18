@@ -27,7 +27,7 @@ import { db as defaultDb } from "@andes-hack/db";
 import { user as userTable } from "@andes-hack/db/schema/auth";
 import { community, communityMember } from "@andes-hack/db/schema/community";
 import { zone } from "@andes-hack/db/schema/places";
-import { tripOffer } from "@andes-hack/db/schema/trips";
+import { tripOffer, tripRequest } from "@andes-hack/db/schema/trips";
 import { vehicle } from "@andes-hack/db/schema/vehicle";
 import { env } from "@andes-hack/env/server";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -648,6 +648,19 @@ export function createApp(deps: AppDeps = {}) {
         code: "community_membership_required",
       });
     }
+
+    // Applies at once to the open needs too, so requests and the optimizer follow the profile;
+    // accepted trips are left as they are.
+    await database
+      .update(tripRequest)
+      .set({ womenOnly: updated.womenOnly })
+      .where(
+        and(
+          eq(tripRequest.communityId, communityId),
+          eq(tripRequest.passengerId, sessionUser.id),
+          eq(tripRequest.status, "open"),
+        ),
+      );
 
     return c.json({ ...updated, message: "Preferencia guardada." }, 200);
   });
