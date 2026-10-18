@@ -75,4 +75,12 @@ describe("plans for random days of Lima", () => {
     expect(plan.durationMs).toBeGreaterThan(0);
     expect(plan.durationMs).toBeLessThanOrEqual(Math.ceil(elapsed));
   });
+
+  it("gives the same plan every time for the same day", () => {
+    const instance = randomDay(3, { offers: 60, requests: 200 }, model);
+    const { durationMs: _first, ...first } = optimizeDay(instance, model);
+    const { durationMs: _second, ...second } = optimizeDay(instance, model);
+
+    expect(second).toEqual(first);
+  });
 });

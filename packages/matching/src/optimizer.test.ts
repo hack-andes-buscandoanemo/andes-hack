@@ -310,4 +310,20 @@ describe("seats of a day assigned to maximise the car trips avoided", () => {
       walkMinutes: 1,
     });
   });
+
+  it("never proposes a seat the driver already turned down for that passenger", () => {
+    const plan = optimizeDay(
+      {
+        date: monday,
+        offers: [offer({ rejectedPassengerIds: ["pedro"] })],
+        requests: [request("pedro")],
+      },
+      model,
+    );
+
+    expect(plan.assignments).toEqual([]);
+    expect(plan.unassigned).toEqual([
+      { requestId: "necesidad-pedro", passengerId: "pedro", reason: "previously_rejected" },
+    ]);
+  });
 });
