@@ -329,6 +329,7 @@ export function createApp(deps: AppDeps = {}) {
   openApiApp.use("/offers/:id/status", requireSession(deps.getSession));
   openApiApp.use("/offers/:id", requireSession(deps.getSession));
   openApiApp.use("/offers/:id/cancel", requireSession(deps.getSession));
+  openApiApp.use("/offers/:id/start", requireSession(deps.getSession));
   openApiApp.use("/offers/:id/bookings", requireSession(deps.getSession));
   openApiApp.use("/me/chats", requireSession(deps.getSession));
   openApiApp.use("/offers/:id/messages", requireSession(deps.getSession));
@@ -336,6 +337,9 @@ export function createApp(deps: AppDeps = {}) {
   openApiApp.use("/bookings/:id/cancel", requireSession(deps.getSession));
   openApiApp.use("/bookings/:id/accept", requireSession(deps.getSession));
   openApiApp.use("/bookings/:id/reject", requireSession(deps.getSession));
+  openApiApp.use("/bookings/:id/board", requireSession(deps.getSession));
+  openApiApp.use("/bookings/:id/arrive", requireSession(deps.getSession));
+  openApiApp.use("/bookings/:id/no-show", requireSession(deps.getSession));
   openApiApp.use("/bookings/:id/share-links", requireSession(deps.getSession));
   openApiApp.use("/share-links/:id", requireSession(deps.getSession));
   openApiApp.use("/me", requireSession(deps.getSession));
