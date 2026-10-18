@@ -556,6 +556,142 @@
           }
         },
         "required": ["status"]
+      },
+      "SearchTripsResponse": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "matches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TripMatch"
+            }
+          },
+          "reason": {
+            "type": ["string", "null"],
+            "enum": [
+              "different_community",
+              "days_mismatch",
+              "women_only",
+              "previously_rejected",
+              "no_seats",
+              "no_walkable_meeting_point",
+              "outside_time_window",
+              "detour_exceeded",
+              null
+            ]
+          }
+        },
+        "required": ["requestId", "matches", "reason"]
+      },
+      "TripMatch": {
+        "type": "object",
+        "properties": {
+          "offerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "driverName": {
+            "type": "string"
+          },
+          "originZoneName": {
+            "type": "string"
+          },
+          "destinationName": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string",
+            "enum": ["outbound", "return"]
+          },
+          "departureTime": {
+            "type": "string"
+          },
+          "seatsFree": {
+            "type": "integer"
+          },
+          "meetingPointName": {
+            "type": "string"
+          },
+          "pickupAt": {
+            "type": "string"
+          },
+          "arrivalAt": {
+            "type": "string"
+          },
+          "detourMinutes": {
+            "type": "integer"
+          },
+          "walkMinutes": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "offerId",
+          "driverName",
+          "originZoneName",
+          "destinationName",
+          "direction",
+          "departureTime",
+          "seatsFree",
+          "meetingPointName",
+          "pickupAt",
+          "arrivalAt",
+          "detourMinutes",
+          "walkMinutes"
+        ]
+      },
+      "SearchTripsRequest": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": ["outbound", "return"]
+          },
+          "originZoneId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "windowStart": {
+            "type": "string",
+            "pattern": "^\\d{2}:\\d{2}$"
+          },
+          "windowEnd": {
+            "type": "string",
+            "pattern": "^\\d{2}:\\d{2}$"
+          },
+          "daysOfWeek": {
+            "type": ["array", "null"],
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 7
+            },
+            "minItems": 1
+          },
+          "date": {
+            "type": ["string", "null"],
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "maxWalkMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 30,
+            "default": 15
+          },
+          "fallbackMode": {
+            "type": "string",
+            "enum": ["drive_alone", "taxi_app", "public_transport", "picked_up", "other"]
+          },
+          "womenOnly": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": ["direction", "originZoneId", "windowStart", "windowEnd", "fallbackMode"]
       }
     },
     "parameters": {}
@@ -876,6 +1012,43 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TripOfferSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/communities/{id}/search": {
+      "post": {
+        "tags": ["Búsqueda"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchTripsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Viajes compatibles con la necesidad guardada de la persona",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchTripsResponse"
                 }
               }
             }

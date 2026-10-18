@@ -426,6 +426,47 @@ export interface paths {
     };
     trace?: never;
   };
+  "/communities/{id}/search": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: {
+        content: {
+          "application/json": components["schemas"]["SearchTripsRequest"];
+        };
+      };
+      responses: {
+        /** @description Viajes compatibles con la necesidad guardada de la persona */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["SearchTripsResponse"];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -592,6 +633,53 @@ export interface components {
     UpdateOfferStatusRequest: {
       /** @enum {string} */
       status: "active" | "paused";
+    };
+    SearchTripsResponse: {
+      /** Format: uuid */
+      requestId: string;
+      matches: components["schemas"]["TripMatch"][];
+      /** @enum {string|null} */
+      reason:
+        | "different_community"
+        | "days_mismatch"
+        | "women_only"
+        | "previously_rejected"
+        | "no_seats"
+        | "no_walkable_meeting_point"
+        | "outside_time_window"
+        | "detour_exceeded"
+        | null;
+    };
+    TripMatch: {
+      /** Format: uuid */
+      offerId: string;
+      driverName: string;
+      originZoneName: string;
+      destinationName: string;
+      /** @enum {string} */
+      direction: "outbound" | "return";
+      departureTime: string;
+      seatsFree: number;
+      meetingPointName: string;
+      pickupAt: string;
+      arrivalAt: string;
+      detourMinutes: number;
+      walkMinutes: number;
+    };
+    SearchTripsRequest: {
+      /** @enum {string} */
+      direction: "outbound" | "return";
+      originZoneId: string;
+      windowStart: string;
+      windowEnd: string;
+      daysOfWeek?: number[] | null;
+      date?: string | null;
+      /** @default 15 */
+      maxWalkMinutes: number;
+      /** @enum {string} */
+      fallbackMode: "drive_alone" | "taxi_app" | "public_transport" | "picked_up" | "other";
+      /** @default false */
+      womenOnly: boolean;
     };
   };
   responses: never;

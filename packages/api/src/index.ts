@@ -513,6 +513,108 @@ export const updateOfferStatusRoute = createRoute({
   },
 });
 
+export const FallbackModeSchema = z.enum([
+  "drive_alone",
+  "taxi_app",
+  "public_transport",
+  "picked_up",
+  "other",
+]);
+
+export const InfeasibleReasonSchema = z.enum([
+  "different_community",
+  "days_mismatch",
+  "women_only",
+  "previously_rejected",
+  "no_seats",
+  "no_walkable_meeting_point",
+  "outside_time_window",
+  "detour_exceeded",
+]);
+
+const clockTime = z.string().regex(/^\d{2}:\d{2}$/, "Ingresa una hora válida.");
+
+export const SearchTripsBodySchema = z
+  .object({
+    direction: TripDirectionSchema,
+    originZoneId: z.string().min(1, "Selecciona tu zona."),
+    windowStart: clockTime,
+    windowEnd: clockTime,
+    daysOfWeek: z.array(z.number().int().min(1).max(7)).min(1).nullable().optional(),
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Ingresa una fecha válida.")
+      .nullable()
+      .optional(),
+    maxWalkMinutes: z.number().int().min(1).max(30).default(15),
+    fallbackMode: FallbackModeSchema,
+    womenOnly: z.boolean().default(false),
+  })
+  .refine((data) => Boolean(data.date) !== Boolean(data.daysOfWeek && data.daysOfWeek.length > 0), {
+    message: "Elige una fecha puntual o días habituales, pero no ambos.",
+    path: ["date"],
+  })
+  .refine((data) => data.windowStart < data.windowEnd, {
+    message: "La hora de inicio debe ser anterior a la hora de fin.",
+    path: ["windowEnd"],
+  })
+  .openapi("SearchTripsRequest");
+
+// Never carries plates, emails or exact locations: only what the result card shows.
+export const TripMatchSchema = z
+  .object({
+    offerId: z.string().uuid(),
+    driverName: z.string(),
+    originZoneName: z.string(),
+    destinationName: z.string(),
+    direction: TripDirectionSchema,
+    departureTime: z.string(),
+    seatsFree: z.number().int(),
+    meetingPointName: z.string(),
+    pickupAt: z.string(),
+    arrivalAt: z.string(),
+    detourMinutes: z.number().int(),
+    walkMinutes: z.number().int(),
+  })
+  .openapi("TripMatch");
+
+export const SearchTripsResponseSchema = z
+  .object({
+    // The passenger's saved need, one per direction; kept even when nothing matched.
+    requestId: z.string().uuid(),
+    // Best match first, in the engine's order.
+    matches: z.array(TripMatchSchema),
+    // Why nothing matched, from the engine; null when something did.
+    reason: InfeasibleReasonSchema.nullable(),
+  })
+  .openapi("SearchTripsResponse");
+
+export const searchTripsRoute = createRoute({
+  method: "post",
+  path: "/communities/{id}/search",
+  tags: ["Búsqueda"],
+  request: {
+    params: JoinCommunityParamsSchema,
+    body: {
+      content: {
+        "application/json": {
+          schema: SearchTripsBodySchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Viajes compatibles con la necesidad guardada de la persona",
+      content: {
+        "application/json": {
+          schema: SearchTripsResponseSchema,
+        },
+      },
+    },
+  },
+});
+
 export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   healthRoute,
   listCommunitiesRoute,
@@ -526,6 +628,7 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   listCommunityOffersRoute,
   createCommunityOfferRoute,
   updateOfferStatusRoute,
+  searchTripsRoute,
 ];
 
 export function createOpenApiDocument(routes: readonly RouteConfig[] = registeredOpenApiRoutes) {
