@@ -31,9 +31,33 @@ const notConfigured = () =>
     code: "voice_not_configured",
   });
 
-// The provider's reason stays in the log; the person only learns that it failed.
-function providerFailure(step: string, status: number) {
-  logEvent("voice.provider_error", { step, status });
+// The provider's reason stays in the log; the person only learns that it failed, and, when
+// the account cannot pay for it, that the feature is off for now.
+async function providerFailure(step: string, response: Response | null) {
+  const status = response?.status ?? 200;
+  const body = (await response?.json().catch(() => null)) as {
+    error?: { code?: string; type?: string };
+  } | null;
+  const reason = body?.error?.code ?? body?.error?.type ?? null;
+  logEvent("voice.provider_error", { step, status, reason });
+  if (status === 429 && reason?.includes("quota")) {
+    return new ApiError(
+      503,
+      "La voz no está disponible por ahora: la cuenta de OpenAI no tiene saldo.",
+      {
+        code: "voice_quota_exceeded",
+      },
+    );
+  }
+  if (status === 401) {
+    return new ApiError(
+      503,
+      "La voz no está disponible por ahora: la clave de OpenAI no es válida.",
+      {
+        code: "voice_not_configured",
+      },
+    );
+  }
   return new ApiError(502, "No pudimos procesar tu voz ahora. Inténtalo de nuevo.", {
     code: "voice_provider_error",
   });
@@ -57,7 +81,7 @@ export const whisperTranscriber: Transcriber = async (audio) => {
     body: form,
     signal: AbortSignal.timeout(TIMEOUT_MS),
   });
-  if (!response.ok) throw providerFailure("whisper", response.status);
+  if (!response.ok) throw await providerFailure("whisper", response);
   const body = (await response.json()) as { text?: string };
   return (body.text ?? "").trim();
 };
@@ -132,10 +156,10 @@ export const openAiExtractor: FieldExtractor = async (input) => {
     }),
     signal: AbortSignal.timeout(TIMEOUT_MS),
   });
-  if (!response.ok) throw providerFailure("extract", response.status);
+  if (!response.ok) throw await providerFailure("extract", response);
   const body = (await response.json()) as { choices?: { message?: { content?: string } }[] };
   const content = body.choices?.[0]?.message?.content;
-  if (!content) throw providerFailure("extract", 200);
+  if (!content) throw await providerFailure("extract", null);
   return JSON.parse(content);
 };
 
