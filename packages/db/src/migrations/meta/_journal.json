@@ -78,6 +78,13 @@
       "when": 1792313126732,
       "tag": "0010_preserve_trip_day_history",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792315659380,
+      "tag": "0011_awesome_logan",
+      "breakpoints": true
     }
   ]
 }
