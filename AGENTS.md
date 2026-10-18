@@ -293,6 +293,7 @@ andes-hack/
 - `bun db:generate` - Generate database migrations
 - `bun db:migrate` - Run database migrations
 - `bun db:seed` - Load the real Lima places and the demo community (idempotent; needs `DEMO_JOIN_CODE` and `DEMO_ADMIN_EMAIL`)
+- `SMOKE_BASE_URL=<API> bun run --filter server test:smoke` - Manually validate the critical flow against a public API (needs two dedicated smoke accounts)
 
 ## Better Fullstack project context
 

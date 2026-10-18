@@ -289,6 +289,7 @@ cp packages/infra/.env.example packages/infra/.env  # Solo para desplegar
 ```
 
 `packages/db` (migraciones y seed) lee `DATABASE_URL`, `DEMO_JOIN_CODE` y `DEMO_ADMIN_EMAIL` de `apps/server/.env`.
+Para validar el flujo público, agrega también `SMOKE_BASE_URL`, `SMOKE_DRIVER_EMAIL`, `SMOKE_PASSENGER_EMAIL` y `SMOKE_PASSWORD` a `apps/server/.env`; ambos correos de prueba deben estar incluidos en `TEAM_EMAILS`.
 
 ### 4. Base de datos y desarrollo
 
@@ -313,6 +314,16 @@ bun dev
   - Healthcheck: [`GET /health`](https://andes-hack-server-diego.diegorafaelcisnerostafur.workers.dev/health) → `{ "status": "ok" }`
   - Referencia OpenAPI: [`GET /docs`](https://andes-hack-server-diego.diegorafaelcisnerostafur.workers.dev/docs)
 
+### 6. Smoke manual del flujo crítico
+
+Después de desplegar, ejecuta el smoke contra la API pública. Usa dos cuentas dedicadas del equipo; la cuenta conductora puede registrar un vehículo de prueba si aún no tiene uno. El comando retira la solicitud de asiento y cancela la oferta al terminar, incluso si falla un paso posterior.
+
+```bash
+SMOKE_BASE_URL=https://andes-hack-server-diego.diegorafaelcisnerostafur.workers.dev bun run --filter server test:smoke
+```
+
+El smoke se ejecuta manualmente y no forma parte de `bun run test`.
+
 ```bash
 # 1. Autenticarse en Cloudflare (una vez) o definir CLOUDFLARE_API_TOKEN en packages/infra/.env
 bun --cwd packages/infra alchemy login cloudflare
@@ -334,6 +345,7 @@ bun --cwd packages/infra deploy
 | `bun dev:server`  | Inicia solo `apps/server`                                   |
 | `bun build`       | Compila todo para producción                                |
 | `bun run test`    | Ejecuta las pruebas con Vitest                              |
+| `bun run --filter server test:smoke` | Valida manualmente el flujo crítico contra la API configurada |
 | `bun check`       | Linter (`oxlint`) y formateador (`oxfmt`)                   |
 | `bun check-types` | Verifica los tipos de TypeScript en todo el monorepo        |
 | `bun db:push`     | Aplica el esquema Drizzle sin migraciones (solo desarrollo) |
