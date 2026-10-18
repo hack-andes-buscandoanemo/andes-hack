@@ -65,6 +65,24 @@ describe("ShareTrip", () => {
     );
   });
 
+  it("selects the link and says to copy it by hand when the clipboard refuses", async () => {
+    const user = userEvent.setup();
+    render(<ShareTrip bookingId={BOOKING_ID} label="Compartir viaje" />);
+    await user.click(screen.getByRole("button", { name: "Compartir viaje" }));
+    const input = (await screen.findByLabelText("Enlace para compartir")) as HTMLInputElement;
+    vi.stubGlobal("navigator", {
+      clipboard: { writeText: vi.fn().mockRejectedValue(new Error("denied")) },
+    });
+
+    await user.click(screen.getByRole("button", { name: "Copiar enlace" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "No pudimos copiar el enlace. Cópialo manualmente.",
+    );
+    expect(screen.queryByText("Enlace copiado.")).not.toBeInTheDocument();
+    expect([input.selectionStart, input.selectionEnd]).toEqual([0, input.value.length]);
+  });
+
   it("offers the system share sheet only where the browser has one", async () => {
     const user = userEvent.setup();
     const { unmount } = render(<ShareTrip bookingId={BOOKING_ID} label="Compartir viaje" />);

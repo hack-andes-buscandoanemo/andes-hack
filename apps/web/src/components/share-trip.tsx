@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { reasonOf } from "@/lib/api-error";
@@ -13,6 +13,7 @@ export default function ShareTrip({ bookingId, label }: { bookingId: string; lab
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [stopped, setStopped] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
 
   async function share() {
     if (busy) return;
@@ -32,8 +33,16 @@ export default function ShareTrip({ bookingId, label }: { bookingId: string; lab
 
   async function copy() {
     if (!shared) return;
-    await navigator.clipboard.writeText(shared.url);
-    setCopied(true);
+    try {
+      await navigator.clipboard.writeText(shared.url);
+      setError(null);
+      setCopied(true);
+    } catch {
+      // No clipboard permission or insecure context: select the text so it can be copied by hand.
+      setCopied(false);
+      setError("No pudimos copiar el enlace. Cópialo manualmente.");
+      input.current?.select();
+    }
   }
 
   async function stop() {
@@ -71,6 +80,7 @@ export default function ShareTrip({ bookingId, label }: { bookingId: string; lab
           <label className="block space-y-1 text-sm font-medium">
             Enlace para compartir
             <input
+              ref={input}
               readOnly
               value={shared.url}
               className="block w-full rounded-lg border border-input bg-background p-2 font-normal"
