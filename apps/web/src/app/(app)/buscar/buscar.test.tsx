@@ -390,4 +390,24 @@ describe("search page /buscar (US-013)", () => {
       await screen.findByText("Guardamos tu búsqueda para el emparejamiento de la jornada."),
     ).toBeInTheDocument();
   });
+
+  it("says when the zones could not be loaded", async () => {
+    listCommunityZones.mockRejectedValue(new Error("network"));
+
+    render(<BuscarPage />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "No pudimos cargar tus zonas. Inténtalo de nuevo.",
+    );
+  });
+
+  it("says when the account could not be loaded", async () => {
+    getMe.mockRejectedValue(new Error("network"));
+
+    render(<BuscarPage />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "No pudimos cargar tu cuenta. Inténtalo de nuevo.",
+    );
+  });
 });

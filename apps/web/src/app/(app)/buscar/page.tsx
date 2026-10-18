@@ -36,6 +36,7 @@ export default function SearchPage() {
   const [womenOnly, setWomenOnly] = useState(false);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const membership = memberships.find((item) => item.communityId === communityId) ?? null;
 
@@ -50,7 +51,9 @@ export default function SearchPage() {
         setCommunityId(first.communityId);
         setFallbackMode(FALLBACK_FOR_USUAL_MODE[first.usualMode ?? "other"] ?? "other");
       })
-      .catch(() => {});
+      .catch(() => {
+        if (active) setLoadError("No pudimos cargar tu cuenta. Inténtalo de nuevo.");
+      });
     return () => {
       active = false;
     };
@@ -64,7 +67,9 @@ export default function SearchPage() {
       .then((list) => {
         if (active) setZones(list);
       })
-      .catch(() => {});
+      .catch(() => {
+        if (active) setLoadError("No pudimos cargar tus zonas. Inténtalo de nuevo.");
+      });
     return () => {
       active = false;
     };
@@ -120,6 +125,11 @@ export default function SearchPage() {
         <h1 className="text-3xl font-extrabold">Buscar viaje</h1>
         <p className="text-muted-foreground">Encuentra personas que van en tu dirección</p>
       </header>
+      {loadError ? (
+        <p role="alert" className="text-sm font-medium text-destructive">
+          {loadError}
+        </p>
+      ) : null}
       {memberships.length > 1 ? (
         <label className="flex items-center justify-between gap-3 text-sm font-bold">
           Comunidad
