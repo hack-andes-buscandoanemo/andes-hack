@@ -235,6 +235,19 @@ describe("GET /offers/{id} (US-014)", () => {
     });
   });
 
+  it("still shows a trip whose driver left the community, under their account name", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const passenger = await createMember(alfa.id, "u-lucia", "Lucía");
+    const offer = await seedOffer(alfa.id, driver.id);
+    await testDb.delete(communityMember).where(eq(communityMember.userId, driver.id));
+
+    const res = await requestAs(passenger, `/offers/${offer.id}`);
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ driverName: "Mateo" });
+  });
+
   it("keeps the trip private from people outside its community", async () => {
     const alfa = await createCommunity("comunidad-alfa");
     const beta = await createCommunity("comunidad-beta");

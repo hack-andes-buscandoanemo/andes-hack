@@ -17,7 +17,13 @@ export type SearchTripsResponse = components["schemas"]["SearchTripsResponse"];
 export type TripMatch = components["schemas"]["TripMatch"];
 export type OfferDetail = components["schemas"]["OfferDetail"];
 export type RequestSeatResponse = components["schemas"]["RequestSeatResponse"];
+export type MyTrip = components["schemas"]["MyTrip"];
+export type MyTripsResponse = components["schemas"]["MyTripsResponse"];
 export type CancelBookingResponse = components["schemas"]["CancelBookingResponse"];
+export type RunMatchingRequest = components["schemas"]["RunMatchingRequest"];
+export type MatchRunsResponse = components["schemas"]["MatchRunsResponse"];
+export type MatchSuggestion = components["schemas"]["MatchSuggestion"];
+export type MatchProposal = components["schemas"]["MatchProposal"];
 
 export const communitiesApi = {
   async listCommunities(): Promise<CommunitySummary[]> {
@@ -122,10 +128,36 @@ export const communitiesApi = {
     );
     return response.data;
   },
+  async listMyTrips(
+    role: "passenger" | "driver",
+    scope: "upcoming" | "past",
+  ): Promise<MyTripsResponse> {
+    const response = await httpClient.get("/me/trips", { params: { role, scope } });
+    return response.data;
+  },
   async cancelBooking(bookingId: string): Promise<CancelBookingResponse> {
     const response = await httpClient.post(
       `/bookings/${bookingId}/cancel` as "/bookings/{id}/cancel",
     );
     return response.data;
+  },
+  async runMatching(communityId: string, payload: RunMatchingRequest): Promise<MatchRunsResponse> {
+    const response = await httpClient.post(
+      `/communities/${communityId}/match-runs` as "/communities/{id}/match-runs",
+      payload,
+    );
+    return response.data;
+  },
+  async latestMatchRuns(communityId: string): Promise<MatchRunsResponse> {
+    const response = await httpClient.get(
+      `/communities/${communityId}/match-runs/latest` as "/communities/{id}/match-runs/latest",
+    );
+    return response.data;
+  },
+  async listProposals(communityId: string): Promise<MatchProposal[]> {
+    const response = await httpClient.get(
+      `/communities/${communityId}/proposals` as "/communities/{id}/proposals",
+    );
+    return response.data.proposals;
   },
 };
