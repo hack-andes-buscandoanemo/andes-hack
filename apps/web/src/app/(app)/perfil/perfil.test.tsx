@@ -1,6 +1,13 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const profilePhotoApi = vi.hoisted(() => ({
+  getMyProfilePhoto: vi.fn(),
+  uploadProfilePhoto: vi.fn(),
+  confirmProfilePhoto: vi.fn(),
+  deleteMyProfilePhoto: vi.fn(),
+}));
 
 import { serverError } from "@/test/server-error";
 
@@ -15,6 +22,7 @@ vi.mock("@/lib/auth-client", () => ({
 vi.mock("@/lib/communities-api", () => ({
   communitiesApi: {
     updateTravelPreferences: (...args: unknown[]) => updateTravelPreferences(...args),
+    ...profilePhotoApi,
   },
 }));
 
@@ -26,6 +34,10 @@ beforeEach(() => {
   push.mockClear();
   signOut.mockReset();
   updateTravelPreferences.mockReset();
+  profilePhotoApi.getMyProfilePhoto.mockReset().mockResolvedValue({ photoUrl: null });
+  profilePhotoApi.uploadProfilePhoto.mockReset();
+  profilePhotoApi.confirmProfilePhoto.mockReset();
+  profilePhotoApi.deleteMyProfilePhoto.mockReset();
 });
 
 describe("perfil: preferencias de viaje (US-026)", () => {
@@ -142,6 +154,8 @@ describe("perfil: preferencias de viaje (US-026)", () => {
   });
 });
 
+afterEach(() => vi.unstubAllGlobals());
+
 describe("perfil", () => {
   it("shows the account name and email", () => {
     render(<Perfil name="Ana" email="ana@uni.pe" />);
@@ -182,5 +196,108 @@ describe("perfil", () => {
       "href",
       "/viajes?tab=historial",
     );
+  });
+
+  it("shows initials until the staged photo is confirmed", async () => {
+    const user = userEvent.setup();
+    const uploadFetch = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", uploadFetch);
+    profilePhotoApi.uploadProfilePhoto.mockResolvedValue({
+      key: "profile-photos/ana/123.jpg",
+      uploadUrl: "https://r2.example/upload",
+      expiresIn: 300,
+    });
+    profilePhotoApi.confirmProfilePhoto.mockResolvedValue({
+      photoUrl: "https://r2.example/photo?signature=read",
+    });
+    render(<Perfil name="Ana" email="ana@uni.pe" />);
+
+    expect(await screen.findByRole("img", { name: "Iniciales de Ana" })).toBeInTheDocument();
+    await user.upload(
+      screen.getByLabelText("Cambiar foto"),
+      new File(["photo"], "ana.png", { type: "image/png" }),
+    );
+
+    expect(await screen.findByRole("img", { name: "Foto de Ana" })).toHaveAttribute(
+      "src",
+      "https://r2.example/photo?signature=read",
+    );
+    expect(profilePhotoApi.uploadProfilePhoto).toHaveBeenCalledWith({
+      contentType: "image/png",
+      size: 5,
+    });
+    expect(uploadFetch).toHaveBeenCalledWith("https://r2.example/upload", {
+      method: "PUT",
+      headers: { "Content-Type": "image/png" },
+      body: expect.any(File),
+    });
+    expect(profilePhotoApi.confirmProfilePhoto).toHaveBeenCalledWith("profile-photos/ana/123.jpg");
+  });
+
+  it("rejects an unsupported file with the allowed formats and size", async () => {
+    const user = userEvent.setup({ applyAccept: false });
+    render(<Perfil name="Ana" email="ana@uni.pe" />);
+
+    await user.upload(
+      screen.getByLabelText("Cambiar foto"),
+      new File(["pdf"], "ana.pdf", { type: "application/pdf" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Usa una imagen JPG, PNG o WebP de hasta 2 MB.",
+    );
+    expect(profilePhotoApi.uploadProfilePhoto).not.toHaveBeenCalled();
+  });
+
+  it("keeps the current photo and shows a retry message when upload fails", async () => {
+    const user = userEvent.setup();
+    profilePhotoApi.getMyProfilePhoto.mockResolvedValue({
+      photoUrl: "https://r2.example/current.jpg?signature=read",
+    });
+    profilePhotoApi.uploadProfilePhoto.mockRejectedValue(new Error("offline"));
+    render(<Perfil name="Ana" email="ana@uni.pe" />);
+
+    expect(await screen.findByRole("img", { name: "Foto de Ana" })).toHaveAttribute(
+      "src",
+      "https://r2.example/current.jpg?signature=read",
+    );
+    await user.upload(
+      screen.getByLabelText("Cambiar foto"),
+      new File(["photo"], "ana.png", { type: "image/png" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "No pudimos subir tu foto. Inténtalo de nuevo.",
+    );
+    expect(screen.getByRole("img", { name: "Foto de Ana" })).toHaveAttribute(
+      "src",
+      "https://r2.example/current.jpg?signature=read",
+    );
+  });
+
+  it("removes a photo and returns to the initials avatar", async () => {
+    const user = userEvent.setup();
+    profilePhotoApi.getMyProfilePhoto.mockResolvedValue({
+      photoUrl: "https://r2.example/current.jpg?signature=read",
+    });
+    profilePhotoApi.deleteMyProfilePhoto.mockResolvedValue({ message: "Foto eliminada." });
+    render(<Perfil name="Ana" email="ana@uni.pe" />);
+
+    await user.click(await screen.findByRole("button", { name: "Quitar foto" }));
+
+    expect(profilePhotoApi.deleteMyProfilePhoto).toHaveBeenCalledOnce();
+    expect(await screen.findByRole("img", { name: "Iniciales de Ana" })).toBeInTheDocument();
+  });
+
+  it("falls back to initials when a signed photo URL expires", async () => {
+    profilePhotoApi.getMyProfilePhoto.mockResolvedValue({
+      photoUrl: "https://r2.example/expired.jpg?signature=old",
+    });
+    render(<Perfil name="Ana" email="ana@uni.pe" />);
+
+    const photo = await screen.findByRole("img", { name: "Foto de Ana" });
+    fireEvent.error(photo);
+
+    expect(await screen.findByRole("img", { name: "Iniciales de Ana" })).toBeInTheDocument();
   });
 });

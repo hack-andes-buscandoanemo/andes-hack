@@ -7,20 +7,12 @@ import { useEffect, useState } from "react";
 import EmptyState from "@/components/empty-state";
 import { FuelEstimateDetail } from "@/components/fuel-estimate";
 import SourceInfo from "@/components/source-info";
+import ProfileAvatar from "@/components/profile-avatar";
 import { Button } from "@/components/ui/button";
 import { reasonOf } from "@/lib/api-error";
 import { communitiesApi, type OfferDetail } from "@/lib/communities-api";
 
 import { clockLabel, dateLabel, daysLabel } from "../../buscar/schedule";
-
-function initialsOf(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0]!.toUpperCase())
-    .join("");
-}
 
 export default function TripDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -103,7 +95,7 @@ export default function TripDetailPage() {
     setSending(true);
     setError(null);
     try {
-      const { booking } = await communitiesApi.requestSeat(id, message || undefined);
+      const { booking } = await communitiesApi.requestSeat(id, message ? { message } : {});
       setSentId(booking.id);
       setWithdrawn(false);
     } catch (failure) {
@@ -119,6 +111,8 @@ export default function TripDetailPage() {
     action = <EmptyState>Este viaje cambió y ya no es compatible con tu búsqueda.</EmptyState>;
   else if (detail.booking?.status === "accepted")
     action = <EmptyState>{`${detail.driverName} aceptó tu solicitud.`}</EmptyState>;
+  else if (detail.booking?.status === "rejected")
+    action = <EmptyState>El conductor no pudo aceptar tu solicitud.</EmptyState>;
   else if (pendingId)
     action = (
       <div className="space-y-2">
@@ -142,6 +136,8 @@ export default function TripDetailPage() {
     );
   else if (detail.seatsFree <= 0)
     action = <EmptyState>Este viaje ya no tiene asientos libres.</EmptyState>;
+  else if (!detail.hasOpenNeed)
+    action = <EmptyState>Busca tu viaje antes de solicitar un asiento.</EmptyState>;
   else
     action = (
       <form
@@ -180,12 +176,11 @@ export default function TripDetailPage() {
     <main className="mx-auto w-full max-w-md space-y-4 px-4 py-6">
       <h1 className="text-2xl font-extrabold">Detalle del viaje</h1>
       <section className="flex items-center gap-3 rounded-2xl border bg-card p-4 shadow-sm">
-        <span
-          aria-hidden
-          className="flex size-12 shrink-0 items-center justify-center rounded-full bg-brand-black font-bold text-white"
-        >
-          {initialsOf(detail.driverName)}
-        </span>
+        <ProfileAvatar
+          name={detail.driverName}
+          photoUrl={detail.driverPhotoUrl}
+          className="size-12"
+        />
         <div>
           <p className="font-bold">{detail.driverName}</p>
           <p className="w-fit rounded-full bg-brand-yellow px-2.5 py-0.5 text-xs font-bold text-brand-black">
