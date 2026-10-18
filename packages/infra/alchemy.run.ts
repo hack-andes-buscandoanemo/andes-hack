@@ -32,6 +32,10 @@ export const server = await Worker("server", {
 export const web = await Nextjs("web", {
   cwd: "../../apps/web",
   url: true,
+  // next-themes inlines its theme script with Function#toString(). esbuild's keepNames wraps the
+  // nested functions in a __name() helper that only exists in the worker, so in the browser the
+  // script throws "ReferenceError: ... is not defined" and the saved theme is never applied.
+  bundle: { minify: true, keepNames: false },
   bindings: {
     NEXT_PUBLIC_SERVER_URL: alchemy.env.NEXT_PUBLIC_SERVER_URL!,
     DATABASE_URL: alchemy.secret.env.DATABASE_URL!,
