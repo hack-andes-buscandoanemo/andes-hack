@@ -198,7 +198,9 @@ async function shareAs(person: { id: string }, bookingId: string, deps: Partial<
 }
 
 async function openLink(token: string, deps: Partial<AppDeps> = {}) {
-  return (await appFor(null, deps).request(`/public/share/${token}`)) as unknown as Reply;
+  return (await appFor(null, deps).request(`/public/share/${token}`, {
+    headers: { "cf-connecting-ip": "203.0.113.7" },
+  })) as unknown as Reply;
 }
 
 async function world() {
@@ -421,6 +423,28 @@ describe("the public view is guarded", () => {
     expect(await reply.json()).toMatchObject({
       details: { code: "too_many_share_requests" },
     });
+  });
+
+  it("still opens the link when the rate limiter is down, because a safety link must not 500", async () => {
+    const { passenger, booking } = await world();
+    const { token } = await (await shareAs(passenger, booking.id)).json();
+
+    const reply = await openLink(token, {
+      shareRateLimit: async () => {
+        throw new Error("Redis unavailable");
+      },
+    });
+
+    expect(reply.status).toBe(200);
+  });
+
+  it("also keeps a refused (429) answer out of caches", async () => {
+    const reply = await openLink("C".repeat(43), {
+      shareRateLimit: async () => ({ success: false, reset: NOW.getTime() + 30_000 }),
+    });
+
+    expect(reply.status).toBe(429);
+    expect(reply.headers.get("Cache-Control")).toBe("no-store");
   });
 
   it("tells browsers and proxies not to keep what it shows", async () => {

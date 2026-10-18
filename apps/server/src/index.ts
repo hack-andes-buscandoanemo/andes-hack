@@ -51,8 +51,11 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 import { createDataSourcesRoutes } from "./data-sources";
+import { clientIp } from "./lib/client-ip";
 import { sendEmail as defaultSendEmail, type SendEmailOptions } from "./lib/email";
 import type { JourneyLock } from "./lib/journey-lock";
+import { logEvent } from "./lib/logger";
+import { safeLimit } from "./lib/safe-limit";
 import { latestMatchRuns, listProposals, runMatching } from "./match-runs";
 import {
   rateLimitMiddleware,
@@ -1239,8 +1242,12 @@ export function createApp(deps: AppDeps = {}) {
         const { checkShareRateLimit } = await import("./lib/share-rate-limit");
         return checkShareRateLimit(identifier);
       });
-    const allowed = await limit(`share:${c.req.header("cf-connecting-ip") ?? "unknown"}`);
+    // Without an address there is no honest key: the lookup goes through (see clientIp).
+    const ip = clientIp(c);
+    const allowed = ip ? await safeLimit(limit, `share:${ip}`) : { success: true, reset: 0 };
     if (!allowed.success) {
+      // Never the token or the address: only that someone is being refused.
+      logEvent("share.lookup_failed", { reason: "rate_limited" });
       c.header(
         "Retry-After",
         String(Math.max(1, Math.ceil((allowed.reset - getNow().getTime()) / 1000))),
@@ -1250,7 +1257,14 @@ export function createApp(deps: AppDeps = {}) {
       });
     }
     const { token } = c.req.valid("param");
-    return c.json(await getSharedTrip(database, { token, now: getNow() }), 200);
+    try {
+      return c.json(await getSharedTrip(database, { token, now: getNow() }), 200);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        logEvent("share.lookup_failed", { reason: "unavailable" });
+      }
+      throw error;
+    }
   });
 
   const journeyLock = async (): Promise<JourneyLock> => {
