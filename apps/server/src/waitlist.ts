@@ -5,6 +5,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { count } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 
+import { clientIp } from "./lib/client-ip";
 import { ApiError } from "./utils/api-response";
 import { errorHandler, validationHook } from "./utils/error-handler";
 
@@ -43,7 +44,8 @@ export function createWaitlistRoutes(deps: WaitlistDeps = {}) {
     });
 
   app.openapi(joinWaitlistRoute, async (c) => {
-    const allowed = await limit(`waitlist:${c.req.header("cf-connecting-ip") ?? "unknown"}`);
+    const ip = clientIp(c);
+    const allowed = ip ? await limit(`waitlist:${ip}`) : { success: true, reset: 0 };
     if (!allowed.success) {
       c.header("Retry-After", String(Math.max(1, Math.ceil((allowed.reset - Date.now()) / 1000))));
       throw new ApiError(429, "Inténtalo en unos minutos.", { code: "too_many_waitlist_entries" });

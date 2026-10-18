@@ -469,6 +469,36 @@ describe("GET /public/communities/{slug}/stats", () => {
     expect(seen).toEqual(["public-stats:203.0.113.7"]);
   });
 
+  it("keys the limit on the first forwarded address when Cloudflare's header is missing", async () => {
+    await seedCommunity();
+    const seen: string[] = [];
+    const app = statsApp({
+      limit: async (identifier) => {
+        seen.push(identifier);
+        return { success: true, reset: 0 };
+      },
+    });
+
+    await app.request("/public/communities/alfa/stats", {
+      headers: { "x-forwarded-for": "198.51.100.4, 10.0.0.1" },
+    });
+    await app.request("/public/communities/alfa/stats", {
+      headers: { "x-real-ip": "198.51.100.9" },
+    });
+
+    expect(seen).toEqual(["public-stats:198.51.100.4", "public-stats:198.51.100.9"]);
+  });
+
+  it("does not rate limit a request whose address is unknown, so one bucket never locks everyone out", async () => {
+    await seedCommunity();
+    const limit = vi.fn(async () => ({ success: false, reset: 0 }));
+
+    const response = await statsApp({ limit }).request("/public/communities/alfa/stats");
+
+    expect(response.status).toBe(200);
+    expect(limit).not.toHaveBeenCalled();
+  });
+
   it("serves the second call within 30 seconds from the cache and recomputes after", async () => {
     const org = await seedCommunity();
     await addMember(org.id, "ana");

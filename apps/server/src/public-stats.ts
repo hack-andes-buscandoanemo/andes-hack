@@ -12,6 +12,7 @@ import {
   loadDistrictBreakdown,
   loadPublicComparison,
 } from "./community-activity";
+import { clientIp } from "./lib/client-ip";
 import { logEvent } from "./lib/logger";
 import { ApiError } from "./utils/api-response";
 import { errorHandler, validationHook } from "./utils/error-handler";
@@ -64,7 +65,8 @@ export function createPublicStatsRoutes(deps: PublicStatsDeps = {}) {
     });
 
   app.openapi(publicStatsRoute, async (c) => {
-    const allowed = await limit(`public-stats:${c.req.header("cf-connecting-ip") ?? "unknown"}`);
+    const ip = clientIp(c);
+    const allowed = ip ? await limit(`public-stats:${ip}`) : { success: true, reset: 0 };
     if (!allowed.success) {
       c.header(
         "Retry-After",
