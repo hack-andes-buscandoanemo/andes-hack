@@ -631,6 +631,8 @@ const BookingStatusSchema = z.enum([
 export const OfferDetailSchema = z
   .object({
     offerId: z.string().uuid(),
+    // Only an active trip can be requested; a paused or cancelled one is shown as unavailable.
+    status: z.enum(["active", "paused", "cancelled"]),
     driverName: z.string(),
     communityName: z.string(),
     originZoneName: z.string(),

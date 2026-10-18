@@ -136,27 +136,43 @@ export async function loadOfferRoutes(
   return { rows, routes, acceptedByOffer };
 }
 
+// What a person asked for, as stored in a trip request or sent by the search form.
+type NeedFields = Pick<
+  typeof tripRequest.$inferSelect,
+  "direction" | "originZoneId" | "windowStart" | "windowEnd" | "maxWalkMinutes"
+> & { date?: string | null; daysOfWeek?: number[] | null };
+
+type MatchOfferInput = {
+  offerId: string;
+  communityId: string;
+  userId: string;
+  passengerIsWoman: boolean;
+  destination: { id: string };
+  need: NeedFields;
+};
+
+// The single place that turns a need into the engine's request (stored times may carry seconds).
+function toRideRequest(
+  need: NeedFields,
+  who: { userId: string; communityId: string; womenOnly: boolean; passengerIsWoman: boolean },
+): RideRequest {
+  return {
+    passengerId: who.userId,
+    communityId: who.communityId,
+    direction: need.direction,
+    originZoneId: need.originZoneId,
+    windowStart: need.windowStart.slice(0, 5),
+    windowEnd: need.windowEnd.slice(0, 5),
+    date: need.date ?? null,
+    daysOfWeek: need.daysOfWeek ?? null,
+    maxWalkMinutes: need.maxWalkMinutes,
+    womenOnly: who.womenOnly,
+    passengerIsWoman: who.passengerIsWoman,
+  };
+}
+
 // The engine's verdict on one offer for a saved need: the pickup it calculates, or null when it no longer fits.
-export async function matchOfferForNeed(
-  database: Database,
-  input: {
-    offerId: string;
-    communityId: string;
-    userId: string;
-    passengerIsWoman: boolean;
-    destination: { id: string };
-    need: Pick<
-      typeof tripRequest.$inferSelect,
-      | "direction"
-      | "originZoneId"
-      | "windowStart"
-      | "windowEnd"
-      | "date"
-      | "daysOfWeek"
-      | "maxWalkMinutes"
-    >;
-  },
-) {
+export async function matchOfferForNeed(database: Database, input: MatchOfferInput) {
   const { need, userId, communityId } = input;
   const { routes } = await loadOfferRoutes(database, {
     where: and(eq(tripOffer.id, input.offerId), eq(tripOffer.status, "active")),
@@ -164,19 +180,13 @@ export async function matchOfferForNeed(
     communityId,
     destination: input.destination,
   });
-  const request: RideRequest = {
-    passengerId: userId,
+  // ponytail: the saved need does not store the "Solo mujeres" preference; the offer's own flag still applies.
+  const request = toRideRequest(need, {
+    userId,
     communityId,
-    direction: need.direction,
-    originZoneId: need.originZoneId,
-    windowStart: need.windowStart.slice(0, 5),
-    windowEnd: need.windowEnd.slice(0, 5),
-    date: need.date,
-    daysOfWeek: need.daysOfWeek,
-    maxWalkMinutes: need.maxWalkMinutes,
     womenOnly: false,
     passengerIsWoman: input.passengerIsWoman,
-  };
+  });
   return rankOffersForRequest(request, routes, model).matches[0] ?? null;
 }
 
@@ -245,19 +255,12 @@ export async function searchTrips(
     ),
   });
 
-  const request: RideRequest = {
-    passengerId: userId,
+  const request = toRideRequest(body, {
+    userId,
     communityId,
-    direction: body.direction,
-    originZoneId: body.originZoneId,
-    windowStart: body.windowStart,
-    windowEnd: body.windowEnd,
-    date: body.date ?? null,
-    daysOfWeek: body.daysOfWeek ?? null,
-    maxWalkMinutes: body.maxWalkMinutes,
     womenOnly: body.womenOnly,
     passengerIsWoman: passenger.identifiesAsWoman,
-  };
+  });
 
   const ranking = rankOffersForRequest(request, routes, model);
   const hadResults = ranking.matches.length > 0;

@@ -217,6 +217,7 @@ describe("GET /offers/{id} (US-014)", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
       offerId: offer.id,
+      status: "active",
       driverName: "Mateo",
       communityName: "Comunidad Alfa",
       originZoneName: "La Molina",
@@ -243,12 +244,13 @@ describe("GET /offers/{id} (US-014)", () => {
 
     const res = await requestAs(outsider, `/offers/${offer.id}`);
 
-    expect(res.status).toBe(403);
+    // Same answer as an unknown trip, so nobody can probe which ids exist in other communities.
+    expect(res.status).toBe(404);
     expect(await res.json()).toEqual({
       success: false,
-      status: 403,
-      error: "No perteneces a esta comunidad.",
-      details: { code: "community_membership_required" },
+      status: 404,
+      error: "No encontramos este viaje.",
+      details: { code: "offer_not_found" },
     });
   });
 
@@ -287,6 +289,23 @@ describe("GET /offers/{id} (US-014)", () => {
 
     expect(body.seatsFree).toBe(2);
     expect(body.booking).toEqual({ id: pending.id, status: "pending" });
+  });
+
+  it("marks a cancelled trip as unavailable and never reveals its plate", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const lucia = await createMember(alfa.id, "u-lucia", "Lucía");
+    const offer = await seedOffer(alfa.id, driver.id);
+    await bookSeat(offer, lucia.id, "accepted");
+    await testDb.update(tripOffer).set({ status: "cancelled" }).where(eq(tripOffer.id, offer.id));
+
+    const res = await requestAs(lucia, `/offers/${offer.id}`);
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({
+      status: "cancelled",
+      vehicle: { make: "Toyota", model: "Corolla", plate: null },
+    });
   });
 
   it("tells the driver it is their own trip and shows them their plate", async () => {
@@ -350,6 +369,50 @@ describe("GET /offers/{id} (US-014)", () => {
       code: "offer_not_found",
     });
     expect(anonymous.status).toBe(401);
+  });
+});
+
+describe("Solo mujeres trips (US-014)", () => {
+  async function womenOnlyOffer() {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-rosa", "Rosa", { identifiesAsWoman: true });
+    const offer = await seedOffer(alfa.id, driver.id);
+    await testDb.update(tripOffer).set({ womenOnly: true }).where(eq(tripOffer.id, offer.id));
+    await seedMeetingPoint();
+    return { alfa, offer };
+  }
+
+  it("gives a passenger who does not identify as a woman no pickup and no seat", async () => {
+    const { alfa, offer } = await womenOnlyOffer();
+    const carlos = await createMember(alfa.id, "u-carlos", "Carlos");
+    await seedNeed(alfa.id, carlos.id);
+
+    const detail = (await (await requestAs(carlos, `/offers/${offer.id}`)).json()) as {
+      match: unknown;
+    };
+    const res = await requestAs(carlos, `/offers/${offer.id}/bookings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    });
+
+    expect(detail.match).toBeNull();
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ details: { code: "no_longer_compatible" } });
+  });
+
+  it("lets a passenger who identifies as a woman request the same trip", async () => {
+    const { alfa, offer } = await womenOnlyOffer();
+    const lucia = await createMember(alfa.id, "u-lucia", "Lucía", { identifiesAsWoman: true });
+    await seedNeed(alfa.id, lucia.id);
+
+    const res = await requestAs(lucia, `/offers/${offer.id}/bookings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    });
+
+    expect(res.status).toBe(201);
   });
 });
 
@@ -486,6 +549,24 @@ describe("POST /offers/{id}/bookings (US-014)", () => {
       .update(tripOffer)
       .set({ daysOfWeek: [6, 7] })
       .where(eq(tripOffer.id, offer.id));
+
+    const res = await requestSeat(lucia, offer.id);
+
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({
+      success: false,
+      status: 409,
+      error: "Este viaje cambió y ya no es compatible con tu búsqueda.",
+      details: { code: "no_longer_compatible" },
+    });
+  });
+
+  it("refuses a paused trip even before the person has a saved search", async () => {
+    const alfa = await createCommunity("comunidad-alfa");
+    const driver = await createMember(alfa.id, "u-mateo", "Mateo");
+    const lucia = await createMember(alfa.id, "u-lucia", "Lucía");
+    const offer = await seedOffer(alfa.id, driver.id);
+    await testDb.update(tripOffer).set({ status: "paused" }).where(eq(tripOffer.id, offer.id));
 
     const res = await requestSeat(lucia, offer.id);
 
