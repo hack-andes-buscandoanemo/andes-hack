@@ -44,7 +44,7 @@ export default function TripSummaryCard({
   return (
     <article
       aria-label={`${outbound ? "Ida" : "Regreso"} · ${from} → ${to}`}
-      className="flex flex-col gap-3 rounded-2xl border bg-card p-5 shadow-sm"
+      className="flex flex-col gap-3 surface p-5"
     >
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">

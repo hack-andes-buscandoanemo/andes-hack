@@ -11,6 +11,10 @@ const listCommunityZones = vi.fn();
 const createCommunityOffer = vi.fn();
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push, replace }) }));
+vi.mock("@/lib/geo", () => ({
+  findPlaces: vi.fn(async (q: string) => [{ lat: -12.08, lng: -77.03, label: `${q}, Lima` }]),
+  streetAt: vi.fn(async () => "Av. Javier Prado"),
+}));
 vi.mock("@/lib/communities-api", () => ({
   communitiesApi: {
     getMe: (...args: unknown[]) => getMe(...args),
@@ -91,8 +95,8 @@ describe("offer page /ofrecer (US-012)", () => {
         communityId: ONBOARDED_ME.memberships[0]!.communityId,
         driverId: "u-mateo",
         vehicleId: "33333333-3333-4333-8333-333333333333",
-        direction: "outbound",
-        originZoneId: "san-isidro",
+        origin: { lat: -12.08, lng: -77.03, label: "San Borja, Lima" },
+        destination: { lat: -12.08, lng: -77.03, label: "San Isidro, Lima" },
         departureTime: "07:30",
         daysOfWeek: [1, 3],
         date: null,
@@ -126,7 +130,15 @@ describe("offer page /ofrecer (US-012)", () => {
     await user.click(screen.getByRole("button", { name: "Guardar vehículo" }));
     expect(await screen.findByText(/Toyota Corolla · ABC123/i)).toBeInTheDocument();
 
-    // 3. Configure recurring trip offer (L and X, 07:30, Hasta 5 min default, note)
+    // 3. Configure recurring trip offer (origin, destination, L and X, 07:30, Hasta 5 min default, note)
+    await user.type(screen.getByLabelText("Sales de"), "San Borja");
+    await user.click(screen.getAllByRole("button", { name: "Buscar" })[0]!);
+    await user.click(await screen.findByRole("button", { name: "San Borja, Lima" }));
+
+    await user.type(screen.getByLabelText("Vas a"), "San Isidro");
+    await user.click(screen.getAllByRole("button", { name: "Buscar" })[0]!);
+    await user.click(await screen.findByRole("button", { name: "San Isidro, Lima" }));
+
     await user.click(screen.getByRole("button", { name: "L" }));
     await user.click(screen.getByRole("button", { name: "X" }));
     await user.type(screen.getByLabelText("Nota opcional"), "Paso por Javier Prado");
@@ -139,8 +151,8 @@ describe("offer page /ofrecer (US-012)", () => {
       ONBOARDED_ME.memberships[0]!.communityId,
       expect.objectContaining({
         vehicleId: "33333333-3333-4333-8333-333333333333",
-        direction: "outbound",
-        originZoneId: "san-isidro",
+        origin: { lat: -12.08, lng: -77.03, label: "San Borja, Lima" },
+        destination: { lat: -12.08, lng: -77.03, label: "San Isidro, Lima" },
         daysOfWeek: [1, 3],
         seatsTotal: 3,
         maxDetourMinutes: 5,
@@ -150,7 +162,7 @@ describe("offer page /ofrecer (US-012)", () => {
     );
   });
 
-  it("blocks seatsTotal > vehicle.seats, supports switching to return direction and single-day mode, and shows Solo con pasajeras mujeres when identifiesAsWoman is true", async () => {
+  it("blocks seatsTotal > vehicle.seats, supports single-day mode, and shows Solo con pasajeras mujeres when identifiesAsWoman is true", async () => {
     getMe.mockResolvedValue({
       ...ONBOARDED_ME,
       memberships: [
@@ -177,17 +189,14 @@ describe("offer page /ofrecer (US-012)", () => {
     expect(await screen.findByText(/Toyota Corolla · ABC123/i)).toBeInTheDocument();
     expect(screen.getByLabelText("Solo con pasajeras mujeres")).toBeInTheDocument();
 
-    // Switch direction to return -> label changes to Zona de llegada
-    await user.click(
-      screen.getByRole("button", { name: "De regreso desde Centro Empresarial Real" }),
-    );
-    expect(screen.getByLabelText("Zona de llegada")).toBeInTheDocument();
+    // Switch to single-day mode -> date input is shown
+    await user.click(screen.getByRole("button", { name: "Un solo día" }));
+    expect(screen.getByLabelText("Fecha del viaje")).toBeInTheDocument();
 
     // Try setting seats > vehicle.seats (3 > 2)
     const seatsInput = screen.getByLabelText("Asientos para este viaje");
     await user.clear(seatsInput);
     await user.type(seatsInput, "3");
-    await user.click(screen.getByRole("button", { name: "L" }));
     await user.click(screen.getByRole("button", { name: "Publicar viaje" }));
 
     expect(

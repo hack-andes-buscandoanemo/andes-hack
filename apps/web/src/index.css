@@ -200,6 +200,24 @@
 }
 
 @layer components {
+  .surface {
+    @apply rounded-xl border bg-card;
+  }
+
+  .choice-surface {
+    @apply rounded-xl border bg-card text-foreground shadow-xs transition-colors;
+  }
+  .choice-surface:hover {
+    border-color: color-mix(in oklch, var(--foreground) 30%, var(--border));
+  }
+  .choice-surface[aria-pressed="true"] {
+    @apply border-foreground bg-highlight font-semibold;
+  }
+  .choice-surface:focus-visible {
+    outline: 3px solid color-mix(in oklch, var(--ring) 40%, transparent);
+    outline-offset: 2px;
+  }
+
   /* Shared look for native select, textarea and date inputs (Input uses it too). */
   .field {
     display: block;

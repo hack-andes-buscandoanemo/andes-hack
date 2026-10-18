@@ -259,7 +259,7 @@ export default function SearchPage() {
           {loadError}
         </p>
       ) : null}
-      <div className="flex flex-col gap-5 rounded-2xl border bg-card p-5 shadow-sm">
+      <div className="flex flex-col gap-5 surface p-5">
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-4">
             <PlacePicker
@@ -457,7 +457,7 @@ export default function SearchPage() {
               const onMap =
                 result.matches.find((match) => match.offerId === mapOfferId) ?? result.matches[0];
               return onMap ? (
-                <div className="overflow-hidden rounded-2xl border bg-card p-1.5 shadow-sm">
+                <div className="overflow-hidden surface p-1.5">
                   <SearchRouteMap match={onMap} me={origin} destination={destination} />
                 </div>
               ) : null;

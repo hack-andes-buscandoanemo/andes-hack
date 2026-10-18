@@ -136,7 +136,7 @@ export default function Perfil({
   return (
     <main className="flex flex-col gap-5 px-4 pt-2 pb-6">
       <PageHeader title="Perfil" />
-      <div className="flex flex-col gap-4 rounded-2xl border bg-card p-5 shadow-sm">
+      <div className="flex flex-col gap-4 surface p-5">
         <div className="flex items-start gap-4">
           <ProfileAvatar name={displayName} photoUrl={photoUrl} className="size-16 text-lg" />
           <div className="flex min-w-0 flex-col gap-0.5">
@@ -203,10 +203,7 @@ export default function Perfil({
           </p>
         ) : null}
       </div>
-      <section
-        aria-labelledby="security"
-        className="flex flex-col gap-2 rounded-2xl border bg-card p-5 shadow-sm"
-      >
+      <section aria-labelledby="security" className="flex flex-col gap-2 surface p-5">
         <h2 id="security" className="text-base font-semibold tracking-tight">
           Seguridad
         </h2>
@@ -243,17 +240,14 @@ export default function Perfil({
         />
       ) : null}
       <Link
-        className="flex min-h-14 items-center justify-between rounded-2xl border bg-card px-5 font-semibold shadow-sm transition-colors hover:bg-muted"
+        className="flex min-h-14 items-center justify-between surface px-5 font-semibold transition-colors hover:bg-muted"
         href="/perfil/privacidad"
       >
         Privacidad
         <RowChevron />
       </Link>
       {role === "admin" ? (
-        <section
-          aria-labelledby="admin-community"
-          className="flex flex-col gap-2 rounded-2xl border bg-card p-5 shadow-sm"
-        >
+        <section aria-labelledby="admin-community" className="flex flex-col gap-2 surface p-5">
           <h2 id="admin-community" className="text-base font-semibold tracking-tight">
             Administrar comunidad
           </h2>

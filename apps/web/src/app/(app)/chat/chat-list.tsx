@@ -48,7 +48,7 @@ export default function ChatList() {
           {chats.map((chat) => (
             <li key={`${chat.offerId}-${chat.role}`}>
               <Link
-                className="flex items-start gap-3 rounded-2xl border bg-card p-5 shadow-sm transition-colors hover:bg-muted/60"
+                className="flex items-start gap-3 surface p-5 transition-colors hover:bg-muted/60"
                 href={`/chat/${chat.offerId}` as Route}
               >
                 <ProfileAvatar

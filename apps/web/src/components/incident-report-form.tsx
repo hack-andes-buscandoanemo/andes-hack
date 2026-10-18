@@ -56,17 +56,14 @@ export default function IncidentReportForm({
 
   if (result === "success") {
     return (
-      <p role="status" className="rounded-xl border bg-card p-3 text-sm font-medium">
+      <p role="status" className="surface p-3 text-sm font-medium">
         Recibimos tu reporte. Tu identidad no se comparte con la persona reportada.
       </p>
     );
   }
 
   return (
-    <form
-      onSubmit={(event) => void submit(event)}
-      className="space-y-3 rounded-2xl border bg-card p-5 shadow-sm"
-    >
+    <form onSubmit={(event) => void submit(event)} className="space-y-3 surface p-5">
       <label className="block space-y-1 text-sm font-medium">
         Tipo
         <select

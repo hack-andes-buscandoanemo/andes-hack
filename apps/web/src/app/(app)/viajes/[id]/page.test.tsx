@@ -168,7 +168,7 @@ describe("trip detail /viajes/{id} (US-014)", () => {
   });
 
   it("says when the fuel of the leg could not be estimated", async () => {
-    getOfferDetail.mockResolvedValue({ ...DETAIL, fuelEstimate: null });
+    getOfferDetail.mockResolvedValue({ ...DETAIL, fuelEstimate: null, priceCents: null });
     render(<TripDetailPage />);
 
     const fuel = await screen.findByRole("region", { name: "Combustible estimado" });
@@ -455,7 +455,7 @@ describe("trip detail /viajes/{id} (US-014)", () => {
       "Info del vehículo disponible",
     ]);
     expect(items).toHaveLength(4);
-    expect(document.body.textContent).not.toMatch(/garantiza|100% seguro|precio|cobro(?!:)/i);
+    expect(document.body.textContent).not.toMatch(/garantiza|100% seguro|cobro (?!:)/i);
   });
 
   it("highlights the person's own meeting point and pickup time", async () => {

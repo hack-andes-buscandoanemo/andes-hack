@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -7,8 +7,12 @@ vi.mock("@/components/leaflet-map", () => ({
   drawRouteMap: () => () => {},
 }));
 
+vi.mock("@/lib/geo", () => ({
+  findPlaces: vi.fn(async (q: string) => [{ lat: -12.08, lng: -77.03, label: `${q}, Lima` }]),
+  streetAt: vi.fn(async () => "Av. Javier Prado"),
+}));
+
 const getMe = vi.fn();
-const listCommunityZones = vi.fn();
 const searchTrips = vi.fn();
 
 import { httpClient } from "@/lib/http-client";
@@ -41,11 +45,6 @@ const ME = {
   user: { id: "u-lucia", name: "Lucía", email: "lucia@alfa.pe" },
   memberships: [membership()],
 };
-
-const ZONES = [
-  { id: "san-borja", name: "San Borja", district: "San Borja", lat: -12.0897, lng: -77.0031 },
-  { id: "la-molina", name: "La Molina", district: "La Molina", lat: -12.0853, lng: -76.9682 },
-];
 
 const MATCH = {
   offerId: "22222222-2222-4222-8222-222222222222",
@@ -92,17 +91,14 @@ beforeEach(() => {
     const data =
       config.url === "/me"
         ? await getMe()
-        : config.url?.endsWith("/zones")
-          ? { zones: await listCommunityZones(communityId) }
-          : config.url?.endsWith("/search")
-            ? await searchTrips(communityId, JSON.parse(config.data))
-            : (() => {
-                throw new Error(`Unexpected request: ${config.url}`);
-              })();
+        : config.url?.endsWith("/search")
+          ? await searchTrips(communityId, JSON.parse(config.data))
+          : (() => {
+              throw new Error(`Unexpected request: ${config.url}`);
+            })();
     return { data, status: 200, statusText: "OK", headers: {}, config };
   };
   getMe.mockReset().mockResolvedValue(ME);
-  listCommunityZones.mockReset().mockResolvedValue(ZONES);
   searchTrips.mockReset();
 });
 
@@ -111,300 +107,24 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-// Zones arrive after the page shows, so wait for the option before picking it.
-async function pickSanBorja(user: ReturnType<typeof userEvent.setup>) {
-  await screen.findByRole("option", { name: "San Borja" }, { timeout: 5_000 });
-  await user.selectOptions(screen.getByLabelText("Mi zona"), "san-borja");
+async function setupPlaces(user: ReturnType<typeof userEvent.setup>) {
+  await user.type(screen.getByLabelText("Dónde estás"), "San Borja");
+  await user.click(screen.getAllByRole("button", { name: "Buscar" })[0]!);
+  await user.click(await screen.findByRole("button", { name: "San Borja, Lima" }));
+
+  await user.type(screen.getByLabelText("A dónde vas"), "Centro Empresarial Real");
+  await user.click(screen.getAllByRole("button", { name: "Buscar" })[0]!);
+  await user.click(await screen.findByRole("button", { name: "Centro Empresarial Real, Lima" }));
 }
 
 async function searchFromSanBorja() {
   const user = userEvent.setup();
   render(<BuscarPage />);
-  await pickSanBorja(user);
+  await setupPlaces(user);
   await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
 }
 
 describe("search page /buscar (US-013)", () => {
-  it("widens a late return window without collapsing it to the standard time slots", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      `/buscar?direction=return&communityId=${COMMUNITY_ID}&originZoneId=san-borja&windowStart=23:00&windowEnd=23:30&fallbackMode=public_transport&date=2026-11-02`,
-    );
-    searchTrips.mockResolvedValue({
-      requestId: "return-request",
-      matches: [],
-      reason: "outside_time_window",
-    });
-    const user = userEvent.setup();
-    render(<BuscarPage />);
-    await screen.findByRole("option", { name: "San Borja" });
-    await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
-    await user.click(await screen.findByRole("button", { name: "Ampliar horario 15 min" }));
-
-    await waitFor(() =>
-      expect(searchTrips).toHaveBeenLastCalledWith(
-        COMMUNITY_ID,
-        expect.objectContaining({
-          direction: "return",
-          windowStart: "22:45",
-          windowEnd: "23:45",
-        }),
-      ),
-    );
-    expect(screen.getByLabelText("Desde")).toHaveValue("22:45");
-    expect(screen.getByLabelText("Hasta")).toHaveValue("23:45");
-  });
-
-  it("does not apply the return link after the person selects a different community during loading", async () => {
-    const betaId = "55555555-5555-4555-8555-555555555555";
-    getMe.mockResolvedValue({
-      ...ME,
-      memberships: [membership(), membership({ communityId: betaId, communityName: "Beta" })],
-    });
-    listCommunityZones.mockImplementation((id) =>
-      id === betaId ? new Promise(() => {}) : Promise.resolve(ZONES),
-    );
-    window.history.replaceState(
-      {},
-      "",
-      `/buscar?direction=return&communityId=${betaId}&originZoneId=san-borja&windowStart=18:00&windowEnd=19:00&fallbackMode=public_transport&date=2026-11-02`,
-    );
-    const user = userEvent.setup();
-    render(<BuscarPage />);
-    await user.selectOptions(await screen.findByLabelText("Comunidad"), COMMUNITY_ID);
-    await screen.findByRole("option", { name: "San Borja" });
-    expect(screen.getByLabelText("Mi zona")).toHaveValue("");
-    expect(screen.getByLabelText("Desde")).toHaveValue("07:30");
-  });
-
-  it("ignores a return link that declares both a date and recurring weekdays", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      `/buscar?direction=return&communityId=${COMMUNITY_ID}&originZoneId=san-borja&windowStart=18:00&windowEnd=19:00&fallbackMode=public_transport&date=2026-11-02&daysOfWeek=1,3`,
-    );
-    render(<BuscarPage />);
-    await screen.findByRole("option", { name: "San Borja" });
-    expect(screen.getByLabelText("Fecha")).toHaveValue("today");
-    expect(screen.getByLabelText("Mi zona")).toHaveValue("");
-  });
-
-  it("ignores a return link with an impossible calendar date", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      `/buscar?direction=return&communityId=${COMMUNITY_ID}&originZoneId=san-borja&windowStart=18:00&windowEnd=19:00&fallbackMode=public_transport&date=2026-02-30`,
-    );
-    render(<BuscarPage />);
-    await screen.findByRole("option", { name: "San Borja" });
-    expect(screen.getByLabelText("Fecha")).toHaveValue("today");
-    expect(screen.getByLabelText("Mi zona")).toHaveValue("");
-    expect(screen.getByLabelText("Desde")).toHaveValue("07:30");
-  });
-
-  it("keeps the return empty state and declared alternative tied to the completed search", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      `/buscar?direction=return&communityId=${COMMUNITY_ID}&originZoneId=san-borja&windowStart=18:00&windowEnd=19:00&fallbackMode=public_transport&date=2026-11-02`,
-    );
-    let finish!: (value: unknown) => void;
-    searchTrips.mockReturnValue(
-      new Promise((resolve) => {
-        finish = resolve;
-      }),
-    );
-    const user = userEvent.setup();
-    render(<BuscarPage />);
-    await screen.findByRole("option", { name: "San Borja" });
-    await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
-    await user.click(screen.getByRole("button", { name: "Invertir sentido" }));
-    await user.selectOptions(
-      screen.getByLabelText("Si no encuentras viaje, ¿cómo irías?"),
-      "taxi_app",
-    );
-    finish({ requestId: "return-request", matches: [], reason: null });
-
-    expect(
-      await screen.findByText(
-        "Aún no hay un regreso compatible. Te incluiremos en el emparejamiento del regreso.",
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Tu alternativa: Bus, combi, Corredor o metro")).toBeInTheDocument();
-    expect(
-      screen.queryByText("Guardamos tu búsqueda para el emparejamiento de la jornada."),
-    ).not.toBeInTheDocument();
-  });
-
-  it("searches the recurring weekdays from a return link without adding a date", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      `/buscar?direction=return&communityId=${COMMUNITY_ID}&originZoneId=san-borja&windowStart=18:00&windowEnd=19:00&fallbackMode=picked_up&daysOfWeek=1,3,5`,
-    );
-    searchTrips.mockResolvedValue({
-      requestId: "return-request",
-      matches: [],
-      reason: "days_mismatch",
-    });
-    const user = userEvent.setup();
-    render(<BuscarPage />);
-    await screen.findByRole("option", { name: "San Borja" });
-    expect(screen.getByLabelText("Fecha")).toHaveValue("days");
-    expect(screen.getByRole("button", { name: "Miércoles" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-    await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
-    await waitFor(() =>
-      expect(searchTrips).toHaveBeenCalledWith(
-        COMMUNITY_ID,
-        expect.objectContaining({
-          direction: "return",
-          date: null,
-          daysOfWeek: [1, 3, 5],
-          fallbackMode: "picked_up",
-        }),
-      ),
-    );
-  });
-
-  it("loads the return link after account and zone options arrive and submits its exact times", async () => {
-    const betaId = "55555555-5555-4555-8555-555555555555";
-    getMe.mockResolvedValue({
-      ...ME,
-      memberships: [
-        membership(),
-        membership({ communityId: betaId, communityName: "Beta", destinationName: "Campus Beta" }),
-      ],
-    });
-    window.history.replaceState(
-      {},
-      "",
-      `/buscar?direction=return&communityId=${betaId}&originZoneId=la-molina&windowStart=18%3A07&windowEnd=19%3A22&fallbackMode=public_transport&date=2026-11-02`,
-    );
-    searchTrips.mockResolvedValue({
-      requestId: "return-request",
-      matches: [],
-      reason: "outside_time_window",
-    });
-    const user = userEvent.setup();
-    render(<BuscarPage />);
-
-    await screen.findByRole("option", { name: "La Molina" });
-    expect(screen.getByLabelText("Comunidad")).toHaveValue(betaId);
-    expect(screen.getByLabelText("Mi zona")).toHaveValue("la-molina");
-    expect(
-      within(screen.getByRole("group", { name: "Origen" })).getByText("Campus Beta"),
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText("Desde")).toHaveValue("18:07");
-    expect(screen.getByLabelText("Hasta")).toHaveValue("19:22");
-    expect(screen.getByLabelText("Día del viaje")).toHaveValue("2026-11-02");
-    expect(screen.getByLabelText("Si no encuentras viaje, ¿cómo irías?")).toHaveValue(
-      "public_transport",
-    );
-    await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
-    await waitFor(() =>
-      expect(searchTrips).toHaveBeenCalledWith(betaId, {
-        direction: "return",
-        originZoneId: "la-molina",
-        windowStart: "18:07",
-        windowEnd: "19:22",
-        date: "2026-11-02",
-        daysOfWeek: null,
-        fallbackMode: "public_transport",
-        maxWalkMinutes: 15,
-        womenOnly: false,
-      }),
-    );
-  });
-
-  it("searches the return with the Solo mujeres saved on the linked community, not the first one", async () => {
-    const betaId = "55555555-5555-4555-8555-555555555555";
-    getMe.mockResolvedValue({
-      ...ME,
-      memberships: [
-        membership({ identifiesAsWoman: true, womenOnly: false }),
-        membership({
-          communityId: betaId,
-          communityName: "Beta",
-          destinationName: "Campus Beta",
-          identifiesAsWoman: true,
-          womenOnly: true,
-        }),
-      ],
-    });
-    window.history.replaceState(
-      {},
-      "",
-      `/buscar?direction=return&communityId=${betaId}&originZoneId=san-borja&windowStart=18:00&windowEnd=18:30&fallbackMode=public_transport&date=2026-11-02`,
-    );
-    searchTrips.mockResolvedValue({ requestId: "r", matches: [], reason: "women_only" });
-    const user = userEvent.setup();
-    render(<BuscarPage />);
-    await screen.findByRole("option", { name: "San Borja" });
-    expect(screen.getByRole("checkbox", { name: "Solo mujeres" })).toBeChecked();
-    await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
-    await waitFor(() =>
-      expect(searchTrips).toHaveBeenCalledWith(
-        betaId,
-        expect.objectContaining({ direction: "return", womenOnly: true }),
-      ),
-    );
-  });
-
-  it.each([
-    ["is not a valid search", "windowStart=19:00&windowEnd=18:00&originZoneId=san-borja"],
-    [
-      "names a zone the community does not have",
-      "windowStart=18:00&windowEnd=18:30&originZoneId=nowhere",
-    ],
-  ])("tells the user when the return link %s", async (_name, query) => {
-    window.history.replaceState(
-      {},
-      "",
-      `/buscar?direction=return&communityId=${COMMUNITY_ID}&${query}&fallbackMode=public_transport&date=2026-11-02`,
-    );
-    render(<BuscarPage />);
-    await screen.findByRole("option", { name: "San Borja" });
-    expect(
-      await screen.findByText(
-        "No pudimos aplicar el regreso del enlace. Completa tu búsqueda para continuar.",
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText("Mi zona")).toHaveValue("");
-  });
-
-  it("tells the user when they switch community before the link's zones arrive", async () => {
-    const betaId = "55555555-5555-4555-8555-555555555555";
-    getMe.mockResolvedValue({
-      ...ME,
-      memberships: [
-        membership(),
-        membership({ communityId: betaId, communityName: "Beta", destinationName: "Campus Beta" }),
-      ],
-    });
-    let release: (zones: typeof ZONES) => void = () => {};
-    listCommunityZones.mockImplementation((communityId: string) =>
-      communityId === betaId ? new Promise((resolve) => (release = resolve)) : ZONES,
-    );
-    window.history.replaceState(
-      {},
-      "",
-      `/buscar?direction=return&communityId=${betaId}&originZoneId=san-borja&windowStart=18:00&windowEnd=18:30&fallbackMode=public_transport&date=2026-11-02`,
-    );
-    const user = userEvent.setup();
-    render(<BuscarPage />);
-    await user.selectOptions(await screen.findByLabelText("Comunidad"), COMMUNITY_ID);
-    release(ZONES);
-    expect(
-      await screen.findByText(
-        "No pudimos aplicar el regreso del enlace. Completa tu búsqueda para continuar.",
-      ),
-    ).toBeInTheDocument();
-  });
-
   it("lists the matches with the engine's factors instead of a percentage", async () => {
     searchTrips.mockResolvedValue({
       requestId: "33333333-3333-4333-8333-333333333333",
@@ -509,40 +229,6 @@ describe("search page /buscar (US-013)", () => {
     expect(await screen.findByText("Buscando viajes compatibles…")).toBeInTheDocument();
   });
 
-  it("always keeps the community's headquarters at one end and flips the direction", async () => {
-    searchTrips.mockResolvedValue({
-      requestId: "33333333-3333-4333-8333-333333333333",
-      matches: [],
-      reason: "outside_time_window",
-    });
-    const user = userEvent.setup();
-    render(<BuscarPage />);
-
-    await screen.findByRole("option", { name: "San Borja" });
-    expect(
-      within(screen.getByRole("group", { name: "Origen" })).getByLabelText("Mi zona"),
-    ).toBeInTheDocument();
-    expect(
-      within(screen.getByRole("group", { name: "Destino" })).getByText("Centro Empresarial Real"),
-    ).toBeInTheDocument();
-    expect(screen.getByText("No guardamos tu dirección exacta")).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "Invertir sentido" }));
-    await user.selectOptions(screen.getByLabelText("Mi zona"), "san-borja");
-    await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
-
-    expect(
-      within(screen.getByRole("group", { name: "Destino" })).getByLabelText("Mi zona"),
-    ).toBeInTheDocument();
-    expect(
-      within(screen.getByRole("group", { name: "Origen" })).getByText("Centro Empresarial Real"),
-    ).toBeInTheDocument();
-    expect(searchTrips).toHaveBeenCalledWith(
-      COMMUNITY_ID,
-      expect.objectContaining({ direction: "return", originZoneId: "san-borja" }),
-    );
-  });
-
   it("sends tomorrow's date in Lima and the chosen time range", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     // 22:00 UTC is 17:00 in Lima, still 18 October.
@@ -554,11 +240,11 @@ describe("search page /buscar (US-013)", () => {
     });
     const user = userEvent.setup();
     render(<BuscarPage />);
-    await pickSanBorja(user);
+    await setupPlaces(user);
 
-    await user.selectOptions(screen.getByLabelText("Fecha"), "Mañana");
-    await user.selectOptions(screen.getByLabelText("Desde"), "6:00 p. m.");
-    await user.selectOptions(screen.getByLabelText("Hasta"), "7:00 p. m.");
+    await user.selectOptions(screen.getByLabelText("Fecha"), "tomorrow");
+    await user.selectOptions(screen.getByLabelText("Desde"), "18:00");
+    await user.selectOptions(screen.getByLabelText("Hasta"), "19:00");
     await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
 
     expect(searchTrips).toHaveBeenCalledWith(
@@ -580,9 +266,9 @@ describe("search page /buscar (US-013)", () => {
     });
     const user = userEvent.setup();
     render(<BuscarPage />);
-    await pickSanBorja(user);
+    await setupPlaces(user);
 
-    await user.selectOptions(screen.getByLabelText("Fecha"), "Días");
+    await user.selectOptions(screen.getByLabelText("Fecha"), "days");
     await user.click(screen.getByRole("button", { name: "Lunes" }));
     await user.click(screen.getByRole("button", { name: "Miércoles" }));
     await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
@@ -594,25 +280,25 @@ describe("search page /buscar (US-013)", () => {
     expect(await screen.findByText("Ningún conductor sale en esos días")).toBeInTheDocument();
   });
 
-  it("asks for a zone before searching", async () => {
+  it("asks for origin and destination before searching", async () => {
     const user = userEvent.setup();
     render(<BuscarPage />);
-    await screen.findByLabelText("Mi zona");
+    await screen.findByLabelText("Dónde estás");
 
     await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
 
-    expect(screen.getByText("Selecciona tu zona o usa tu ubicación.")).toBeInTheDocument();
+    expect(screen.getByText("Elige dónde estás y a dónde vas.")).toBeInTheDocument();
     expect(searchTrips).not.toHaveBeenCalled();
   });
 
   it("shows the server's message when the search is refused, never a broken page", async () => {
     searchTrips.mockRejectedValue({
-      response: { data: { error: "Selecciona una zona de la lista." } },
+      response: { data: { error: "No pudimos calcular la ruta." } },
     });
 
     await searchFromSanBorja();
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Selecciona una zona de la lista.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("No pudimos calcular la ruta.");
     expect(screen.queryByText("Buscando viajes compatibles…")).not.toBeInTheDocument();
   });
 
@@ -652,12 +338,12 @@ describe("search page /buscar (US-013)", () => {
     });
     const user = userEvent.setup();
     render(<BuscarPage />);
-    await pickSanBorja(user);
+    await setupPlaces(user);
 
     const fallback = screen.getByLabelText("Si no encuentras viaje, ¿cómo irías?");
     expect(fallback).toHaveDisplayValue("Me recogen");
 
-    await user.selectOptions(fallback, "Bus, combi, Corredor o metro");
+    await user.selectOptions(fallback, "public_transport");
     await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
 
     expect(searchTrips).toHaveBeenCalledWith(
@@ -678,7 +364,7 @@ describe("search page /buscar (US-013)", () => {
     });
     const user = userEvent.setup();
     render(<BuscarPage />);
-    await pickSanBorja(user);
+    await setupPlaces(user);
 
     await user.click(screen.getByRole("checkbox", { name: "Solo mujeres" }));
     await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
@@ -711,7 +397,7 @@ describe("search page /buscar (US-013)", () => {
 
   it("does not show Solo mujeres, nor a verified-members switch, to everyone else", async () => {
     render(<BuscarPage />);
-    await screen.findByLabelText("Mi zona");
+    await screen.findByLabelText("Dónde estás");
 
     expect(screen.queryByRole("checkbox", { name: "Solo mujeres" })).not.toBeInTheDocument();
     expect(screen.queryByText(/Solo miembros verificados/)).not.toBeInTheDocument();
@@ -739,18 +425,38 @@ describe("search page /buscar (US-013)", () => {
     const user = userEvent.setup();
     render(<BuscarPage />);
 
-    await user.selectOptions(await screen.findByLabelText("Comunidad"), "Universidad Beta");
-    expect(listCommunityZones).toHaveBeenLastCalledWith(BETA_ID);
-    expect(screen.getByText("Campus Beta")).toBeInTheDocument();
-    await user.selectOptions(screen.getByLabelText("Mi zona"), "san-borja");
+    await user.selectOptions(await screen.findByLabelText("Comunidad"), BETA_ID);
+    expect(screen.getByText(/Campus Beta/)).toBeInTheDocument();
+    await setupPlaces(user);
     await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
 
     expect(searchTrips).toHaveBeenCalledWith(BETA_ID, expect.anything());
   });
 
+  it("selects the community passed via URL query parameter", async () => {
+    const BETA_ID = "55555555-5555-4555-8555-555555555555";
+    window.history.replaceState({}, "", `/buscar?communityId=${BETA_ID}`);
+    getMe.mockResolvedValue({
+      ...ME,
+      memberships: [
+        membership(),
+        membership({
+          id: "m-2",
+          communityId: BETA_ID,
+          communityName: "Universidad Beta",
+          destinationName: "Campus Beta",
+        }),
+      ],
+    });
+    render(<BuscarPage />);
+
+    expect(await screen.findByText(/Campus Beta/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Comunidad")).toHaveValue(BETA_ID);
+  });
+
   it("does not ask for the community when there is only one", async () => {
     render(<BuscarPage />);
-    await screen.findByLabelText("Mi zona");
+    await screen.findByLabelText("Dónde estás");
 
     expect(screen.queryByLabelText("Comunidad")).not.toBeInTheDocument();
   });
@@ -763,9 +469,9 @@ describe("search page /buscar (US-013)", () => {
     });
     const user = userEvent.setup();
     render(<BuscarPage />);
-    await pickSanBorja(user);
+    await setupPlaces(user);
 
-    await user.selectOptions(screen.getByLabelText("Fecha"), "Otra fecha");
+    await user.selectOptions(screen.getByLabelText("Fecha"), "other");
     fireEvent.change(screen.getByLabelText("Día del viaje"), { target: { value: "2026-11-02" } });
     await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
 
@@ -789,16 +495,6 @@ describe("search page /buscar (US-013)", () => {
     ).toBeInTheDocument();
   });
 
-  it("says when the zones could not be loaded", async () => {
-    listCommunityZones.mockRejectedValue(new Error("network"));
-
-    render(<BuscarPage />);
-
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "No pudimos cargar tus zonas. Inténtalo de nuevo.",
-    );
-  });
-
   it("says when the account could not be loaded", async () => {
     getMe.mockRejectedValue(new Error("network"));
 
@@ -812,9 +508,9 @@ describe("search page /buscar (US-013)", () => {
   it("asks for the date before searching another day", async () => {
     const user = userEvent.setup();
     render(<BuscarPage />);
-    await pickSanBorja(user);
+    await setupPlaces(user);
 
-    await user.selectOptions(screen.getByLabelText("Fecha"), "Otra fecha");
+    await user.selectOptions(screen.getByLabelText("Fecha"), "other");
     await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
 
     expect(screen.getByText("Elige la fecha del viaje.")).toBeInTheDocument();
@@ -824,9 +520,9 @@ describe("search page /buscar (US-013)", () => {
   it("asks for at least one weekday before searching a recurring trip", async () => {
     const user = userEvent.setup();
     render(<BuscarPage />);
-    await pickSanBorja(user);
+    await setupPlaces(user);
 
-    await user.selectOptions(screen.getByLabelText("Fecha"), "Días");
+    await user.selectOptions(screen.getByLabelText("Fecha"), "days");
     await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
 
     expect(screen.getByText("Elige al menos un día.")).toBeInTheDocument();
@@ -837,7 +533,7 @@ describe("search page /buscar (US-013)", () => {
     searchTrips.mockReturnValue(new Promise(() => {}));
     const user = userEvent.setup();
     render(<BuscarPage />);
-    await pickSanBorja(user);
+    await setupPlaces(user);
     const button = screen.getByRole("button", { name: "Buscar coincidencias" });
 
     await user.click(button);

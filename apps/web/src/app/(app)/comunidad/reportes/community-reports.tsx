@@ -62,7 +62,7 @@ export default function CommunityReports({ communityId }: { communityId: string 
   return (
     <div className="space-y-3">
       {reports.map((report) => (
-        <article key={report.id} className="space-y-2 rounded-2xl border bg-card p-5 shadow-sm">
+        <article key={report.id} className="space-y-2 surface p-5">
           <div className="flex items-center justify-between gap-2">
             <h3 className="text-base font-semibold tracking-tight">
               {incidentLabels[report.type]}

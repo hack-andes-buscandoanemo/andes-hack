@@ -216,7 +216,7 @@ describe("POST /communities/{id}/search (US-013)", () => {
     const body = (await res.json()) as { matches: unknown[]; reason: string | null };
     expect(body.reason).toBeNull();
     expect(body.matches).toEqual([
-      {
+      expect.objectContaining({
         offerId: offer!.id,
         driverName: "Mateo",
         driverPhotoUrl: null,
@@ -232,7 +232,11 @@ describe("POST /communities/{id}/search (US-013)", () => {
         walkMinutes: 14,
         // La Molina → Centro Empresarial Real, 15.77 km: S/ 10,04 between Mateo and Lucía.
         fuelEstimate: { tripSoles: 10.04, perOccupantSoles: 5.02, occupants: 2 },
-      },
+        priceCents: null,
+        paymentMethods: [],
+        live: false,
+        dropOffMeters: null,
+      }),
     ]);
   });
 

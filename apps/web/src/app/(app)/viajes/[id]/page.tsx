@@ -88,10 +88,7 @@ export default function TripDetailPage() {
   if (loadError) {
     return (
       <main className="px-4 pt-2 pb-6">
-        <p
-          role="alert"
-          className="rounded-2xl border bg-card p-5 text-sm font-medium text-destructive"
-        >
+        <p role="alert" className="surface p-5 text-sm font-medium text-destructive">
           {loadError}
         </p>
       </main>
@@ -246,10 +243,7 @@ export default function TripDetailPage() {
               <div className="space-y-2 pt-2">
                 <h3 className="text-sm font-semibold">Viajes alternativos disponibles</h3>
                 {detail.alternatives.map((alt) => (
-                  <div
-                    key={alt.offerId}
-                    className="space-y-1 rounded-2xl border bg-card p-5 shadow-sm"
-                  >
+                  <div key={alt.offerId} className="space-y-1 surface p-5">
                     <p className="font-semibold">{alt.driverName}</p>
                     <p className="text-sm text-muted-foreground">{`Salida: ${alt.departureTime.slice(0, 5)} · ${alt.meetingPointName}`}</p>
                     <p className="text-xs text-muted-foreground">{`${alt.seatsFree} asientos libres`}</p>
@@ -382,7 +376,7 @@ export default function TripDetailPage() {
         </Link>
         <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight">Detalle del viaje</h1>
       </div>
-      <section className="flex items-center gap-4 rounded-2xl border bg-card p-5 shadow-sm">
+      <section className="flex items-center gap-4 surface p-5">
         <ProfileAvatar
           name={detail.driverName}
           photoUrl={detail.driverPhotoUrl}
@@ -397,7 +391,7 @@ export default function TripDetailPage() {
           <p className="text-[0.8125rem] text-muted-foreground">{detail.communityName}</p>
         </div>
       </section>
-      <section className="space-y-3 rounded-2xl border bg-card p-5 shadow-sm">
+      <section className="space-y-3 surface p-5">
         <p className="text-[0.9375rem] font-semibold">{`${from} → ${to}`}</p>
         <RouteMap route={detail.routeMap} livePosition={livePosition} dropOff={dropOff} />
         <div className="space-y-1 text-sm">
@@ -439,7 +433,7 @@ export default function TripDetailPage() {
         onPosition={setLivePosition}
       />
       {detail.isOwn ? null : <DropOffSuggestion route={detail.routeMap} onSuggest={setDropOff} />}
-      <section className="space-y-1.5 rounded-2xl border bg-card p-5 text-sm shadow-sm">
+      <section className="space-y-1.5 surface p-5 text-sm">
         {detail.live ? <LiveBadge /> : null}
         <TripPrice priceCents={detail.priceCents} paymentMethods={detail.paymentMethods} />
         <p>
@@ -465,7 +459,7 @@ export default function TripDetailPage() {
         ) : null}
       </section>
       <FuelEstimateDetail estimate={detail.fuelEstimate} />
-      <section className="space-y-2 rounded-2xl border bg-card p-5 text-sm shadow-sm">
+      <section className="space-y-2 surface p-5 text-sm">
         <h2 className="text-base font-semibold tracking-tight">Seguridad del viaje</h2>
         <ul className="flex flex-wrap items-start gap-x-4 gap-y-2">
           <li className="inline-flex items-center gap-1.5">
@@ -519,7 +513,7 @@ export default function TripDetailPage() {
         </ul>
       </section>
       {detail.note ? (
-        <section className="rounded-2xl border bg-card p-5 text-sm shadow-sm">
+        <section className="surface p-5 text-sm">
           <h2 className="text-base font-semibold tracking-tight">Nota del conductor</h2>
           <p>{detail.note}</p>
         </section>

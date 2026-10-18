@@ -126,10 +126,7 @@ export default function TripChat({ offerId }: { offerId: string }) {
           </p>
         </div>
       </header>
-      <section
-        aria-label="Participantes"
-        className="space-y-3 rounded-2xl border bg-card p-5 shadow-sm"
-      >
+      <section aria-label="Participantes" className="space-y-3 surface p-5">
         <h2 className="text-base font-semibold tracking-tight">{`${chat.participants.length} participantes`}</h2>
         <ul className="space-y-2">
           {chat.participants.map((participant) => (
@@ -150,12 +147,12 @@ export default function TripChat({ offerId }: { offerId: string }) {
         </ul>
       </section>
       {chat.meetingPoints.map((point) => (
-        <section key={point.participantName} className="rounded-2xl border bg-card p-5 shadow-sm">
+        <section key={point.participantName} className="surface p-5">
           <h2 className="text-base font-semibold tracking-tight">{`Punto de encuentro acordado: ${point.name}`}</h2>
           <p className="text-sm text-muted-foreground">{`Ver punto de encuentro: ${point.participantName}`}</p>
         </section>
       ))}
-      <section aria-label="Mensajes" className="space-y-3 rounded-2xl border bg-card p-5 shadow-sm">
+      <section aria-label="Mensajes" className="space-y-3 surface p-5">
         {messages.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Aún no hay mensajes. Saluda a tu compañero de viaje.

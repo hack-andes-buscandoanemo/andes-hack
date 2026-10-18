@@ -42,7 +42,7 @@ export default function SignInForm() {
   return (
     <div className="mx-auto flex min-h-svh w-full max-w-md flex-col gap-8 px-4 pt-5 pb-10">
       <StandaloneHeader />
-      <div className="rounded-2xl border bg-card p-6 shadow-sm">
+      <div className="surface p-6">
         <h1 className="mb-6 text-2xl leading-tight font-bold tracking-tight">Iniciar sesión</h1>
         <form
           noValidate

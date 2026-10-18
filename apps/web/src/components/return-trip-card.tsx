@@ -45,10 +45,7 @@ export default function ReturnTripCard({
   // Nothing to prefill without a shared calendar, but the way back must stay reachable.
   if (!context || !calendar)
     return (
-      <section
-        aria-label="¿Y el regreso?"
-        className="space-y-3 rounded-2xl border bg-card p-5 shadow-sm"
-      >
+      <section aria-label="¿Y el regreso?" className="space-y-3 surface p-5">
         <h2 className="text-lg font-semibold tracking-tight">¿Y el regreso?</h2>
         <Link href="/buscar" className="text-sm font-bold underline">
           Buscar regreso
@@ -57,10 +54,7 @@ export default function ReturnTripCard({
     );
   const { date, days } = calendar;
   return (
-    <section
-      aria-label="¿Y el regreso?"
-      className="space-y-3 rounded-2xl border bg-card p-5 shadow-sm"
-    >
+    <section aria-label="¿Y el regreso?" className="space-y-3 surface p-5">
       <h2 className="text-lg font-semibold tracking-tight">¿Y el regreso?</h2>
       {returns.map(({ trip: acceptedReturn, label }) => (
         <section

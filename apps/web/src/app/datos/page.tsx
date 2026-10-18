@@ -79,7 +79,7 @@ export default function DataPage() {
         </p>
       </header>
       {failed ? (
-        <div className="space-y-3 rounded-2xl border bg-card p-5 shadow-sm">
+        <div className="space-y-3 surface p-5">
           <p role="alert" className="text-sm font-medium text-destructive">
             No pudimos cargar los datos.
           </p>
@@ -105,7 +105,7 @@ export default function DataPage() {
               <h2 id={`${topic.id}-heading`} className="text-lg font-semibold tracking-tight">
                 {topic.title}
               </h2>
-              <div className="overflow-x-auto rounded-2xl border bg-card">
+              <div className="overflow-x-auto surface">
                 <table className="w-full min-w-[40rem] text-left text-sm">
                   <thead className="border-b bg-muted/50 text-xs text-muted-foreground">
                     <tr>

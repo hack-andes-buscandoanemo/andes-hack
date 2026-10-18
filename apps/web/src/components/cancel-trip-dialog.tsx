@@ -31,7 +31,7 @@ export function CancelTripDialog({
       role="dialog"
       aria-modal="true"
       aria-labelledby="cancel-trip-title"
-      className="space-y-4 rounded-2xl border bg-card p-5 shadow-md"
+      className="space-y-4 surface p-5 shadow-md"
     >
       <h2 id="cancel-trip-title" className="text-lg font-semibold tracking-tight">
         {title}

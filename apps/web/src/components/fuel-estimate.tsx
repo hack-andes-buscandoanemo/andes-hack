@@ -16,10 +16,7 @@ export const FUEL_NOTE =
 // a voluntary contribution. There is no fare, balance or payment anywhere in the app.
 export function FuelEstimateDetail({ estimate }: { estimate: FuelEstimate }) {
   return (
-    <section
-      aria-labelledby="fuel-estimate"
-      className="space-y-1.5 rounded-2xl border bg-card p-5 text-sm shadow-sm"
-    >
+    <section aria-labelledby="fuel-estimate" className="space-y-1.5 surface p-5 text-sm">
       <h2 id="fuel-estimate" className="text-base font-semibold tracking-tight">
         Combustible estimado
       </h2>
