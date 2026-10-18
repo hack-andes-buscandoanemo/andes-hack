@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import EmptyState from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import {
 
 import { addDays, clockLabel, limaToday, shiftClock, TIME_SLOTS, WEEKDAYS } from "./schedule";
 import { FALLBACK_FOR_USUAL_MODE, FALLBACK_OPTIONS, REASON_MESSAGES } from "./reasons";
+import { parseReturnPrefill, type ReturnPrefill } from "./return-prefill";
 import { FUEL_NOTE } from "@/components/fuel-estimate";
 
 import TripCard from "./trip-card";
@@ -23,6 +24,7 @@ const selectClass =
 type DayChoice = "today" | "tomorrow" | "other" | "days";
 
 export default function SearchPage() {
+  const initialSearch = useRef<ReturnPrefill | null>(null);
   const [memberships, setMemberships] = useState<MembershipSummary[]>([]);
   const [communityId, setCommunityId] = useState("");
   const [zones, setZones] = useState<ZoneSummary[]>([]);
@@ -34,6 +36,10 @@ export default function SearchPage() {
   const [windowStart, setWindowStart] = useState("07:30");
   const [windowEnd, setWindowEnd] = useState("08:30");
   const [result, setResult] = useState<SearchTripsResponse | null>(null);
+  const [completedSearch, setCompletedSearch] = useState<{
+    outbound: boolean;
+    fallback: string;
+  } | null>(null);
   const [fallbackMode, setFallbackMode] =
     useState<(typeof FALLBACK_OPTIONS)[number]["value"]>("other");
   const [womenOnly, setWomenOnly] = useState(false);
@@ -41,6 +47,7 @@ export default function SearchPage() {
   const [error, setError] = useState<string | null>(null);
   const [dateError, setDateError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [prefillNotice, setPrefillNotice] = useState(false);
 
   const membership = memberships.find((item) => item.communityId === communityId) ?? null;
 
@@ -51,11 +58,19 @@ export default function SearchPage() {
       .then((me) => {
         const first = me.memberships[0];
         if (!active || !first) return;
+        const query = new URLSearchParams(window.location.search);
+        const linkedMembership = me.memberships.find(
+          (item) => item.communityId === query.get("communityId"),
+        );
+        const selected = linkedMembership ?? first;
+        const linkedReturn = linkedMembership && query.get("direction") === "return";
+        initialSearch.current = linkedReturn ? parseReturnPrefill(query) : null;
+        if (linkedReturn && !initialSearch.current) setPrefillNotice(true);
         setMemberships(me.memberships);
-        setCommunityId(first.communityId);
-        setFallbackMode(FALLBACK_FOR_USUAL_MODE[first.usualMode ?? "other"] ?? "other");
-        // The profile's "Solo mujeres" preference is where every search starts (US-026).
-        setWomenOnly(first.womenOnly);
+        setCommunityId(selected.communityId);
+        setFallbackMode(FALLBACK_FOR_USUAL_MODE[selected.usualMode ?? "other"] ?? "other");
+        // The saved "Solo mujeres" of the membership the search opens on (US-026).
+        setWomenOnly(selected.womenOnly);
       })
       .catch(() => {
         if (active) setLoadError("No pudimos cargar tu cuenta. Inténtalo de nuevo.");
@@ -71,7 +86,26 @@ export default function SearchPage() {
     communitiesApi
       .listCommunityZones(communityId)
       .then((list) => {
-        if (active) setZones(list);
+        if (!active) return;
+        setZones(list);
+        const prefill = initialSearch.current;
+        initialSearch.current = null;
+        if (!prefill) return;
+        if (
+          prefill.communityId !== communityId ||
+          !list.some((zone) => zone.id === prefill.originZoneId)
+        ) {
+          setPrefillNotice(true);
+          return;
+        }
+        setOutbound(false);
+        setZoneId(prefill.originZoneId);
+        setWindowStart(prefill.windowStart);
+        setWindowEnd(prefill.windowEnd);
+        setFallbackMode(prefill.fallbackMode);
+        setDayChoice(prefill.date ? "other" : "days");
+        setOtherDate(prefill.date ?? "");
+        setDays(prefill.days);
       })
       .catch(() => {
         if (active) setLoadError("No pudimos cargar tus zonas. Inténtalo de nuevo.");
@@ -105,6 +139,10 @@ export default function SearchPage() {
     setDateError(null);
     setSearching(true);
     setResult(null);
+    const submittedSearch = {
+      outbound,
+      fallback: FALLBACK_OPTIONS.find((option) => option.value === fallbackMode)!.label,
+    };
     try {
       setResult(
         await communitiesApi.searchTrips(membership.communityId, {
@@ -119,6 +157,7 @@ export default function SearchPage() {
           womenOnly,
         }),
       );
+      setCompletedSearch(submittedSearch);
     } catch (err: unknown) {
       const apiError = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       setError(apiError ?? "No pudimos buscar viajes. Inténtalo de nuevo.");
@@ -141,6 +180,11 @@ export default function SearchPage() {
         <h1 className="text-3xl font-extrabold">Buscar viaje</h1>
         <p className="text-muted-foreground">Encuentra personas que van en tu dirección</p>
       </header>
+      {prefillNotice ? (
+        <p role="status" className="text-sm font-medium">
+          No pudimos aplicar el regreso del enlace. Completa tu búsqueda para continuar.
+        </p>
+      ) : null}
       {loadError ? (
         <p role="alert" className="text-sm font-medium text-destructive">
           {loadError}
@@ -260,7 +304,7 @@ export default function SearchPage() {
                   value={windowStart}
                   onChange={(event) => setWindowStart(event.target.value)}
                 >
-                  {TIME_SLOTS.map((slot) => (
+                  {[...new Set([...TIME_SLOTS, windowStart])].sort().map((slot) => (
                     <option key={slot} value={slot}>
                       {clockLabel(slot)}
                     </option>
@@ -273,7 +317,7 @@ export default function SearchPage() {
                   value={windowEnd}
                   onChange={(event) => setWindowEnd(event.target.value)}
                 >
-                  {TIME_SLOTS.map((slot) => (
+                  {[...new Set([...TIME_SLOTS, windowEnd])].sort().map((slot) => (
                     <option key={slot} value={slot}>
                       {clockLabel(slot)}
                     </option>
@@ -351,7 +395,14 @@ export default function SearchPage() {
                 ? "1 coincidencia encontrada"
                 : `${result.matches.length} coincidencias encontradas`}
             </h2>
-            {result.reason ? (
+            {result.matches.length === 0 && completedSearch?.outbound === false ? (
+              <EmptyState>
+                <span className="block font-medium text-foreground">
+                  Aún no hay un regreso compatible. Te incluiremos en el emparejamiento del regreso.
+                </span>
+                <span className="block text-xs">Tu alternativa: {completedSearch.fallback}</span>
+              </EmptyState>
+            ) : result.reason ? (
               <EmptyState>
                 <span className="block font-medium text-foreground">
                   {REASON_MESSAGES[result.reason]}

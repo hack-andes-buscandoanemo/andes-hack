@@ -68,11 +68,9 @@ export function dateLabel(date: string) {
   return `${weekday} ${day.getUTCDate()} de ${MONTHS[day.getUTCMonth()]}`;
 }
 
-// Moves a time of day, staying inside the slots the selects offer.
+// Moves a time of day without crossing midnight.
 export function shiftClock(time: string, minutes: number) {
   const total = Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5)) + minutes;
-  const first = Number(TIME_SLOTS[0]!.slice(0, 2)) * 60;
-  const last = Number(TIME_SLOTS.at(-1)!.slice(0, 2)) * 60 + 45;
-  const clamped = Math.min(Math.max(total, first), last);
+  const clamped = Math.min(Math.max(total, 0), 23 * 60 + 59);
   return `${String(Math.floor(clamped / 60)).padStart(2, "0")}:${String(clamped % 60).padStart(2, "0")}`;
 }
