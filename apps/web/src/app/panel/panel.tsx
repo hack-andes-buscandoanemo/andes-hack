@@ -262,7 +262,13 @@ export default function Panel() {
               </div>
             ))}
           </Block>
-        ) : null}
+        ) : (
+          <Block title="Optimizador vs. primero en llegar">
+            <p className="text-sm text-muted-foreground">
+              Aún no hay una comparación para esta comunidad.
+            </p>
+          </Block>
+        )}
       </div>
       <p className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
         <span>{`Actualizado a las ${limaClock.format(new Date(stats.updatedAt))} (hora del servidor)`}</span>

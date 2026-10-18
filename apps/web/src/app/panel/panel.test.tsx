@@ -103,6 +103,18 @@ describe("Panel", () => {
     expect(within(fcfs).getByText("Viajes en auto evitados").nextSibling).toHaveTextContent("5");
     expect(within(fcfs).getByText("Personas emparejadas").nextSibling).toHaveTextContent("7");
   });
+  it("says the comparison is missing until a matching run has been saved", async () => {
+    render(<Panel />);
+
+    const comparison = await screen.findByRole("region", {
+      name: "Optimizador vs. primero en llegar",
+    });
+
+    expect(
+      within(comparison).getByText("Aún no hay una comparación para esta comunidad."),
+    ).toBeInTheDocument();
+    expect(within(comparison).queryByRole("group")).not.toBeInTheDocument();
+  });
   it("finishes loading when there are no communities", async () => {
     communitiesResponse.mockResolvedValue([]);
     render(<Panel />);
