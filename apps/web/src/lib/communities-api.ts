@@ -25,6 +25,8 @@ export type MatchRunsResponse = components["schemas"]["MatchRunsResponse"];
 export type MatchSuggestion = components["schemas"]["MatchSuggestion"];
 export type MatchProposal = components["schemas"]["MatchProposal"];
 
+export type PublicStats = components["schemas"]["PublicStats"];
+
 export const communitiesApi = {
   async listCommunities(): Promise<CommunitySummary[]> {
     const response = await httpClient.get("/communities");
@@ -125,6 +127,12 @@ export const communitiesApi = {
     const response = await httpClient.post(
       `/offers/${offerId}/bookings` as "/offers/{id}/bookings",
       { message },
+    );
+    return response.data;
+  },
+  async getPublicStats(slug: string): Promise<PublicStats> {
+    const response = await httpClient.get(
+      `/public/communities/${slug}/stats` as "/public/communities/{slug}/stats",
     );
     return response.data;
   },
