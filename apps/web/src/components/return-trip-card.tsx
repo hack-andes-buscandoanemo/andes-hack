@@ -1,11 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { dateLabel, daysLabel } from "@/app/(app)/buscar/schedule";
+import { clockLabel, dateLabel, daysLabel } from "@/app/(app)/buscar/schedule";
 import { Button } from "@/components/ui/button";
 import type { MyTrip } from "@/lib/communities-api";
+
+import type { PairedReturn } from "./return-pairs";
 
 // The date or weekdays two calendars share, or null when they never meet.
 export function commonCalendar(...calendars: Pick<MyTrip, "date" | "daysOfWeek">[]) {
@@ -24,7 +27,13 @@ export function commonCalendar(...calendars: Pick<MyTrip, "date" | "daysOfWeek">
   return days?.length ? { date: null, days } : null;
 }
 
-export default function ReturnTripCard({ trip }: { trip: MyTrip }) {
+export default function ReturnTripCard({
+  trip,
+  returns = [],
+}: {
+  trip: MyTrip;
+  returns?: PairedReturn[];
+}) {
   const router = useRouter();
   const context = trip.passengerRequest;
   const [start, setStart] = useState(context?.returnWindow?.start ?? "");
@@ -40,10 +49,27 @@ export default function ReturnTripCard({ trip }: { trip: MyTrip }) {
   const calendar = commonCalendar(trip, context);
   if (!calendar) return null;
   const { date, days } = calendar;
-
   return (
     <section aria-label="¿Y el regreso?" className="space-y-3 rounded-2xl border bg-card p-4">
       <h2 className="text-lg font-bold">¿Y el regreso?</h2>
+      {returns.map(({ trip: acceptedReturn, label }) => (
+        <section
+          key={acceptedReturn.id}
+          aria-label={`Ida y regreso: ${label}`}
+          className="space-y-2 rounded-xl border p-3 text-sm"
+        >
+          <h3 className="font-bold">{`Ida y regreso: ${label}`}</h3>
+          <p>Ambos viajes aceptados para esta fecha o estos días.</p>
+          <div className="flex flex-col gap-2 font-bold underline">
+            <Link href={`/viajes/${trip.offerId}`}>
+              {`Ida · ${clockLabel(trip.time.slice(0, 5))}`}
+            </Link>
+            <Link href={`/viajes/${acceptedReturn.offerId}`}>
+              {`Regreso · ${clockLabel(acceptedReturn.time.slice(0, 5))}`}
+            </Link>
+          </div>
+        </section>
+      ))}
       <form
         className="space-y-3"
         onSubmit={(event) => {

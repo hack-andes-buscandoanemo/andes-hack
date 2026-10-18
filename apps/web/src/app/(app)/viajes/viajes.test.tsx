@@ -2,12 +2,16 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { MyTrip } from "@/lib/communities-api";
+
 const listMyTrips = vi.fn();
 const updateOfferStatus = vi.fn();
+const push = vi.fn();
 let tab: string | null = null;
 let roleParam: string | null = null;
 
 vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push }),
   useSearchParams: () => ({
     get: (key: string) => (key === "tab" ? tab : key === "role" ? roleParam : null),
   }),
@@ -58,14 +62,162 @@ const DRIVER_TRIP = {
   acceptedPassengers: ["Lucía R."],
 };
 
+const OUTBOUND: MyTrip = {
+  ...PASSENGER_TRIP,
+  passengerRequest: {
+    communityId: "33333333-3333-4333-8333-333333333333",
+    originZoneId: "la-molina",
+    date: null,
+    daysOfWeek: [1, 3],
+    fallbackMode: "public_transport",
+    returnWindow: { start: "18:00", end: "18:30" },
+  },
+};
+
+const RETURN: MyTrip = {
+  ...OUTBOUND,
+  id: "55555555-5555-4555-8555-555555555555",
+  offerId: "66666666-6666-4666-8666-666666666666",
+  direction: "return",
+  time: "18:10:00",
+  daysOfWeek: [3, 4],
+  passengerRequest: { ...OUTBOUND.passengerRequest!, daysOfWeek: [3, 5] },
+};
+
 beforeEach(() => {
   tab = null;
   roleParam = null;
   listMyTrips.mockReset().mockResolvedValue({ trips: [PASSENGER_TRIP] });
   updateOfferStatus.mockReset();
+  push.mockReset();
 });
 
 describe("Viajes", () => {
+  it.each([
+    ["pending", { ...RETURN, status: "pending" }],
+    ["driver", { ...RETURN, role: "driver" }],
+    ["outbound", { ...RETURN, direction: "outbound", passengerRequest: undefined }],
+    ["missing passenger context", { ...RETURN, passengerRequest: undefined }],
+    [
+      "another community",
+      { ...RETURN, passengerRequest: { ...RETURN.passengerRequest!, communityId: "other" } },
+    ],
+    [
+      "another zone",
+      { ...RETURN, passengerRequest: { ...RETURN.passengerRequest!, originZoneId: "other" } },
+    ],
+    ["unsupported return offer days", { ...RETURN, daysOfWeek: [2, 4] }],
+    [
+      "unsupported return request days",
+      { ...RETURN, passengerRequest: { ...RETURN.passengerRequest!, daysOfWeek: [5] } },
+    ],
+    [
+      "return offer outside the request date",
+      {
+        ...RETURN,
+        passengerRequest: { ...RETURN.passengerRequest!, date: "2099-03-02", daysOfWeek: null },
+      },
+    ],
+    [
+      "conflicting one-off return calendars",
+      {
+        ...RETURN,
+        date: "2099-03-02",
+        daysOfWeek: null,
+        passengerRequest: { ...RETURN.passengerRequest!, date: "2099-03-04", daysOfWeek: null },
+      },
+    ],
+  ] satisfies [string, MyTrip][])(
+    "keeps %s trips separate from the accepted ida",
+    async (_, trip) => {
+      listMyTrips.mockResolvedValue({ trips: [OUTBOUND, trip] });
+      render(<Viajes />);
+
+      await screen.findByRole("region", { name: "¿Y el regreso?" });
+      expect(screen.queryByRole("region", { name: /^Ida y regreso:/ })).not.toBeInTheDocument();
+      expect(screen.getAllByRole("listitem")).toHaveLength(2);
+    },
+  );
+
+  it("keeps accepted trips on different dates separate", async () => {
+    listMyTrips.mockResolvedValue({
+      trips: [
+        {
+          ...OUTBOUND,
+          date: "2099-03-02",
+          daysOfWeek: null,
+          passengerRequest: { ...OUTBOUND.passengerRequest!, date: "2099-03-02", daysOfWeek: null },
+        },
+        {
+          ...RETURN,
+          date: "2099-03-04",
+          daysOfWeek: null,
+          passengerRequest: { ...RETURN.passengerRequest!, date: "2099-03-04", daysOfWeek: null },
+        },
+      ],
+    });
+    render(<Viajes />);
+
+    await screen.findByRole("region", { name: "¿Y el regreso?" });
+    expect(screen.queryByRole("region", { name: /^Ida y regreso:/ })).not.toBeInTheDocument();
+  });
+
+  it("does not pair a return that leaves before the outward trip", async () => {
+    listMyTrips.mockResolvedValue({ trips: [OUTBOUND, { ...RETURN, time: "06:00:00" }] });
+    render(<Viajes />);
+
+    await screen.findByRole("region", { name: "¿Y el regreso?" });
+    expect(screen.queryByRole("region", { name: /^Ida y regreso:/ })).not.toBeInTheDocument();
+  });
+
+  it("links a dated return to a recurring outward trip only on its effective date", async () => {
+    listMyTrips.mockResolvedValue({
+      trips: [
+        OUTBOUND,
+        {
+          ...RETURN,
+          date: "2099-03-02",
+          daysOfWeek: null,
+          passengerRequest: { ...RETURN.passengerRequest!, date: "2099-03-02", daysOfWeek: null },
+        },
+      ],
+    });
+    render(<Viajes />);
+
+    const pair = await screen.findByRole("region", { name: "Ida y regreso: Lunes 2 de marzo" });
+    expect(within(pair).getByRole("link", { name: "Regreso · 6:10 p. m." })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Ida y regreso: Lunes y miércoles" })).toBeNull();
+  });
+
+  it("shows accepted ida and regreso together only for their common effective days", async () => {
+    listMyTrips.mockResolvedValue({ trips: [OUTBOUND, RETURN] });
+    render(<Viajes />);
+
+    const pair = await screen.findByRole("region", { name: "Ida y regreso: Miércoles" });
+    expect(within(pair).getByRole("link", { name: "Ida · 7:29 a. m." })).toHaveAttribute(
+      "href",
+      `/viajes/${OFFER_ID}`,
+    );
+    expect(within(pair).getByRole("link", { name: "Regreso · 6:10 p. m." })).toHaveAttribute(
+      "href",
+      "/viajes/66666666-6666-4666-8666-666666666666",
+    );
+    expect(within(pair).queryByText(/Lunes|Jueves|Viernes/)).not.toBeInTheDocument();
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+  });
+
+  it("offers return coordination after an accepted outward trip", async () => {
+    listMyTrips.mockResolvedValue({ trips: [OUTBOUND] });
+    render(<Viajes />);
+
+    const coordination = await screen.findByRole("region", { name: "¿Y el regreso?" });
+    expect(within(coordination).getByText("Lunes y miércoles")).toBeInTheDocument();
+    await userEvent.click(within(coordination).getByRole("button", { name: "Buscar regreso" }));
+    expect(push).toHaveBeenCalledWith(
+      "/buscar?direction=return&communityId=33333333-3333-4333-8333-333333333333&originZoneId=la-molina&windowStart=18%3A00&windowEnd=18%3A30&fallbackMode=public_transport&daysOfWeek=1%2C3",
+    );
+  });
+
   it("shows an accepted trip under Próximos with its meeting point, driver and plate", async () => {
     render(<Viajes />);
 

@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import EmptyState from "@/components/empty-state";
+import { pairReturns, type PairedReturn } from "@/components/return-pairs";
+import ReturnTripCard from "@/components/return-trip-card";
 import { FUEL_NOTE, FuelShareLine } from "@/components/fuel-estimate";
 import { Button } from "@/components/ui/button";
 import { communitiesApi, type MyTrip } from "@/lib/communities-api";
@@ -26,10 +28,14 @@ function TripCard({
   trip,
   busy,
   onToggle,
+  coordinateReturn,
+  returns,
 }: {
   trip: MyTrip;
   busy: boolean;
   onToggle: (trip: MyTrip) => void;
+  coordinateReturn: boolean;
+  returns: PairedReturn[];
 }) {
   const outbound = trip.direction === "outbound";
   const from = outbound ? trip.originZoneName : trip.destinationName;
@@ -86,6 +92,7 @@ function TripCard({
           {trip.status === "paused" ? "Reactivar" : "Pausar"}
         </Button>
       ) : null}
+      {coordinateReturn ? <ReturnTripCard trip={trip} returns={returns} /> : null}
     </li>
   );
 }
@@ -136,6 +143,9 @@ export default function Viajes() {
       active = false;
     };
   }, [role, scope, attempt]);
+
+  // Pair outbound and return once per list, not once per card.
+  const returnsByTrip = useMemo(() => pairReturns(trips ?? []), [trips]);
 
   async function toggle(trip: MyTrip) {
     if (togglingId) return;
@@ -251,6 +261,8 @@ export default function Viajes() {
                   trip={trip}
                   busy={togglingId === trip.id}
                   onToggle={toggle}
+                  coordinateReturn={scope === "upcoming"}
+                  returns={returnsByTrip.get(trip.id) ?? []}
                 />
               ))}
             </ul>
