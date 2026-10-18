@@ -76,9 +76,58 @@ describe("impact of a community's shared trips", () => {
     expect(metrics.netCarTripsAvoided).toBe(0);
   });
 
-  it("induces no car trip for a driver nobody rides with", () => {
+  it("leaves out passengers still waiting, turned down or cancelled", () => {
     const metrics = measureImpact({
-      offers: [offer([], { driverUsualMode: "public_transport" })],
+      offers: [
+        offer([
+          seat({ status: "accepted" }),
+          seat({ status: "pending" }),
+          seat({ status: "rejected" }),
+          seat({ status: "cancelled_by_passenger" }),
+          seat({ status: "cancelled_by_driver" }),
+        ]),
+      ],
+      openNeeds: [],
+    });
+
+    expect(metrics.peopleTransported).toBe(1);
+    expect(metrics.carTripsAvoided.potential.trips).toBe(1);
+  });
+
+  it("verifies only the car trips avoided whose trip was completed", () => {
+    const metrics = measureImpact({
+      offers: [
+        offer([
+          seat({ status: "completed", datePassed: true }),
+          seat({ status: "no_show", datePassed: true }),
+          seat({ status: "accepted" }),
+        ]),
+      ],
+      openNeeds: [],
+    });
+
+    expect(metrics.peopleTransported).toBe(3);
+    expect(metrics.carTripsAvoided.potential.trips).toBe(3);
+    expect(metrics.carTripsAvoided.verified.trips).toBe(1);
+  });
+
+  it("leaves out every trip with a team account on either side", () => {
+    const metrics = measureImpact({
+      offers: [
+        offer([seat(), seat({ passengerIsTeam: true })]),
+        offer([seat()], { driverIsTeam: true, driverUsualMode: "public_transport" }),
+      ],
+      openNeeds: [],
+    });
+
+    expect(metrics.peopleTransported).toBe(1);
+    expect(metrics.carTripsAvoided.potential.trips).toBe(1);
+    expect(metrics.carTripsInduced).toBe(0);
+  });
+
+  it("induces no car trip for a driver whose passengers are not accepted yet", () => {
+    const metrics = measureImpact({
+      offers: [offer([seat({ status: "pending" })], { driverUsualMode: "public_transport" })],
       openNeeds: [],
     });
 

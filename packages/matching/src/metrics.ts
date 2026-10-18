@@ -80,17 +80,29 @@ const avoidsCarTrip = (seat: SeatActivity) =>
 const madeTripByCar = (mode: UsualMode | null) =>
   mode === "drove_alone" || mode === "drove_with_others" || mode === "taxi_app";
 
+// Bookings the driver accepted and nobody cancelled, whether or not the trip took place.
+const acceptedStatuses: readonly BookingStatus[] = ["accepted", "completed", "no_show"];
+
+// Team accounts never count, as a driver or as a passenger: the rubric does not take them
+// as evidence of real use.
+const acceptedSeats = (offer: OfferActivity) =>
+  offer.seats.filter((seat) => acceptedStatuses.includes(seat.status) && !seat.passengerIsTeam);
+
 export function measureImpact(activity: CommunityActivity): ImpactMetrics {
-  const seats = activity.offers.flatMap((offer) => offer.seats);
+  const offers = activity.offers.filter((offer) => !offer.driverIsTeam);
+  const seats = offers.flatMap(acceptedSeats);
   const avoided = seats.filter(avoidsCarTrip).length;
-  const induced = activity.offers.filter(
-    (offer) => offer.seats.length > 0 && !madeTripByCar(offer.driverUsualMode),
+  const verified = seats.filter(
+    (seat) => seat.status === "completed" && avoidsCarTrip(seat),
+  ).length;
+  const induced = offers.filter(
+    (offer) => acceptedSeats(offer).length > 0 && !madeTripByCar(offer.driverUsualMode),
   ).length;
   return {
     peopleTransported: seats.length,
     carTripsAvoided: {
       potential: { trips: avoided, km: 0, co2Kg: 0 },
-      verified: { trips: 0, km: 0, co2Kg: 0 },
+      verified: { trips: verified, km: 0, co2Kg: 0 },
     },
     carTripsInduced: induced,
     netCarTripsAvoided: avoided - induced,
