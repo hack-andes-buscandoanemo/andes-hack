@@ -2036,11 +2036,11 @@ export interface components {
             photoUrl: string | null;
         };
         UpdateMembershipRequest: {
-            consentAccepted: boolean;
+            consentAccepted?: boolean;
             /** @enum {string} */
             usualMode: "drove_alone" | "drove_with_others" | "car_passenger" | "public_transport" | "taxi_app" | "other";
             /** @enum {string} */
-            travelRole: "driver" | "passenger" | "both";
+            travelRole?: "driver" | "passenger" | "both";
             alias?: string;
         };
         TravelPreferencesResponse: components["schemas"]["TravelPreferences"] & {

@@ -329,19 +329,28 @@ export const deleteMyProfilePhotoRoute = createRoute({
   },
 });
 
+// Onboarding sends the consent and the travel role; "Editar perfil" (US-035) sends neither and
+// keeps the consent already given.
 export const UpdateMembershipBodySchema = z
   .object({
-    consentAccepted: z.boolean().refine((value) => value === true, {
-      message: "Debes aceptar las condiciones para continuar.",
-    }),
+    consentAccepted: z
+      .boolean()
+      .refine((value) => value === true, {
+        message: "Debes aceptar las condiciones para continuar.",
+      })
+      .optional(),
     usualMode: UsualModeSchema,
-    travelRole: TravelRoleSchema,
+    travelRole: TravelRoleSchema.optional(),
     alias: z
       .string()
       .trim()
       .min(2, "El nombre visible debe tener entre 2 y 30 caracteres.")
       .max(30, "El nombre visible debe tener entre 2 y 30 caracteres.")
       .optional(),
+  })
+  .refine((body) => !body.consentAccepted || body.travelRole, {
+    message: "Elige si viajarás como conductor, pasajero o ambos.",
+    path: ["travelRole"],
   })
   .openapi("UpdateMembershipRequest");
 

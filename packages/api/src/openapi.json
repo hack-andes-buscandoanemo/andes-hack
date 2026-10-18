@@ -453,9 +453,7 @@
           }
         },
         "required": [
-          "consentAccepted",
-          "usualMode",
-          "travelRole"
+          "usualMode"
         ]
       },
       "TravelPreferencesResponse": {

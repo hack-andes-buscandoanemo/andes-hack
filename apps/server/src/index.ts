@@ -758,7 +758,7 @@ export function createApp(deps: AppDeps = {}) {
     }
 
     const [existing] = await database
-      .select({ id: communityMember.id })
+      .select({ id: communityMember.id, consentAt: communityMember.consentAt })
       .from(communityMember)
       .where(
         and(eq(communityMember.communityId, org.id), eq(communityMember.userId, sessionUser.id)),
@@ -771,12 +771,18 @@ export function createApp(deps: AppDeps = {}) {
       });
     }
 
+    if (!body.consentAccepted && !existing.consentAt) {
+      throw new ApiError(422, "Debes aceptar las condiciones para continuar.", {
+        code: "consent_required",
+      });
+    }
+
     const consentTime = getNow();
     const [updated] = await database
       .update(communityMember)
       .set({
-        consentVersion: "v1",
-        consentAt: consentTime,
+        // A profile edit sends no consent and keeps the one already given.
+        ...(body.consentAccepted ? { consentVersion: "v1", consentAt: consentTime } : {}),
         usualMode: body.usualMode,
         travelRole: body.travelRole,
         alias: body.alias ?? null,
