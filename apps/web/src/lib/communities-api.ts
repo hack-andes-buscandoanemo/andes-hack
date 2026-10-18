@@ -17,6 +17,7 @@ export type SearchTripsResponse = components["schemas"]["SearchTripsResponse"];
 export type TripMatch = components["schemas"]["TripMatch"];
 export type OfferDetail = components["schemas"]["OfferDetail"];
 export type RequestSeatResponse = components["schemas"]["RequestSeatResponse"];
+export type CancelBookingResponse = components["schemas"]["CancelBookingResponse"];
 
 export const communitiesApi = {
   async listCommunities(): Promise<CommunitySummary[]> {
@@ -118,6 +119,12 @@ export const communitiesApi = {
     const response = await httpClient.post(
       `/offers/${offerId}/bookings` as "/offers/{id}/bookings",
       { message },
+    );
+    return response.data;
+  },
+  async cancelBooking(bookingId: string): Promise<CancelBookingResponse> {
+    const response = await httpClient.post(
+      `/bookings/${bookingId}/cancel` as "/bookings/{id}/cancel",
     );
     return response.data;
   },

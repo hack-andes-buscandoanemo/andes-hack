@@ -8,7 +8,7 @@ import EmptyState from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import { communitiesApi, type OfferDetail } from "@/lib/communities-api";
 
-import { clockLabel } from "../../buscar/schedule";
+import { clockLabel, dateLabel, daysLabel } from "../../buscar/schedule";
 
 function initialsOf(name: string) {
   return name
@@ -25,16 +25,12 @@ function reasonOf(failure: unknown, fallback: string) {
   return typeof reason === "string" ? reason : fallback;
 }
 
-// ISO weekdays: [1,2,3,4,5] -> "Lunes a viernes".
-function daysLabel(days: number[]) {
-  return days.join() === "1,2,3,4,5" ? "Lunes a viernes" : days.join(", ");
-}
-
 export default function TripDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [detail, setDetail] = useState<OfferDetail | null>(null);
   const [message, setMessage] = useState("");
-  const [sent, setSent] = useState(false);
+  const [sentId, setSentId] = useState<string | null>(null);
+  const [withdrawn, setWithdrawn] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -69,13 +65,29 @@ export default function TripDetailPage() {
   }
   if (!detail) return null;
 
+  const pendingId = withdrawn
+    ? null
+    : (sentId ?? (detail.booking?.status === "pending" ? detail.booking.id : null));
+
+  async function withdraw(bookingId: string) {
+    setError(null);
+    try {
+      await communitiesApi.cancelBooking(bookingId);
+      setSentId(null);
+      setWithdrawn(true);
+    } catch (failure) {
+      setError(reasonOf(failure, "No pudimos retirar tu solicitud. Inténtalo de nuevo."));
+    }
+  }
+
   async function submit() {
     if (sending) return;
     setSending(true);
     setError(null);
     try {
-      await communitiesApi.requestSeat(id, message || undefined);
-      setSent(true);
+      const { booking } = await communitiesApi.requestSeat(id, message || undefined);
+      setSentId(booking.id);
+      setWithdrawn(false);
     } catch (failure) {
       setError(reasonOf(failure, "No pudimos enviar tu solicitud. Inténtalo de nuevo."));
     } finally {
@@ -87,9 +99,24 @@ export default function TripDetailPage() {
   if (detail.isOwn) action = null;
   else if (detail.booking?.status === "accepted")
     action = <EmptyState>{`${detail.driverName} aceptó tu solicitud.`}</EmptyState>;
-  else if (sent || detail.booking?.status === "pending")
+  else if (pendingId)
     action = (
-      <EmptyState>{`Solicitud enviada. Te avisaremos cuando ${detail.driverName} responda.`}</EmptyState>
+      <div className="space-y-2">
+        <EmptyState>{`Solicitud enviada. Te avisaremos cuando ${detail.driverName} responda.`}</EmptyState>
+        {error ? (
+          <p role="alert" className="text-sm font-medium text-destructive">
+            {error}
+          </p>
+        ) : null}
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 w-full rounded-xl font-bold"
+          onClick={() => void withdraw(pendingId)}
+        >
+          Retirar solicitud
+        </Button>
+      </div>
     );
   else if (detail.seatsFree <= 0)
     action = <EmptyState>Este viaje ya no tiene asientos libres.</EmptyState>;
@@ -102,6 +129,7 @@ export default function TripDetailPage() {
           void submit();
         }}
       >
+        {withdrawn ? <p className="text-sm font-medium">Retiraste tu solicitud.</p> : null}
         <label className="block space-y-1 text-sm font-medium">
           Mensaje para el conductor (opcional)
           <textarea
@@ -146,7 +174,11 @@ export default function TripDetailPage() {
       </section>
       <section className="space-y-1 rounded-2xl border bg-card p-4 shadow-sm">
         <p className="font-semibold">{`${from} → ${to}`}</p>
-        {detail.daysOfWeek ? <p className="text-sm">{daysLabel(detail.daysOfWeek)}</p> : null}
+        {detail.daysOfWeek ? (
+          <p className="text-sm">{`Viaje recurrente: ${daysLabel(detail.daysOfWeek)}`}</p>
+        ) : detail.date ? (
+          <p className="text-sm">{dateLabel(detail.date)}</p>
+        ) : null}
         <p className="text-sm">{`Salida: ${clockLabel(detail.departureTime.slice(0, 5))}`}</p>
         {match ? (
           <>

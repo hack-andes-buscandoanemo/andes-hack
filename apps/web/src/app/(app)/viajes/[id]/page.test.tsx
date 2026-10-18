@@ -5,12 +5,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getOfferDetail = vi.fn();
 const requestSeat = vi.fn();
+const cancelBooking = vi.fn();
 
 vi.mock("next/navigation", () => ({ useParams: () => ({ id: OFFER_ID }) }));
 vi.mock("@/lib/communities-api", () => ({
   communitiesApi: {
     getOfferDetail: (...args: unknown[]) => getOfferDetail(...args),
     requestSeat: (...args: unknown[]) => requestSeat(...args),
+    cancelBooking: (...args: unknown[]) => cancelBooking(...args),
   },
 }));
 
@@ -20,6 +22,7 @@ const OFFER_ID = "22222222-2222-4222-8222-222222222222";
 
 const DETAIL = {
   offerId: OFFER_ID,
+  status: "active" as const,
   driverName: "Mateo Q.",
   communityName: "Comunidad Alfa",
   originZoneName: "La Molina",
@@ -50,6 +53,7 @@ function serverError(status: number, error: string) {
 beforeEach(() => {
   getOfferDetail.mockReset().mockResolvedValue(DETAIL);
   requestSeat.mockReset();
+  cancelBooking.mockReset();
 });
 
 describe("trip detail /viajes/{id} (US-014)", () => {
@@ -60,7 +64,7 @@ describe("trip detail /viajes/{id} (US-014)", () => {
     expect(screen.getAllByText("Miembro verificado").length).toBeGreaterThan(0);
     expect(screen.getByText("Comunidad Alfa")).toBeTruthy();
     expect(screen.getByText("La Molina → Centro Empresarial Real")).toBeTruthy();
-    expect(screen.getByText("Lunes a viernes")).toBeTruthy();
+    expect(screen.getByText("Viaje recurrente: Lunes a viernes")).toBeTruthy();
     expect(screen.getByText("Salida: 7:00 a. m.")).toBeTruthy();
     expect(screen.getByText("Llegada estimada: 7:44 a. m.")).toBeTruthy();
     expect(screen.getByText("3 asientos disponibles")).toBeTruthy();
@@ -72,6 +76,21 @@ describe("trip detail /viajes/{id} (US-014)", () => {
     expect(screen.getByText("Puedes cancelar cuando quieras")).toBeTruthy();
     expect(screen.getByText("Estación San Borja Sur (Línea 1)")).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/ABC123/);
+  });
+
+  it("shows the date of a one-off trip instead of recurring days", async () => {
+    getOfferDetail.mockResolvedValue({ ...DETAIL, daysOfWeek: null, date: "2026-10-20" });
+    render(<TripDetailPage />);
+
+    expect(await screen.findByText("Martes 20 de octubre")).toBeTruthy();
+    expect(screen.queryByText(/Viaje recurrente/)).toBeNull();
+  });
+
+  it("names the days of an irregular recurring trip", async () => {
+    getOfferDetail.mockResolvedValue({ ...DETAIL, daysOfWeek: [5, 1, 3] });
+    render(<TripDetailPage />);
+
+    expect(await screen.findByText("Viaje recurrente: Lunes, miércoles y viernes")).toBeTruthy();
   });
 
   it("explains that the plate appears once the driver accepts, and shows it afterwards", async () => {
@@ -151,6 +170,34 @@ describe("trip detail /viajes/{id} (US-014)", () => {
       await screen.findByText("Solicitud enviada. Te avisaremos cuando Mateo Q. responda."),
     ).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Solicitar asiento" })).toBeNull();
+  });
+
+  it("lets the passenger withdraw a pending request and ask again", async () => {
+    getOfferDetail.mockResolvedValue({ ...DETAIL, booking: { id: "b-1", status: "pending" } });
+    cancelBooking.mockResolvedValue({ booking: { id: "b-1", status: "cancelled_by_passenger" } });
+    const user = userEvent.setup();
+    render(<TripDetailPage />);
+
+    await user.click(await screen.findByRole("button", { name: "Retirar solicitud" }));
+
+    expect(await screen.findByText("Retiraste tu solicitud.")).toBeTruthy();
+    expect(cancelBooking).toHaveBeenCalledWith("b-1");
+    expect(screen.getByRole("button", { name: "Solicitar asiento" })).toBeTruthy();
+    expect(screen.queryByText(/Solicitud enviada/)).toBeNull();
+  });
+
+  it("keeps the request and says why when it cannot be withdrawn", async () => {
+    getOfferDetail.mockResolvedValue({ ...DETAIL, booking: { id: "b-1", status: "pending" } });
+    cancelBooking.mockRejectedValue(serverError(409, "Esta solicitud ya no se puede retirar."));
+    const user = userEvent.setup();
+    render(<TripDetailPage />);
+
+    await user.click(await screen.findByRole("button", { name: "Retirar solicitud" }));
+
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "Esta solicitud ya no se puede retirar.",
+    );
+    expect(screen.getByText(/Solicitud enviada/)).toBeTruthy();
   });
 
   it("says the trip is full instead of offering a request when no seat is free", async () => {
