@@ -96,6 +96,8 @@ flowchart TD
 | **7** | **Chat del viaje**                     |    Ambos     | Coordinar hora y punto de encuentro entre el conductor y los pasajeros aceptados.                                                                                    |
 | **8** | **Perfil y seguridad**                 |    Ambos     | Verificación, foto, modo habitual, **mi impacto**, enlace para compartir el viaje y eliminar mis datos.                                                              |
 
+Desde **Viajes** (`/viajes`), el pasajero puede cancelar su asiento y el conductor, el viaje. Si el conductor cancela, el pasajero ve los viajes alternativos compatibles.
+
 Además hay tres páginas públicas: **`/panel`**, el impacto de la comunidad; **`/datos`**, cada cifra con su fuente o supuesto; e **`/instituciones`**, la lista de espera para organizaciones.
 
 ---
