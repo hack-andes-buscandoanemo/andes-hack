@@ -345,6 +345,79 @@
           "travelRole"
         ]
       },
+      "TravelPreferencesResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/TravelPreferences"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "message"
+            ]
+          }
+        ]
+      },
+      "TravelPreferences": {
+        "type": "object",
+        "properties": {
+          "identifiesAsWoman": {
+            "type": "boolean"
+          },
+          "womenOnly": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "identifiesAsWoman",
+          "womenOnly"
+        ]
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "status": {
+            "type": "integer"
+          },
+          "error": {
+            "type": "string"
+          },
+          "details": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "code"
+            ],
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "success",
+          "status",
+          "error"
+        ]
+      },
       "VehiclesResponse": {
         "type": "object",
         "properties": {
@@ -798,46 +871,6 @@
           "walkMinutes"
         ]
       },
-      "ApiError": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "enum": [
-              false
-            ]
-          },
-          "status": {
-            "type": "integer"
-          },
-          "error": {
-            "type": "string"
-          },
-          "details": {
-            "type": "object",
-            "properties": {
-              "code": {
-                "type": "string"
-              },
-              "fields": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              }
-            },
-            "required": [
-              "code"
-            ],
-            "additionalProperties": {}
-          }
-        },
-        "required": [
-          "success",
-          "status",
-          "error"
-        ]
-      },
       "SearchTripsRequest": {
         "type": "object",
         "properties": {
@@ -897,8 +930,7 @@
             ]
           },
           "womenOnly": {
-            "type": "boolean",
-            "default": false
+            "type": "boolean"
           }
         },
         "required": [
@@ -2205,6 +2237,75 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MembershipSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/communities/{id}/preferences": {
+      "put": {
+        "tags": [
+          "Comunidades"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TravelPreferences"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Preferencias de viaje guardadas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TravelPreferencesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No hay sesión iniciada (`unauthorized`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro de la comunidad (`community_membership_required`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Solo mujeres sin confirmar que se identifica como mujer (`women_only_requires_declaration`), o datos no válidos (`validation_error`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }

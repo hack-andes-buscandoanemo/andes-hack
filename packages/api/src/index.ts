@@ -263,32 +263,6 @@ export const TravelPreferencesResponseSchema = TravelPreferencesSchema.extend({
   message: z.string(),
 }).openapi("TravelPreferencesResponse");
 
-export const updateTravelPreferencesRoute = createRoute({
-  method: "put",
-  path: "/communities/{id}/preferences",
-  tags: ["Comunidades"],
-  request: {
-    params: JoinCommunityParamsSchema,
-    body: {
-      content: {
-        "application/json": {
-          schema: TravelPreferencesSchema,
-        },
-      },
-    },
-  },
-  responses: {
-    200: {
-      description: "Preferencias de viaje guardadas",
-      content: {
-        "application/json": {
-          schema: TravelPreferencesResponseSchema,
-        },
-      },
-    },
-  },
-});
-
 export function normalizePlate(raw: string): string {
   return raw.replace(/[\s-]+/g, "").toUpperCase();
 }
@@ -656,6 +630,37 @@ export const ApiErrorSchema = z
 const apiErrorResponse = (description: string) => ({
   description,
   content: { "application/json": { schema: ApiErrorSchema } },
+});
+
+export const updateTravelPreferencesRoute = createRoute({
+  method: "put",
+  path: "/communities/{id}/preferences",
+  tags: ["Comunidades"],
+  request: {
+    params: JoinCommunityParamsSchema,
+    body: {
+      content: {
+        "application/json": {
+          schema: TravelPreferencesSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Preferencias de viaje guardadas",
+      content: {
+        "application/json": {
+          schema: TravelPreferencesResponseSchema,
+        },
+      },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    403: apiErrorResponse("No es miembro de la comunidad (`community_membership_required`)"),
+    422: apiErrorResponse(
+      "Solo mujeres sin confirmar que se identifica como mujer (`women_only_requires_declaration`), o datos no válidos (`validation_error`)",
+    ),
+  },
 });
 
 const BookingStatusSchema = z.enum([
@@ -1234,6 +1239,7 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   verifyEmailCommunityRoute,
   getMeRoute,
   updateMembershipRoute,
+  updateTravelPreferencesRoute,
   listVehiclesRoute,
   createVehicleRoute,
   listCommunityZonesRoute,
