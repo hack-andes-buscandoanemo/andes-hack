@@ -36,6 +36,7 @@ export default function SearchPage() {
   const [womenOnly, setWomenOnly] = useState(false);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dateError, setDateError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const membership = memberships.find((item) => item.communityId === communityId) ?? null;
@@ -87,7 +88,16 @@ export default function SearchPage() {
       setError("Selecciona tu zona.");
       return;
     }
+    if (dayChoice === "other" && !otherDate) {
+      setDateError("Elige la fecha del viaje.");
+      return;
+    }
+    if (dayChoice === "days" && days.length === 0) {
+      setDateError("Elige al menos un día.");
+      return;
+    }
     setError(null);
+    setDateError(null);
     setSearching(true);
     setResult(null);
     try {
@@ -224,6 +234,7 @@ export default function SearchPage() {
             onChange={(event) => setOtherDate(event.target.value)}
           />
         ) : null}
+        {dateError ? <p className="text-sm font-medium text-destructive">{dateError}</p> : null}
         {dayChoice === "days" ? (
           <div role="group" aria-label="Días" className="flex gap-1">
             {WEEKDAYS.map((day) => (

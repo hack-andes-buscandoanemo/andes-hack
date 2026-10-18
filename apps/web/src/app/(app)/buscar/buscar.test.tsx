@@ -410,4 +410,28 @@ describe("search page /buscar (US-013)", () => {
       "No pudimos cargar tu cuenta. Inténtalo de nuevo.",
     );
   });
+
+  it("asks for the date before searching another day", async () => {
+    const user = userEvent.setup();
+    render(<BuscarPage />);
+    await pickSanBorja(user);
+
+    await user.selectOptions(screen.getByLabelText("Fecha"), "Otra fecha");
+    await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
+
+    expect(screen.getByText("Elige la fecha del viaje.")).toBeInTheDocument();
+    expect(searchTrips).not.toHaveBeenCalled();
+  });
+
+  it("asks for at least one weekday before searching a recurring trip", async () => {
+    const user = userEvent.setup();
+    render(<BuscarPage />);
+    await pickSanBorja(user);
+
+    await user.selectOptions(screen.getByLabelText("Fecha"), "Días de la semana");
+    await user.click(screen.getByRole("button", { name: "Buscar coincidencias" }));
+
+    expect(screen.getByText("Elige al menos un día.")).toBeInTheDocument();
+    expect(searchTrips).not.toHaveBeenCalled();
+  });
 });
