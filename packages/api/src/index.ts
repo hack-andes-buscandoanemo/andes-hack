@@ -55,6 +55,7 @@ export const CommunityKindSchema = z.enum(["company", "university", "public_enti
 export const CommunitySummarySchema = z
   .object({
     id: z.string().uuid(),
+    slug: z.string(),
     name: z.string(),
     kind: CommunityKindSchema,
     isDemo: z.boolean(),
@@ -1080,6 +1081,71 @@ export const waitlistSummaryRoute = createRoute({
   },
 });
 
+export const PublicStatsParamsSchema = z.object({
+  slug: z.string().openapi({ param: { name: "slug", in: "path" } }),
+});
+
+const CarTripsAvoidedSchema = z.object({
+  trips: z.number().int(),
+  km: z.number(),
+  co2Kg: z.number(),
+});
+
+const PublicStrategyCountsSchema = z.object({
+  carTripsAvoided: z.number().int(),
+  passengersMatched: z.number().int(),
+});
+
+export const PublicStatsSchema = z
+  .object({
+    community: z.object({ name: z.string(), isDemo: z.boolean() }),
+    updatedAt: z.string().datetime(),
+    activity: z.object({
+      enrolled: z.number().int(),
+      drivers: z.number().int(),
+      activeOffers: z.number().int(),
+      openNeeds: z.number().int(),
+      // Share of open needs with a compatible offer, from 0 to 1; null while there are none.
+      coverage: z.number().nullable(),
+      acceptedRequests: z.number().int(),
+      completedTrips: z.number().int(),
+    }),
+    waitlist: z.object({ institutions: z.number().int(), individuals: z.number().int() }),
+    comparison: z
+      .object({
+        date: z.string(),
+        direction: z.enum(["outbound", "return"]),
+        optimizer: PublicStrategyCountsSchema,
+        firstComeFirstServed: PublicStrategyCountsSchema,
+      })
+      .nullable(),
+    // People who travel from each district; null stands for "menos de 10" (k ≥ 10, US-029).
+    districts: z.array(z.object({ district: z.string(), people: z.number().int().nullable() })),
+    people: z.object({ transported: z.number().int(), fromPublicTransport: z.number().int() }),
+    vehicleImpact: z.object({
+      potential: CarTripsAvoidedSchema,
+      verified: CarTripsAvoidedSchema,
+      induced: z.number().int(),
+      net: z.number().int(),
+    }),
+  })
+  .openapi("PublicStats");
+
+export const publicStatsRoute = createRoute({
+  method: "get",
+  path: "/public/communities/{slug}/stats",
+  tags: ["Público"],
+  request: { params: PublicStatsParamsSchema },
+  responses: {
+    200: {
+      description: "Cifras de impacto de la comunidad, sin cuentas del equipo ni datos personales",
+      content: { "application/json": { schema: PublicStatsSchema } },
+    },
+    404: apiErrorResponse("Comunidad no encontrada"),
+    429: apiErrorResponse("Demasiadas consultas desde la misma IP"),
+  },
+});
+
 const dataSourceFields = {
   id: z.string(),
   topic: z.enum(["tiempos", "impacto", "contexto"]),
@@ -1145,6 +1211,7 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   listProposalsRoute,
   joinWaitlistRoute,
   waitlistSummaryRoute,
+  publicStatsRoute,
   dataSourcesRoute,
 ];
 
