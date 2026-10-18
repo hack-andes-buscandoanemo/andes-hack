@@ -292,6 +292,7 @@ andes-hack/
 - `bun db:generate` - Generate database migrations
 - `bun db:migrate` - Run database migrations
 - `bun db:seed` - Load the real Lima places and the demo community (idempotent; needs `DEMO_JOIN_CODE` and `DEMO_ADMIN_EMAIL`)
+- `bun db:seed:mock` - Fill the app with fictional people, trips, needs and seat requests (accounts `@mock.tejalo.test`, no password; idempotent; needs `db:seed` first). `bun run db:seed:mock -- --remove` takes them all out.
 
 ## Better Fullstack project context
 

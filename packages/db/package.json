@@ -16,6 +16,7 @@
     "db:studio": "drizzle-kit studio",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "bun src/seed/index.ts",
+    "db:seed:mock": "bun src/seed/mock.ts",
     "test": "vitest run"
   },
   "dependencies": {
