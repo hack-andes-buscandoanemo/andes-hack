@@ -1,5 +1,5 @@
 {
-  "id": "eb189365-21aa-42bc-a61a-39bd36360970",
+  "id": "bc1d8af3-ad7f-4e7c-a4f8-7a93a3e61d8c",
   "prevId": "09a06024-4fa7-4879-9098-89738cb90bfa",
   "version": "7",
   "dialect": "postgresql",
@@ -876,7 +876,7 @@
           "tableTo": "trip_offer",
           "columnsFrom": ["offer_id"],
           "columnsTo": ["id"],
-          "onDelete": "cascade",
+          "onDelete": "restrict",
           "onUpdate": "no action"
         },
         "seat_booking_request_id_trip_request_id_fk": {
@@ -885,7 +885,7 @@
           "tableTo": "trip_request",
           "columnsFrom": ["request_id"],
           "columnsTo": ["id"],
-          "onDelete": "cascade",
+          "onDelete": "restrict",
           "onUpdate": "no action"
         },
         "seat_booking_passenger_id_user_id_fk": {

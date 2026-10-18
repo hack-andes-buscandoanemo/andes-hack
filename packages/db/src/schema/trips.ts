@@ -24,7 +24,8 @@ import { vehicle } from "./vehicle";
 
 // Times of day are local to America/Lima (UTC−5, no daylight saving time).
 // People references become null when the account is deleted (US-029), so the
-// historical counters keep the trip without knowing who made it.
+// historical counters keep the trip without knowing who made it. For the same reason
+// an offer or a need that has bookings cannot be deleted: close it instead.
 
 // `outbound` goes to the community's destination; `return` comes back from it.
 export const tripDirectionEnum = pgEnum("trip_direction", ["outbound", "return"]);
@@ -141,10 +142,10 @@ export const seatBooking = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     offerId: uuid("offer_id")
       .notNull()
-      .references(() => tripOffer.id, { onDelete: "cascade" }),
+      .references(() => tripOffer.id, { onDelete: "restrict" }),
     requestId: uuid("request_id")
       .notNull()
-      .references(() => tripRequest.id, { onDelete: "cascade" }),
+      .references(() => tripRequest.id, { onDelete: "restrict" }),
     passengerId: text("passenger_id").references(() => user.id, { onDelete: "set null" }),
     meetingPointId: text("meeting_point_id")
       .notNull()

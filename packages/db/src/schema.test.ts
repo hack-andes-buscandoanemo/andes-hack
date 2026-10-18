@@ -203,6 +203,7 @@ function requestSeat(seat: SeatRequest) {
 // SQLSTATE codes from the PostgreSQL manual, appendix A.
 const checkViolation = (constraint: string) => ({ cause: { code: "23514", constraint } });
 const uniqueViolation = (constraint: string) => ({ cause: { code: "23505", constraint } });
+const restrictViolation = (constraint: string) => ({ cause: { code: "23001", constraint } });
 
 describe("core domain schema on a freshly migrated database", () => {
   it("a passenger requests a seat on a driver's offer and the booking starts pending", async () => {
@@ -270,6 +271,26 @@ describe("active seat bookings", () => {
     await expect(requestSeat(seat)).rejects.toMatchObject(
       uniqueViolation("seat_booking_active_passenger_idx"),
     );
+  });
+});
+
+describe("trip history", () => {
+  it("refuses to delete an offer that has bookings, so its history survives", async () => {
+    const seat = await givenPassengerForOffer();
+    await requestSeat(seat);
+
+    await expect(db.delete(tripOffer).where(eq(tripOffer.id, seat.offerId))).rejects.toMatchObject(
+      restrictViolation("seat_booking_offer_id_trip_offer_id_fk"),
+    );
+  });
+
+  it("refuses to delete a need that has bookings, so its history survives", async () => {
+    const seat = await givenPassengerForOffer();
+    await requestSeat(seat);
+
+    await expect(
+      db.delete(tripRequest).where(eq(tripRequest.id, seat.requestId)),
+    ).rejects.toMatchObject(restrictViolation("seat_booking_request_id_trip_request_id_fk"));
   });
 });
 

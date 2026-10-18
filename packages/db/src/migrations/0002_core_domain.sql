@@ -144,8 +144,8 @@ CREATE TABLE "vehicle" (
 ALTER TABLE "community_member" ADD CONSTRAINT "community_member_community_id_community_id_fk" FOREIGN KEY ("community_id") REFERENCES "public"."community"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "community_member" ADD CONSTRAINT "community_member_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "meeting_point" ADD CONSTRAINT "meeting_point_zone_id_zone_id_fk" FOREIGN KEY ("zone_id") REFERENCES "public"."zone"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "seat_booking" ADD CONSTRAINT "seat_booking_offer_id_trip_offer_id_fk" FOREIGN KEY ("offer_id") REFERENCES "public"."trip_offer"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "seat_booking" ADD CONSTRAINT "seat_booking_request_id_trip_request_id_fk" FOREIGN KEY ("request_id") REFERENCES "public"."trip_request"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "seat_booking" ADD CONSTRAINT "seat_booking_offer_id_trip_offer_id_fk" FOREIGN KEY ("offer_id") REFERENCES "public"."trip_offer"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "seat_booking" ADD CONSTRAINT "seat_booking_request_id_trip_request_id_fk" FOREIGN KEY ("request_id") REFERENCES "public"."trip_request"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "seat_booking" ADD CONSTRAINT "seat_booking_passenger_id_user_id_fk" FOREIGN KEY ("passenger_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "seat_booking" ADD CONSTRAINT "seat_booking_meeting_point_id_meeting_point_id_fk" FOREIGN KEY ("meeting_point_id") REFERENCES "public"."meeting_point"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "trip_offer" ADD CONSTRAINT "trip_offer_community_id_community_id_fk" FOREIGN KEY ("community_id") REFERENCES "public"."community"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
