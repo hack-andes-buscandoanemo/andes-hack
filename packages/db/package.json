@@ -15,6 +15,7 @@
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
     "db:migrate": "drizzle-kit migrate",
+    "db:seed": "bun src/seed/index.ts",
     "test": "vitest run"
   },
   "dependencies": {
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@andes-hack/config": "workspace:*",
+    "@andes-hack/matching": "workspace:*",
     "@electric-sql/pglite": "0.5.8",
     "drizzle-kit": "^0.31.11",
     "typescript": "^6.0.3",
