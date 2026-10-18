@@ -15,9 +15,11 @@ const places = [
   { id: "san-borja", lat: -12.107075, lng: -76.9988421 },
   { id: "centro-empresarial-real", lat: -12.0975459, lng: -77.0375707 },
   { id: "san-borja-municipalidad", lat: -12.1071567, lng: -76.9991313 },
+  { id: "la-molina-plaza-de-armas", lat: -12.0780067, lng: -76.917343 },
 ];
 
-const meetingPointIds = ["san-borja-municipalidad"];
+// The plaza de armas is next to the La Molina zone.
+const meetingPointIds = ["san-borja-municipalidad", "la-molina-plaza-de-armas"];
 
 const freeFlow: Record<string, number> = {
   "la-molina>centro-empresarial-real": 20,
@@ -25,6 +27,12 @@ const freeFlow: Record<string, number> = {
   "san-borja-municipalidad>centro-empresarial-real": 16,
   "surquillo>centro-empresarial-real": 15,
   "surquillo>san-borja-municipalidad": 2,
+  // Through the plaza de armas Carlos takes 1 + 22 = 23 min alone, 1 + 6 + 16 = 23 with
+  // the municipalidad after it, and much longer the other way round.
+  "la-molina>la-molina-plaza-de-armas": 1,
+  "la-molina-plaza-de-armas>centro-empresarial-real": 22,
+  "la-molina-plaza-de-armas>san-borja-municipalidad": 6,
+  "san-borja-municipalidad>la-molina-plaza-de-armas": 9,
 };
 
 const ids = places.map((place) => place.id);
@@ -167,6 +175,48 @@ describe("the optimizer against first come, first served", () => {
       assignments: [{ passengerId: "maria", offerId: "carlos" }],
       unassigned: [{ requestId: "necesidad-pedro", passengerId: "pedro", reason: "no_seats" }],
     });
+  });
+
+  it("tells where each first-come passenger ends up once a later one is seated ahead", () => {
+    // Pedro asks first and is picked up at the municipalidad at 7:00 + 6 × 1.72 = 7:10.
+    // Sofía, from La Molina, is then seated before him at the plaza, 7:02, which pushes
+    // Pedro to 7:00 + 7 × 1.72 = 7:12. Both arrive at 7:00 + 23 × 1.72 = 7:40.
+    const comparison = compareStrategies(
+      {
+        date: monday,
+        offers: [offer({ maxDetourMinutes: 10 })],
+        requests: [request("pedro"), request("sofia", { originZoneId: "la-molina" })],
+      },
+      model,
+    );
+
+    expect(
+      comparison.firstComeFirstServed.plan.assignments.map(
+        ({ passengerId, position, pickupAt, arrivalAt }) => [
+          passengerId,
+          position,
+          pickupAt,
+          arrivalAt,
+        ],
+      ),
+    ).toEqual([
+      ["pedro", 1, "07:12", "07:40"],
+      ["sofia", 0, "07:02", "07:40"],
+    ]);
+  });
+
+  it("reports a day with needs but no offers as nobody matched, each with its reason", () => {
+    const comparison = compareStrategies(
+      { date: monday, offers: [], requests: [request("pedro")] },
+      model,
+    );
+
+    for (const strategy of [comparison.firstComeFirstServed, comparison.optimizer]) {
+      expect(strategy.coverage).toBe(0);
+      expect(strategy.plan.unassigned).toEqual([
+        { requestId: "necesidad-pedro", passengerId: "pedro", reason: "outside_time_window" },
+      ]);
+    }
   });
 
   it("reports an empty day as nobody matched and no coverage, without failing", () => {

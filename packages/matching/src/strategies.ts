@@ -7,7 +7,12 @@ import type { TravelTimeModel } from "./travel-time";
 // takes the best offer still feasible, and nobody is moved afterwards.
 export function firstComeFirstServed(instance: DayInstance, model: TravelTimeModel): DayPlan {
   const routes = new Map(instance.offers.map((offer) => [offer.id, offer]));
-  const assignments: Assignment[] = [];
+  // Who sits at each stop of a route, in its order: a request's id, or null for a
+  // passenger the driver had already accepted.
+  const riders = new Map(
+    instance.offers.map((offer) => [offer.id, offer.passengers.map((): string | null => null)]),
+  );
+  const seated = new Map<string, Assignment>();
   const unassigned: DayPlan["unassigned"] = [];
 
   for (const request of instance.requests) {
@@ -27,7 +32,8 @@ export function firstComeFirstServed(instance: DayInstance, model: TravelTimeMod
       ...route,
       passengers: route.passengers.toSpliced(best.position, 0, stop),
     });
-    assignments.push({
+    riders.set(route.id, riders.get(route.id)!.toSpliced(best.position, 0, request.id));
+    seated.set(request.id, {
       requestId: request.id,
       passengerId: request.passengerId,
       offerId: best.offerId,
@@ -41,12 +47,21 @@ export function firstComeFirstServed(instance: DayInstance, model: TravelTimeMod
     });
   }
 
-  const detourMinutes = instance.offers.reduce((sum, offer) => {
-    const final = routes.get(offer.id)!;
-    if (final.passengers.length === offer.passengers.length) return sum;
-    const added = timeRoute(final, instance.date, model).minutes;
-    return sum + Math.round(added - timeRoute(offer, instance.date, model).minutes);
-  }, 0);
+  let detourMinutes = 0;
+  for (const offer of instance.offers) {
+    const ids = riders.get(offer.id)!;
+    if (ids.every((requestId) => requestId === null)) continue;
+    // Someone seated later but ahead on the route delays those before: times and positions
+    // come from the final route, as in optimizeDay.
+    const timing = timeRoute(routes.get(offer.id)!, instance.date, model);
+    ids.forEach((requestId, stop) => {
+      const assignment = requestId === null ? undefined : seated.get(requestId);
+      if (assignment)
+        seated.set(assignment.requestId, { ...assignment, ...timing.stops[stop]!, position: stop });
+    });
+    detourMinutes += Math.round(timing.minutes - timeRoute(offer, instance.date, model).minutes);
+  }
+  const assignments = instance.requests.flatMap((request) => seated.get(request.id) ?? []);
 
   return {
     assignments,
