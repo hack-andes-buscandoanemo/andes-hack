@@ -18,6 +18,9 @@ export interface FreeFlowMatrix {
 export interface TravelTimeData {
   places: readonly PlacePoint[];
   matrix: FreeFlowMatrix;
+  // The places, among `places`, where a passenger can be picked up or dropped off. Left
+  // out, the model knows no meeting points and no passenger can be matched.
+  meetingPointIds?: readonly string[];
 }
 
 export interface TravelTime {
@@ -25,10 +28,17 @@ export interface TravelTime {
   kind: SourceKind;
 }
 
+export interface WalkableMeetingPoint {
+  meetingPointId: string;
+  walkMinutes: number;
+}
+
 export interface TravelTimeModel {
   minutes(fromId: string, toId: string, departAt: Date): TravelTime;
   // Always an estimate: there is no walking matrix.
   walkMinutes(zoneId: string, meetingPointId: string): number;
+  // Meeting points of any zone within the walk, nearest first.
+  walkableMeetingPoints(zoneId: string, maxWalkMinutes: number): WalkableMeetingPoint[];
 }
 
 // How many times the free-flow time a trip takes, and whether that is a measured value.
@@ -80,6 +90,7 @@ function weekdayFactor(hour: number): TrafficFactor {
 const limaData: TravelTimeData = {
   places: [...places.zones, ...places.meetingPoints, ...places.destinations],
   matrix: travelMatrix,
+  meetingPointIds: places.meetingPoints.map(({ id }) => id),
 };
 
 // Built on the real places of Lima unless other data is given, as tests do.
@@ -110,6 +121,10 @@ export function createTravelTimeModel(data: TravelTimeData = limaData): TravelTi
     return (streetKm(fromId, toId) / sources.freeFlowSpeed.value) * 60;
   }
 
+  function walkMinutes(zoneId: string, meetingPointId: string) {
+    return (streetKm(zoneId, meetingPointId) / sources.walkingSpeed.value) * 60;
+  }
+
   return {
     minutes(fromId, toId, departAt) {
       const factor = trafficFactor(departAt);
@@ -121,8 +136,19 @@ export function createTravelTimeModel(data: TravelTimeData = limaData): TravelTi
       return { minutes: freeFlow * factor.value, kind: factor.kind };
     },
 
-    walkMinutes(zoneId, meetingPointId) {
-      return (streetKm(zoneId, meetingPointId) / sources.walkingSpeed.value) * 60;
+    walkMinutes,
+
+    walkableMeetingPoints(zoneId, maxWalkMinutes) {
+      return (data.meetingPointIds ?? [])
+        .map((meetingPointId) => ({
+          meetingPointId,
+          walkMinutes: walkMinutes(zoneId, meetingPointId),
+        }))
+        .filter((point) => point.walkMinutes <= maxWalkMinutes)
+        .toSorted(
+          (a, b) =>
+            a.walkMinutes - b.walkMinutes || a.meetingPointId.localeCompare(b.meetingPointId),
+        );
     },
   };
 }
