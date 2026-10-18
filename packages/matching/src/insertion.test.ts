@@ -230,6 +230,13 @@ describe("best insertion of a passenger in a driver's route", () => {
     expect(result).toEqual({ feasible: false, reason: "days_mismatch" });
   });
 
+  it("matches a one-off need on one of the driver's weekdays", () => {
+    // 19 October 2026 is a Monday.
+    const result = bestInsertion(offer(), need({ daysOfWeek: null, date: "2026-10-19" }), model);
+
+    expect(result.feasible).toBe(true);
+  });
+
   it("matches a one-off need with a one-off offer on the same date", () => {
     const onMonday = { daysOfWeek: null, date: "2026-10-19" };
 
@@ -287,6 +294,16 @@ describe("best insertion of a passenger in a driver's route", () => {
     const result = bestInsertion(offer({ driverIsWoman: false }), need({ womenOnly: true }), model);
 
     expect(result).toEqual({ feasible: false, reason: "women_only" });
+  });
+
+  it("pairs a woman passenger with a woman driver when either of them asked for women only", () => {
+    const result = bestInsertion(
+      offer({ womenOnly: true, driverIsWoman: true }),
+      need({ womenOnly: true, passengerIsWoman: true }),
+      model,
+    );
+
+    expect(result.feasible).toBe(true);
   });
 
   it("never offers again a seat the driver already turned down for that passenger", () => {
