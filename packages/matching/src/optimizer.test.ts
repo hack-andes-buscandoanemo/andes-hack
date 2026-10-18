@@ -327,6 +327,27 @@ describe("seats of a day assigned to maximise the car trips avoided", () => {
     ]);
   });
 
+  it("seats someone the driver would turn down alone once another pickup takes the car their way", () => {
+    // Alone at the plaza Sofía costs Carlos 3 × 1.72 = 5.2 min, over his 5. With Pedro at
+    // the municipalidad and 5 min between the two, 1 + 5 + 16 = 22 min: 3.4 for both.
+    const nearPlaza = modelWith({
+      ...freeFlow,
+      "la-molina-plaza-de-armas>san-borja-municipalidad": 5,
+    });
+
+    const plan = optimizeDay(
+      {
+        date: monday,
+        offers: [offer()],
+        requests: [request("pedro"), request("sofia", { originZoneId: "la-molina" })],
+      },
+      nearPlaza,
+    );
+
+    expect(plan.assignments.map(({ passengerId }) => passengerId)).toEqual(["pedro", "sofia"]);
+    expect(plan.unassigned).toEqual([]);
+  });
+
   it("plans a day with trips both ways, matching each passenger only with drivers going theirs", () => {
     const plan = optimizeDay(
       {

@@ -175,7 +175,6 @@ export function optimizeDay(
   const { date } = instance;
   const { priority = "car_trips_avoided", timeBudgetMs = 1000 } = options;
   const start = performance.now();
-  const deadline = start + timeBudgetMs;
   const accepted = new Map(
     instance.offers.map((offer) => [offer.id, timeRoute(offer, date, model).minutes]),
   );
@@ -343,28 +342,54 @@ export function optimizeDay(
   }
 
   let total = [...cars.values()].reduce((sum, current) => plus(sum, current.score), nothing);
-  search: while (performance.now() < deadline) {
+  const withChanges = (changed: readonly Car[]) =>
+    changed.reduce(
+      (sum, current) => plus(plus(sum, current.score), cars.get(current.route.id)!.score, -1),
+      total,
+    );
+
+  // Puts the changed cars in the plan; whoever no car carries any more is waiting again.
+  function apply(changed: readonly Car[]) {
+    total = withChanges(changed);
+    for (const current of changed) cars.set(current.route.id, current);
+    seatedOn.clear();
+    for (const { route, riders } of cars.values())
+      for (const rider of riders) if (rider) seatedOn.set(rider.request, route.id);
+  }
+
+  // Applies the first move that improves the plan; false at a local optimum or once the
+  // budget, counted from here, runs out.
+  const deadline = performance.now() + timeBudgetMs;
+  function improve() {
     for (const changed of moves()) {
-      const next = changed.reduce(
-        (sum, current) => plus(plus(sum, current.score), cars.get(current.route.id)!.score, -1),
-        total,
-      );
-      if (compare(next, total, priority) > 0) {
-        for (const current of changed) {
-          cars.set(current.route.id, current);
-          for (const rider of cars.get(current.route.id)!.riders)
-            if (rider) seatedOn.set(rider.request, current.route.id);
-        }
-        // Whoever no car carries any more is waiting again.
-        for (const [request, offerId] of seatedOn)
-          if (!cars.get(offerId)!.riders.some((rider) => rider?.request === request))
-            seatedOn.delete(request);
-        total = next;
-        continue search;
+      if (compare(withChanges(changed), total, priority) > 0) {
+        apply(changed);
+        return true;
       }
-      if (performance.now() >= deadline) break search;
+      if (performance.now() >= deadline) return false;
     }
-    break;
+    return false;
+  }
+  while (performance.now() < deadline) if (!improve()) break;
+
+  // A last pass on the final routes tries every offer going each waiting passenger's way:
+  // those left out of `reachable`, and whoever the budget did not reach. When it seats
+  // nobody, the reasons it found are the final ones.
+  const reasons = new Map<DayRequest, InfeasibleReason>();
+  for (let seatedSomeone = true; seatedSomeone; ) {
+    seatedSomeone = false;
+    for (const request of waiting()) {
+      const routes = [...cars.values()].map((current) => current.route);
+      const { matches, reason } = rankOffersForRequest(request, routes, model, date);
+      const best = matches[0];
+      if (best) {
+        apply([seat(cars.get(best.offerId)!, request, best)]);
+        seatedSomeone = true;
+      } else {
+        // With no match there is always a reason.
+        reasons.set(request, reason!);
+      }
+    }
   }
 
   const seated = new Map<DayRequest, Assignment>();
@@ -391,7 +416,6 @@ export function optimizeDay(
     });
   }
 
-  const routes = [...cars.values()].map((current) => current.route);
   return {
     // In the order the requests came.
     assignments: instance.requests.flatMap((request) => seated.get(request) ?? []),
@@ -399,7 +423,7 @@ export function optimizeDay(
     unassigned: waiting().map((request) => ({
       requestId: request.id,
       passengerId: request.passengerId,
-      reason: rankOffersForRequest(request, routes, model, date).reason!,
+      reason: reasons.get(request)!,
     })),
     objective: total,
     metrics: { matched: byFallback([...seated.keys()]), unassigned: byFallback(waiting()) },
