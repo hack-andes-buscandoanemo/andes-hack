@@ -1517,6 +1517,100 @@ export const publicStatsRoute = createRoute({
   },
 });
 
+export const CreateShareLinkResponseSchema = z
+  .object({
+    id: z.string().uuid(),
+    // Shown once: only its hash is stored, so a lost link is replaced, not recovered.
+    token: z.string(),
+    expiresAt: z.iso.datetime(),
+  })
+  .openapi("CreateShareLinkResponse");
+
+export const createShareLinkRoute = createRoute({
+  method: "post",
+  path: "/bookings/{id}/share-links",
+  tags: ["Solicitudes"],
+  request: { params: JoinCommunityParamsSchema },
+  responses: {
+    201: {
+      description:
+        "Enlace para compartir el viaje; reemplaza al anterior y vence al final del día del viaje",
+      content: {
+        "application/json": { schema: CreateShareLinkResponseSchema },
+      },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    404: apiErrorResponse("La reserva no existe o no es de la persona (`booking_not_found`)"),
+    409: apiErrorResponse("El viaje no se puede compartir (`booking_not_shareable`)"),
+    422: apiErrorResponse("El identificador no es válido (`validation_error`)"),
+  },
+});
+
+export const revokeShareLinkRoute = createRoute({
+  method: "delete",
+  path: "/share-links/{id}",
+  tags: ["Solicitudes"],
+  request: { params: JoinCommunityParamsSchema },
+  responses: {
+    200: {
+      description: "El enlace dejó de funcionar; repetir la acción no cambia nada",
+      content: {
+        "application/json": {
+          schema: z
+            .object({ id: z.string().uuid(), revokedAt: z.iso.datetime() })
+            .openapi("RevokeShareLinkResponse"),
+        },
+      },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    404: apiErrorResponse("El enlace no existe o no es de la persona (`share_link_not_found`)"),
+    422: apiErrorResponse("El identificador no es válido (`validation_error`)"),
+  },
+});
+
+export const SharedTripSchema = z
+  .object({
+    passengerAlias: z.string(),
+    driverAlias: z.string(),
+    vehicle: z.object({
+      make: z.string(),
+      model: z.string(),
+      color: z.string(),
+      plate: z.string(),
+    }),
+    meetingPointName: z.string(),
+    // Time of day (HH:MM, Lima) the passenger is picked up.
+    estimatedTime: z.string(),
+    status: z.enum(["not_started", "in_progress", "arrived"]),
+  })
+  .openapi("SharedTrip");
+
+export const sharedTripRoute = createRoute({
+  method: "get",
+  path: "/public/share/{token}",
+  tags: ["Público"],
+  request: {
+    params: z.object({
+      token: z
+        .string()
+        .regex(/^[A-Za-z0-9_-]{20,64}$/)
+        .openapi({ param: { name: "token", in: "path" } }),
+    }),
+  },
+  responses: {
+    200: {
+      description:
+        "Lo mínimo para acompañar el viaje: alias, vehículo con placa, punto de encuentro, hora y estado. Sin correos, zonas de origen ni datos del pasajero más allá de su alias",
+      content: { "application/json": { schema: SharedTripSchema } },
+    },
+    404: apiErrorResponse(
+      "El enlace no existe, venció o se dejó de compartir; la respuesta es la misma en los tres casos (`share_link_unavailable`)",
+    ),
+    422: apiErrorResponse("El enlace no tiene un formato válido (`validation_error`)"),
+    429: apiErrorResponse("Demasiadas consultas desde la misma IP (`too_many_share_requests`)"),
+  },
+});
+
 const dataSourceFields = {
   id: z.string(),
   topic: z.enum(["tiempos", "impacto", "contexto"]),
@@ -1595,6 +1689,9 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   joinWaitlistRoute,
   waitlistSummaryRoute,
   publicStatsRoute,
+  createShareLinkRoute,
+  revokeShareLinkRoute,
+  sharedTripRoute,
   dataSourcesRoute,
 ];
 

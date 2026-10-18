@@ -209,3 +209,30 @@ export type TripOffer = typeof tripOffer.$inferSelect;
 export type TripRequest = typeof tripRequest.$inferSelect;
 export type SeatBooking = typeof seatBooking.$inferSelect;
 export type TripMessage = typeof tripMessage.$inferSelect;
+
+// A link a passenger gives to someone they trust (US-028). Only the SHA-256 of the token is
+// stored, so a copy of the table cannot open any link; it lives until the end of the trip day
+// (Lima) or until the passenger stops sharing, whichever comes first.
+export const tripShareLink = pgTable(
+  "trip_share_link",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    bookingId: uuid("booking_id")
+      .notNull()
+      .references(() => seatBooking.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("trip_share_link_token_hash_idx").on(table.tokenHash),
+    index("trip_share_link_booking_id_idx").on(table.bookingId),
+    // One live link per booking: two shares at once cannot both stay active.
+    uniqueIndex("trip_share_link_active_booking_idx")
+      .on(table.bookingId)
+      .where(sql`${table.revokedAt} IS NULL`),
+  ],
+);
+
+export type TripShareLink = typeof tripShareLink.$inferSelect;
