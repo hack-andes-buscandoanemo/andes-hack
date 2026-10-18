@@ -348,6 +348,28 @@ describe("seats of a day assigned to maximise the car trips avoided", () => {
     expect(plan.unassigned).toEqual([]);
   });
 
+  it("never moves a passenger the driver already accepted, even for someone who would drive", () => {
+    const acceptedAtThePlaza = {
+      meetingPointId: "la-molina-plaza-de-armas",
+      windowStart: "07:30",
+      windowEnd: "08:00",
+    };
+
+    const plan = optimizeDay(
+      {
+        date: monday,
+        offers: [offer({ seatsTotal: 1, passengers: [acceptedAtThePlaza] })],
+        requests: [request("pedro")],
+      },
+      model,
+    );
+
+    expect(plan.assignments).toEqual([]);
+    expect(plan.unassigned).toEqual([
+      { requestId: "necesidad-pedro", passengerId: "pedro", reason: "no_seats" },
+    ]);
+  });
+
   it("plans a day with trips both ways, matching each passenger only with drivers going theirs", () => {
     const plan = optimizeDay(
       {
