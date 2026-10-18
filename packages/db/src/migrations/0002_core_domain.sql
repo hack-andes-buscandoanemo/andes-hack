@@ -136,7 +136,8 @@ CREATE TABLE "vehicle" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "vehicle_plate_unique" UNIQUE("plate"),
-	CONSTRAINT "vehicle_seats_check" CHECK ("vehicle"."seats" BETWEEN 1 AND 6)
+	CONSTRAINT "vehicle_seats_check" CHECK ("vehicle"."seats" BETWEEN 1 AND 6),
+	CONSTRAINT "vehicle_plate_normalized_check" CHECK ("vehicle"."plate" = upper("vehicle"."plate") AND "vehicle"."plate" !~ '[[:space:]]')
 );
 --> statement-breakpoint
 ALTER TABLE "community_member" ADD CONSTRAINT "community_member_community_id_community_id_fk" FOREIGN KEY ("community_id") REFERENCES "public"."community"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

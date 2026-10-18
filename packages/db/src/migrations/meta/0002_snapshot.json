@@ -1,5 +1,5 @@
 {
-  "id": "731c70f1-6336-4dfe-b228-cafda2c44be1",
+  "id": "d15aae87-3c7b-434e-bfcc-17d3d6bd4f04",
   "prevId": "09a06024-4fa7-4879-9098-89738cb90bfa",
   "version": "7",
   "dialect": "postgresql",
@@ -1400,6 +1400,10 @@
         "vehicle_seats_check": {
           "name": "vehicle_seats_check",
           "value": "\"vehicle\".\"seats\" BETWEEN 1 AND 6"
+        },
+        "vehicle_plate_normalized_check": {
+          "name": "vehicle_plate_normalized_check",
+          "value": "\"vehicle\".\"plate\" = upper(\"vehicle\".\"plate\") AND \"vehicle\".\"plate\" !~ '[[:space:]]'"
         }
       },
       "isRLSEnabled": false

@@ -289,6 +289,24 @@ describe("unique keys", () => {
       uniqueViolation("vehicle_plate_unique"),
     );
   });
+
+  it.each(["abc123", "ABC 123"])("rejects the non-normalised plate %s", async (plate) => {
+    const org = await givenCommunity();
+    const owner = await givenMember(org.id);
+
+    await expect(givenVehicle(owner.id, { plate })).rejects.toMatchObject(
+      checkViolation("vehicle_plate_normalized_check"),
+    );
+  });
+
+  it("accepts a plate written like ABC-123", async () => {
+    const org = await givenCommunity();
+    const owner = await givenMember(org.id);
+
+    await expect(givenVehicle(owner.id, { plate: "ABC-123" })).resolves.toMatchObject({
+      plate: "ABC-123",
+    });
+  });
 });
 
 describe("seat and detour limits", () => {
