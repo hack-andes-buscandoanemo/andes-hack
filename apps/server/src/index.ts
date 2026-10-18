@@ -3,9 +3,11 @@ import {
   joinCommunityRoute,
   listCommunitiesRoute,
   OPENAPI_DOCUMENT_CONFIG,
+  verifyEmailCommunityRoute,
 } from "@andes-hack/api";
-import { auth } from "@andes-hack/auth";
+import { auth as defaultAuth, createAuth, setVerificationOtpSender } from "@andes-hack/auth";
 import { db as defaultDb } from "@andes-hack/db";
+import { user as userTable } from "@andes-hack/db/schema/auth";
 import { community, communityMember } from "@andes-hack/db/schema/community";
 import { env } from "@andes-hack/env/server";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -14,6 +16,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
+import { sendEmail as defaultSendEmail, type SendEmailOptions } from "./lib/email";
 import {
   rateLimitMiddleware,
   requireSession,
@@ -23,11 +26,21 @@ import {
 import { ApiError } from "./utils/api-response";
 import { errorHandler, validationHook } from "./utils/error-handler";
 
+setVerificationOtpSender(async ({ email, otp }) => {
+  await defaultSendEmail({
+    to: email,
+    subject: "Tu código de verificación de Te Jalo",
+    text: `Tu código de verificación de Te Jalo es ${otp}. Vence en 5 minutos.`,
+  });
+});
+
 export type AppDeps = {
   db?: typeof defaultDb;
   getSession?: SessionResolver;
   rateLimit?: RateLimitCheck;
   joinRateLimit?: RateLimitCheck;
+  otpRateLimit?: RateLimitCheck;
+  sendEmail?: (options: SendEmailOptions) => Promise<unknown>;
 };
 
 async function sha256Hex(value: string): Promise<string> {
@@ -58,8 +71,46 @@ function isTeamEmail(
     .includes(normalized);
 }
 
+function extractEmailDomain(email: string): string | null {
+  const atIndex = email.lastIndexOf("@");
+  if (atIndex === -1 || atIndex === email.length - 1) return null;
+  return email
+    .slice(atIndex + 1)
+    .trim()
+    .toLowerCase();
+}
+
+function matchAllowedDomain(email: string | undefined, allowedDomains: string[]): string | null {
+  if (!email) return null;
+  const userDomain = extractEmailDomain(email);
+  if (!userDomain) return null;
+  const match = allowedDomains.find((d) => d.trim().toLowerCase() === userDomain);
+  return match ? `@${match.trim().toLowerCase()}` : null;
+}
+
 export function createApp(deps: AppDeps = {}) {
   const database = deps.db ?? defaultDb;
+  const emailSender = deps.sendEmail ?? defaultSendEmail;
+  const authInstance =
+    deps.db || deps.sendEmail
+      ? createAuth({
+          db: database,
+          sendVerificationOTP: async ({ email, otp }) => {
+            await emailSender({
+              to: email,
+              subject: "Tu código de verificación de Te Jalo",
+              text: `Tu código de verificación de Te Jalo es ${otp}. Vence en 5 minutos.`,
+            });
+          },
+        })
+      : defaultAuth;
+
+  const resolveOptionalSession: SessionResolver =
+    deps.getSession ??
+    (async (headers) => {
+      return authInstance.api.getSession({ headers });
+    });
+
   const app = new Hono();
 
   app.onError(errorHandler);
@@ -68,33 +119,98 @@ export function createApp(deps: AppDeps = {}) {
     cors({
       origin: env.CORS_ORIGIN,
       allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-      allowHeaders: ["Content-Type", "Authorization"],
+      allowHeaders: ["Content-Type", "Authorization", "x-community-id"],
       credentials: true,
     }),
   );
   app.use("/*", rateLimitMiddleware(deps.rateLimit, deps.getSession));
 
-  app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
+  app.post("/api/auth/email-otp/send-verification-otp", async (c, next) => {
+    const session = await resolveOptionalSession(c.req.raw.headers);
+    const cloned = c.req.raw.clone();
+    const payload = (await cloned.json().catch(() => ({}))) as { email?: string };
+    const candidateEmail = (session?.user?.email ?? payload.email ?? "").trim();
+
+    const communityIdHeader = c.req.header("x-community-id");
+    if (communityIdHeader) {
+      const [org] = await database
+        .select({
+          id: community.id,
+          name: community.name,
+          allowedEmailDomains: community.allowedEmailDomains,
+        })
+        .from(community)
+        .where(eq(community.id, communityIdHeader))
+        .limit(1);
+
+      if (!org) {
+        throw new ApiError(404, "Comunidad no encontrada.", { code: "community_not_found" });
+      }
+
+      if (!matchAllowedDomain(candidateEmail, org.allowedEmailDomains)) {
+        throw new ApiError(
+          403,
+          `Tu cuenta usa un correo que no pertenece a ${org.name}. Crea tu cuenta con tu correo institucional.`,
+          { code: "email_domain_not_allowed" },
+        );
+      }
+    }
+
+    const checkOtpLimit: RateLimitCheck =
+      deps.otpRateLimit ??
+      deps.rateLimit ??
+      (async (key) => {
+        const { checkOtpSendRateLimit } = await import("./lib/rate-limit");
+        return checkOtpSendRateLimit(key);
+      });
+    const rateKey = `otp:${session?.user?.id ?? candidateEmail.toLowerCase()}`;
+    const otpLimit = await checkOtpLimit(rateKey);
+    if (!otpLimit.success) {
+      c.header("Retry-After", String(Math.max(1, Math.ceil((otpLimit.reset - Date.now()) / 1000))));
+      throw new ApiError(429, "Demasiados intentos. Espera unos minutos.", {
+        code: "otp_rate_limited",
+      });
+    }
+
+    await next();
+  });
+
+  app.on(["POST", "GET"], "/api/auth/*", (c) => authInstance.handler(c.req.raw));
 
   const openApiApp = new OpenAPIHono({ defaultHook: validationHook });
   openApiApp.use("/communities/:id/join", requireSession(deps.getSession));
+  openApiApp.use("/communities/:id/verify-email", requireSession(deps.getSession));
 
   openApiApp.openapi(healthRoute, (c) => {
     return c.json({ status: "ok" as const });
   });
 
   openApiApp.openapi(listCommunitiesRoute, async (c) => {
+    const session = await resolveOptionalSession(c.req.raw.headers).catch(() => null);
     const rows = await database
       .select({
         id: community.id,
         name: community.name,
         kind: community.kind,
         isDemo: community.isDemo,
+        allowedEmailDomains: community.allowedEmailDomains,
       })
       .from(community)
       .orderBy(asc(community.name));
 
-    return c.json({ communities: rows }, 200);
+    return c.json(
+      {
+        communities: rows.map((row) => ({
+          id: row.id,
+          name: row.name,
+          kind: row.kind,
+          isDemo: row.isDemo,
+          hasEmailVerification: row.allowedEmailDomains.length > 0,
+          matchedEmailDomain: matchAllowedDomain(session?.user?.email, row.allowedEmailDomains),
+        })),
+      },
+      200,
+    );
   });
 
   openApiApp.openapi(joinCommunityRoute, async (c) => {
@@ -187,6 +303,100 @@ export function createApp(deps: AppDeps = {}) {
         verificationMethod: "join_code" as const,
         isTeam: teamMember,
         message: `¡Listo! Ya eres parte de ${org.name}.`,
+      },
+      200,
+    );
+  });
+
+  openApiApp.openapi(verifyEmailCommunityRoute, async (c) => {
+    const { id: communityId } = c.req.valid("param");
+    const sessionUser = c.get("user");
+
+    const [org] = await database
+      .select({
+        id: community.id,
+        name: community.name,
+        allowedEmailDomains: community.allowedEmailDomains,
+      })
+      .from(community)
+      .where(eq(community.id, communityId))
+      .limit(1);
+
+    if (!org) {
+      throw new ApiError(404, "Comunidad no encontrada.", { code: "community_not_found" });
+    }
+
+    const [dbUser] = await database
+      .select({
+        id: userTable.id,
+        email: userTable.email,
+        emailVerified: userTable.emailVerified,
+      })
+      .from(userTable)
+      .where(eq(userTable.id, sessionUser.id))
+      .limit(1);
+
+    const userEmail = dbUser?.email ?? sessionUser.email;
+    if (!matchAllowedDomain(userEmail, org.allowedEmailDomains)) {
+      throw new ApiError(
+        403,
+        `Tu cuenta usa un correo que no pertenece a ${org.name}. Crea tu cuenta con tu correo institucional.`,
+        { code: "email_domain_not_allowed" },
+      );
+    }
+
+    if (!dbUser?.emailVerified) {
+      throw new ApiError(400, "El código no es válido o ya venció.", {
+        code: "email_not_verified",
+      });
+    }
+
+    const [existing] = await database
+      .select({
+        verificationMethod: communityMember.verificationMethod,
+        isTeam: communityMember.isTeam,
+      })
+      .from(communityMember)
+      .where(
+        and(eq(communityMember.communityId, org.id), eq(communityMember.userId, sessionUser.id)),
+      )
+      .limit(1);
+
+    if (existing) {
+      return c.json(
+        {
+          joined: true as const,
+          alreadyMember: true,
+          communityId: org.id,
+          communityName: org.name,
+          verificationMethod: existing.verificationMethod,
+          isTeam: existing.isTeam,
+          message: "Pertenencia verificada.",
+        },
+        200,
+      );
+    }
+
+    const teamMember = isTeamEmail(userEmail);
+    await database
+      .insert(communityMember)
+      .values({
+        communityId: org.id,
+        userId: sessionUser.id,
+        verificationMethod: "email_domain",
+        isTeam: teamMember,
+      })
+      .onConflictDoNothing();
+
+    return c.json(
+      {
+        joined: true as const,
+        alreadyMember: false,
+        communityId: org.id,
+        communityName: org.name,
+        verificationMethod: "email_domain" as const,
+        isTeam: teamMember,
+        message: "Pertenencia verificada.",
       },
       200,
     );

@@ -58,6 +58,8 @@ export const CommunitySummarySchema = z
     name: z.string(),
     kind: CommunityKindSchema,
     isDemo: z.boolean(),
+    hasEmailVerification: z.boolean(),
+    matchedEmailDomain: z.string().nullable(),
   })
   .openapi("CommunitySummary");
 
@@ -134,10 +136,30 @@ export const joinCommunityRoute = createRoute({
   },
 });
 
+export const verifyEmailCommunityRoute = createRoute({
+  method: "post",
+  path: "/communities/{id}/verify-email",
+  tags: ["Comunidades"],
+  request: {
+    params: JoinCommunityParamsSchema,
+  },
+  responses: {
+    200: {
+      description: "Membresía verificada con correo institucional",
+      content: {
+        "application/json": {
+          schema: JoinCommunityResponseSchema,
+        },
+      },
+    },
+  },
+});
+
 export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   healthRoute,
   listCommunitiesRoute,
   joinCommunityRoute,
+  verifyEmailCommunityRoute,
 ];
 
 export function createOpenApiDocument(routes: readonly RouteConfig[] = registeredOpenApiRoutes) {

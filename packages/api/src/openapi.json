@@ -80,9 +80,15 @@
           },
           "isDemo": {
             "type": "boolean"
+          },
+          "hasEmailVerification": {
+            "type": "boolean"
+          },
+          "matchedEmailDomain": {
+            "type": ["string", "null"]
           }
         },
-        "required": ["id", "name", "kind", "isDemo"]
+        "required": ["id", "name", "kind", "isDemo", "hasEmailVerification", "matchedEmailDomain"]
       },
       "JoinCommunityResponse": {
         "type": "object",
@@ -196,6 +202,34 @@
         "responses": {
           "200": {
             "description": "Membresía verificada en la comunidad",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JoinCommunityResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/communities/{id}/verify-email": {
+      "post": {
+        "tags": ["Comunidades"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Membresía verificada con correo institucional",
             "content": {
               "application/json": {
                 "schema": {
