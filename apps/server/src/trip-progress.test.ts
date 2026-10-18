@@ -184,6 +184,25 @@ async function book(
 
 type Reply = { status: number; json(): Promise<any> };
 
+it("requires a session for every progress action before reading the trip", async () => {
+  const id = "22222222-2222-4222-8222-222222222222";
+  for (const path of [
+    `/offers/${id}/start`,
+    `/bookings/${id}/board`,
+    `/bookings/${id}/arrive`,
+    `/bookings/${id}/no-show`,
+  ]) {
+    const reply = await appAt(null, at("07:55")).request(path, {
+      method: "POST",
+      headers: { "cf-connecting-ip": "192.0.2.1" },
+    });
+    expect(reply.status).toBe(401);
+    expect(((await reply.json()) as { details: { code: string } }).details.code).toBe(
+      "unauthorized",
+    );
+  }
+});
+
 function appAt(person: { id: string } | null, now: Date) {
   return createApp({
     db: testDb as never,
@@ -443,15 +462,17 @@ describe("arriving without having travelled", () => {
       const reply = await post(person, `/bookings/${booking.id}/arrive`, at("07:55"));
       expect(reply.status).toBe(409);
       expect((await reply.json()).details.code).toBe("booking_not_accepted");
-      const [after] = await testDb.select().from(seatBooking).where(eq(seatBooking.id, booking.id));
-      expect(after!.status).toBe(status);
+      const detail = await appAt(person, at("07:55")).request(`/offers/${offer.id}`);
+      expect(((await detail.json()) as { booking: { status: string } }).booking.status).toBe(
+        status,
+      );
     }
   });
 });
 
 describe("arriving before the trip started", () => {
   it("refuses with 409 while nobody has started it", async () => {
-    const { passenger, booking } = await world();
+    const { passenger, booking, offer } = await world();
 
     const reply = await post(passenger, `/bookings/${booking.id}/arrive`, at("07:55"));
 
@@ -459,8 +480,10 @@ describe("arriving before the trip started", () => {
     const body = await reply.json();
     expect(body.error).toBe("El viaje todavía no empezó.");
     expect(body.details.code).toBe("trip_not_started");
-    const [after] = await testDb.select().from(seatBooking).where(eq(seatBooking.id, booking.id));
-    expect(after!.status).toBe("accepted");
+    const detail = await appAt(passenger, at("07:55")).request(`/offers/${offer.id}`);
+    expect(((await detail.json()) as { booking: { status: string } }).booking.status).toBe(
+      "accepted",
+    );
   });
 });
 
@@ -749,6 +772,80 @@ describe("a weekly seat", () => {
 });
 
 describe("the community panel with a weekly seat", () => {
+  it("keeps cancelled completed occurrences when the driver later deletes their account", async () => {
+    const org = await seedWorld();
+    const driver = await createMember(org.id, "driver", "Carlos Quispe Huamán");
+    const passenger = await createMember(org.id, "passenger", "María Torres Rojas");
+    const offer = await createOffer(org.id, driver.id, { daysOfWeek: [1] });
+    const booking = await book(offer, passenger.id);
+    await post(driver, `/offers/${offer.id}/start`, at("06:30"));
+    await post(passenger, `/bookings/${booking.id}/arrive`, at("07:55"));
+    await post(passenger, `/bookings/${booking.id}/cancel`, atDay("2026-10-20", "08:00"));
+
+    const deletion = await appAt(driver, atDay("2026-10-20", "08:00")).request("/me", {
+      method: "DELETE",
+    });
+    expect(deletion.status).toBe(200);
+    const stats = await publicPanel(atDay("2026-10-20", "08:00"));
+    expect(stats.activity.completedTrips).toBe(1);
+    expect(stats.vehicleImpact.verified.trips).toBe(1);
+  });
+  it("keeps anonymized completed occurrences after the passenger deletes their account", async () => {
+    const org = await seedWorld();
+    const driver = await createMember(org.id, "driver", "Carlos Quispe Huamán");
+    const passenger = await createMember(org.id, "passenger", "María Torres Rojas");
+    const offer = await createOffer(org.id, driver.id, { daysOfWeek: [1] });
+    const booking = await book(offer, passenger.id);
+    await post(driver, `/offers/${offer.id}/start`, at("06:30"));
+    await post(passenger, `/bookings/${booking.id}/arrive`, at("07:55"));
+
+    const deletion = await appAt(passenger, at("08:00")).request("/me", { method: "DELETE" });
+    expect(deletion.status).toBe(200);
+    const stats = await publicPanel(at("08:00"));
+    expect(stats.activity.completedTrips).toBe(1);
+    expect(stats.vehicleImpact.verified.trips).toBe(1);
+    const requests = await appAt(driver, at("08:00")).request(`/offers/${offer.id}/bookings`);
+    expect(JSON.stringify(await requests.json())).not.toContain("María");
+  });
+  it("counts an induced car trip separately for each completed occurrence", async () => {
+    const org = await seedWorld();
+    const driver = await createMember(org.id, "driver", "Carlos Quispe Huamán");
+    const passenger = await createMember(org.id, "passenger", "María Torres Rojas");
+    await testDb
+      .update(communityMember)
+      .set({ usualMode: "public_transport" })
+      .where(eq(communityMember.userId, driver.id));
+    const offer = await createOffer(org.id, driver.id, { daysOfWeek: [1] });
+    const booking = await book(offer, passenger.id);
+    for (const day of ["2026-10-19", "2026-10-26"]) {
+      await post(driver, `/offers/${offer.id}/start`, atDay(day, "06:30"));
+      await post(passenger, `/bookings/${booking.id}/arrive`, atDay(day, "07:55"));
+    }
+
+    const stats = await publicPanel(atDay("2026-10-26", "08:00"));
+
+    expect(stats.vehicleImpact.potential.trips).toBe(2);
+    expect(stats.vehicleImpact.induced).toBe(2);
+    expect(stats.vehicleImpact.net).toBe(0);
+  });
+  it("keeps completed occurrences after the passenger cancels the recurring seat", async () => {
+    const org = await seedWorld();
+    const driver = await createMember(org.id, "driver", "Carlos Quispe Huamán");
+    const passenger = await createMember(org.id, "passenger", "María Torres Rojas");
+    const offer = await createOffer(org.id, driver.id, { daysOfWeek: [1] });
+    const booking = await book(offer, passenger.id);
+    await post(driver, `/offers/${offer.id}/start`, at("06:30"));
+    await post(passenger, `/bookings/${booking.id}/arrive`, at("07:55"));
+    expect(
+      (await post(passenger, `/bookings/${booking.id}/cancel`, atDay("2026-10-20", "08:00")))
+        .status,
+    ).toBe(200);
+
+    const stats = await publicPanel(atDay("2026-10-20", "08:00"));
+
+    expect(stats.activity.completedTrips).toBe(1);
+    expect(stats.vehicleImpact.verified.trips).toBe(1);
+  });
   it("counts one verified trip for each day the same seat arrived", async () => {
     const org = await seedWorld();
     const driver = await createMember(org.id, "driver", "Carlos Quispe Huamán");
@@ -771,6 +868,18 @@ describe("the community panel with a weekly seat", () => {
     expect(((await reply.json()) as any).vehicleImpact.verified.trips).toBe(2);
   });
 });
+
+async function publicPanel(now: Date) {
+  const app = createApp({
+    db: testDb as never,
+    now: () => now,
+    statsRateLimit: async () => ({ success: true, reset: 0 }),
+    statsCache: { get: async () => null, set: async () => {} },
+  });
+  const reply = await app.request("/public/communities/alfa/stats");
+  expect(reply.status).toBe(200);
+  return (await reply.json()) as any;
+}
 
 describe("a trip nobody can join", () => {
   it("refuses to start with no accepted passengers and invents no start time", async () => {
