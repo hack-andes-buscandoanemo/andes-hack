@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import ProfileAvatar from "@/components/profile-avatar";
+import IncidentReportForm from "@/components/incident-report-form";
 import { Button } from "@/components/ui/button";
 import {
   communitiesApi,
@@ -30,6 +31,7 @@ export default function TripChat({ offerId }: { offerId: string }) {
   const [sendError, setSendError] = useState(false);
   const [failedMessage, setFailedMessage] = useState<TripMessagePayload | null>(null);
   const [sending, setSending] = useState(false);
+  const [reportingMessageId, setReportingMessageId] = useState<string | null>(null);
   const cursor = useRef<string | undefined>(undefined);
   const hasChat = useRef(false);
 
@@ -126,25 +128,43 @@ export default function TripChat({ offerId }: { offerId: string }) {
         ) : (
           <ol className="space-y-3">
             {messages.map((message) => (
-              <li key={message.id} className="flex items-start gap-2 rounded-xl bg-muted p-3">
-                <ProfileAvatar
-                  name={message.senderName}
-                  photoUrl={message.senderPhotoUrl}
-                  className="size-8"
-                />
-                <div>
-                  <p className="font-bold">
-                    {message.senderName} {message.senderRole === "driver" ? "· Conductor" : ""}
-                  </p>
-                  <p>{message.body}</p>
-                  <time dateTime={message.createdAt} className="text-xs text-muted-foreground">
-                    {new Date(message.createdAt).toLocaleTimeString("es-PE", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      timeZone: "America/Lima",
-                    })}
-                  </time>
+              <li key={message.id} className="space-y-2 rounded-xl bg-muted p-3">
+                <div className="flex items-start gap-2">
+                  <ProfileAvatar
+                    name={message.senderName}
+                    photoUrl={message.senderPhotoUrl}
+                    className="size-8"
+                  />
+                  <div>
+                    <p className="font-bold">
+                      {message.senderName} {message.senderRole === "driver" ? "· Conductor" : ""}
+                    </p>
+                    <p>{message.body}</p>
+                    <time dateTime={message.createdAt} className="text-xs text-muted-foreground">
+                      {new Date(message.createdAt).toLocaleTimeString("es-PE", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        timeZone: "America/Lima",
+                      })}
+                    </time>
+                  </div>
                 </div>
+                {!message.isOwn &&
+                  (reportingMessageId === message.id ? (
+                    <IncidentReportForm
+                      offerId={offerId}
+                      messageId={message.id}
+                      onCancel={() => setReportingMessageId(null)}
+                    />
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setReportingMessageId(message.id)}
+                    >
+                      Reportar mensaje
+                    </Button>
+                  ))}
               </li>
             ))}
           </ol>

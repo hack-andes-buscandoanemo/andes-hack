@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { CancelTripDialog } from "@/components/cancel-trip-dialog";
 import DropOffSuggestion, { type DropOff } from "@/components/drop-off-suggestion";
 import EmptyState from "@/components/empty-state";
+import IncidentReportForm from "@/components/incident-report-form";
 import { FuelEstimateDetail } from "@/components/fuel-estimate";
 import LiveTrip from "@/components/live-trip";
 import ShareTrip from "@/components/share-trip";
@@ -38,6 +39,7 @@ export default function TripDetailPage() {
   const [showAlternatives, setShowAlternatives] = useState(false);
   const [livePosition, setLivePosition] = useState<Coordinates | null>(null);
   const [dropOff, setDropOff] = useState<DropOff | null>(null);
+  const [showIncidentReport, setShowIncidentReport] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -55,6 +57,7 @@ export default function TripDetailPage() {
     setShowAlternatives(false);
     setLivePosition(null);
     setDropOff(null);
+    setShowIncidentReport(false);
     communitiesApi
       .getOfferDetail(id)
       .then((loaded) => {
@@ -100,6 +103,8 @@ export default function TripDetailPage() {
   const pendingId = withdrawn
     ? null
     : (sentId ?? (detail.booking?.status === "pending" ? detail.booking.id : null));
+  const canReport =
+    detail.isOwn || ["accepted", "completed", "no_show"].includes(detail.booking?.status ?? "");
 
   async function withdraw(bookingId: string) {
     setError(null);
@@ -469,6 +474,24 @@ export default function TripDetailPage() {
           <h2 className="font-bold">Nota del conductor</h2>
           <p>{detail.note}</p>
         </section>
+      ) : null}
+      {canReport ? (
+        showIncidentReport ? (
+          <IncidentReportForm
+            offerId={id}
+            reportedUsers={detail.reportTargets}
+            onCancel={() => setShowIncidentReport(false)}
+          />
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => setShowIncidentReport(true)}
+          >
+            Reportar
+          </Button>
+        )
       ) : null}
       {action}
       <EmptyState>

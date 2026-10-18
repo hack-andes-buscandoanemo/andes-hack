@@ -6,6 +6,7 @@ import {
   Message01Icon,
   Notification01Icon,
   Search01Icon,
+  Shield01Icon,
   UserIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -29,8 +30,26 @@ function initials(name: string) {
     .join("");
 }
 
-export default function AppShell({ name, children }: { name: string; children: React.ReactNode }) {
+export default function AppShell({
+  name,
+  isAdmin,
+  children,
+}: {
+  name: string;
+  isAdmin: boolean;
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
+  const sections = isAdmin
+    ? [
+        ...SECTIONS,
+        {
+          href: "/comunidad/reportes",
+          label: "Administrar comunidad",
+          icon: Shield01Icon,
+        } as const,
+      ]
+    : SECTIONS;
 
   return (
     <div className="mx-auto flex min-h-svh w-full max-w-md flex-col md:max-w-xl">
@@ -62,7 +81,7 @@ export default function AppShell({ name, children }: { name: string; children: R
         className="fixed inset-x-0 bottom-0 z-10 border-t bg-background pb-[env(safe-area-inset-bottom)]"
       >
         <ul className="mx-auto flex max-w-md md:max-w-xl">
-          {SECTIONS.map(({ href, label, icon }) => {
+          {sections.map(({ href, label, icon }) => {
             const active = pathname === href || pathname.startsWith(`${href}/`);
             return (
               <li key={href} className="flex-1">
