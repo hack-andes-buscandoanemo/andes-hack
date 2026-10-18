@@ -35,6 +35,7 @@ import { and, asc, desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
+import { createDataSourcesRoutes } from "./data-sources";
 import { sendEmail as defaultSendEmail, type SendEmailOptions } from "./lib/email";
 import type { JourneyLock } from "./lib/journey-lock";
 import { latestMatchRuns, listProposals, runMatching } from "./match-runs";
@@ -998,6 +999,7 @@ export function createApp(deps: AppDeps = {}) {
   });
 
   openApiApp.route("/", createWaitlistRoutes({ db: deps.db }));
+  openApiApp.route("/", createDataSourcesRoutes());
 
   openApiApp.doc31("/openapi.json", OPENAPI_DOCUMENT_CONFIG);
   openApiApp.get("/docs", apiReference({ spec: { url: "/openapi.json" } }));

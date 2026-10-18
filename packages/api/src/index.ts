@@ -1080,6 +1080,48 @@ export const waitlistSummaryRoute = createRoute({
   },
 });
 
+const dataSourceFields = {
+  id: z.string(),
+  topic: z.enum(["tiempos", "impacto", "contexto"]),
+  label: z.string(),
+  // A rule rather than a number, like the interpolation, is written as text.
+  value: z.union([z.number(), z.string()]),
+  unit: z.string(),
+  source: z.string(),
+  // The day the team consulted the source, not the day it was published.
+  date: z.iso.date(),
+};
+
+// `dato` has a source anyone can check at `url`; `estimado` is an assumption of the team.
+export const DataSourceSchema = z
+  .discriminatedUnion("kind", [
+    z.object({ ...dataSourceFields, kind: z.literal("dato"), url: z.url() }),
+    z.object({ ...dataSourceFields, kind: z.literal("estimado"), url: z.null() }),
+  ])
+  .openapi("DataSource");
+
+export const DataSourcesResponseSchema = z
+  .object({
+    sources: z.array(DataSourceSchema),
+  })
+  .openapi("DataSourcesResponse");
+
+export const dataSourcesRoute = createRoute({
+  method: "get",
+  path: "/public/data-sources",
+  tags: ["Público"],
+  responses: {
+    200: {
+      description: "Cada constante de los tiempos y del impacto, con su tipo, fuente y fecha",
+      content: {
+        "application/json": {
+          schema: DataSourcesResponseSchema,
+        },
+      },
+    },
+  },
+});
+
 export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   healthRoute,
   listCommunitiesRoute,
@@ -1103,6 +1145,7 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   listProposalsRoute,
   joinWaitlistRoute,
   waitlistSummaryRoute,
+  dataSourcesRoute,
 ];
 
 export function createOpenApiDocument(routes: readonly RouteConfig[] = registeredOpenApiRoutes) {

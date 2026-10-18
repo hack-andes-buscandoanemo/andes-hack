@@ -1669,6 +1669,143 @@
           "institutions",
           "individuals"
         ]
+      },
+      "DataSourcesResponse": {
+        "type": "object",
+        "properties": {
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DataSource"
+            }
+          }
+        },
+        "required": [
+          "sources"
+        ]
+      },
+      "DataSource": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "topic": {
+                "type": "string",
+                "enum": [
+                  "tiempos",
+                  "impacto",
+                  "contexto"
+                ]
+              },
+              "label": {
+                "type": "string"
+              },
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "unit": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "dato"
+                ]
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "required": [
+              "id",
+              "topic",
+              "label",
+              "value",
+              "unit",
+              "source",
+              "date",
+              "kind",
+              "url"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "topic": {
+                "type": "string",
+                "enum": [
+                  "tiempos",
+                  "impacto",
+                  "contexto"
+                ]
+              },
+              "label": {
+                "type": "string"
+              },
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "unit": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "estimado"
+                ]
+              },
+              "url": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "id",
+              "topic",
+              "label",
+              "value",
+              "unit",
+              "source",
+              "date",
+              "kind",
+              "url"
+            ]
+          }
+        ]
       }
     },
     "parameters": {}
@@ -2684,6 +2821,25 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WaitlistSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/data-sources": {
+      "get": {
+        "tags": [
+          "Público"
+        ],
+        "responses": {
+          "200": {
+            "description": "Cada constante de los tiempos y del impacto, con su tipo, fuente y fecha",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataSourcesResponse"
                 }
               }
             }
