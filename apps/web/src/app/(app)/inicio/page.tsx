@@ -9,5 +9,11 @@ export default async function InicioPage() {
   if ("redirectTo" in access) redirect(access.redirectTo);
   if ("unavailable" in access) return null; // layout shows the error state
 
-  return <Inicio name={access.user.name} communityName={access.communityName} />;
+  return (
+    <Inicio
+      name={access.user.name}
+      communityId={access.communityId}
+      communityName={access.communityName}
+    />
+  );
 }

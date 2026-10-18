@@ -9,5 +9,5 @@ export default async function ProfilePage() {
   if ("redirectTo" in access) redirect(access.redirectTo);
   if ("unavailable" in access) return null; // layout shows the error state
 
-  return <Perfil name={access.user.name} email={access.user.email} />;
+  return <Perfil name={access.user.name} email={access.user.email} role={access.role} />;
 }

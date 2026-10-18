@@ -6,7 +6,15 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 
-export default function Perfil({ name, email }: { name: string; email: string }) {
+export default function Perfil({
+  name,
+  email,
+  role = "member",
+}: {
+  name: string;
+  email: string;
+  role?: "member" | "admin";
+}) {
   const router = useRouter();
 
   return (
@@ -22,6 +30,23 @@ export default function Perfil({ name, email }: { name: string; email: string })
       >
         Historial de viajes
       </Link>
+      {role === "admin" ? (
+        <section
+          aria-labelledby="admin-community"
+          className="flex flex-col gap-2 rounded-xl border bg-card p-4"
+        >
+          <h2 id="admin-community" className="font-bold">
+            Administrar comunidad
+          </h2>
+          <Link
+            href="/comunidad/emparejamiento"
+            className="flex min-h-11 items-center justify-between rounded-lg bg-muted px-3 font-medium"
+          >
+            Emparejamiento
+            <span aria-hidden>›</span>
+          </Link>
+        </section>
+      ) : null}
       <Button
         variant="outline"
         className="min-h-12"
