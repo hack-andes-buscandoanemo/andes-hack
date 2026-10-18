@@ -499,6 +499,44 @@ describe("GET /public/communities/{slug}/stats", () => {
     expect(limit).not.toHaveBeenCalled();
   });
 
+  it("answers from the database when the rate limiter is down", async () => {
+    const org = await seedCommunity();
+    await addMember(org.id, "ana");
+    const limit = async () => {
+      throw new Error("Redis unavailable");
+    };
+
+    const response = await statsApp({ limit }).request("/public/communities/alfa/stats", {
+      headers: { "cf-connecting-ip": "203.0.113.7" },
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ activity: { enrolled: 1 } });
+  });
+
+  it("answers 200 when the cache rejects the write", async () => {
+    await seedCommunity();
+    const cache = {
+      get: async () => null,
+      set: async () => {
+        throw new Error("Redis unavailable");
+      },
+    };
+
+    const response = await statsApp({ cache }).request("/public/communities/alfa/stats");
+
+    expect(response.status).toBe(200);
+  });
+
+  it("does not wait for a slow cache write to answer", async () => {
+    await seedCommunity();
+    const cache = { get: async () => null, set: () => new Promise<void>(() => undefined) };
+
+    const response = await statsApp({ cache }).request("/public/communities/alfa/stats");
+
+    expect(response.status).toBe(200);
+  });
+
   it("serves the second call within 30 seconds from the cache and recomputes after", async () => {
     const org = await seedCommunity();
     await addMember(org.id, "ana");

@@ -66,7 +66,13 @@ export function createPublicStatsRoutes(deps: PublicStatsDeps = {}) {
 
   app.openapi(publicStatsRoute, async (c) => {
     const ip = clientIp(c);
-    const allowed = ip ? await limit(`public-stats:${ip}`) : { success: true, reset: 0 };
+    // Redis down must not take the panel down: without a verdict the request goes through.
+    const allowed = ip
+      ? await limit(`public-stats:${ip}`).catch(() => {
+          logEvent("public_stats_rate_limit_unavailable");
+          return { success: true, reset: 0 };
+        })
+      : { success: true, reset: 0 };
     if (!allowed.success) {
       c.header(
         "Retry-After",
@@ -144,7 +150,8 @@ export function createPublicStatsRoutes(deps: PublicStatsDeps = {}) {
         net: impact.netCarTripsAvoided,
       },
     };
-    await cache.set(cacheKey, stats, CACHE_TTL_SECONDS).catch(() => {
+    // Not awaited: the answer is already computed, so a slow Redis must not delay it.
+    void (async () => cache.set(cacheKey, stats, CACHE_TTL_SECONDS))().catch(() => {
       logEvent("public_stats_cache_unavailable", { operation: "set" });
     });
     return c.json(stats, 200);
