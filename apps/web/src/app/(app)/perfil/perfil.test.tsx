@@ -2,19 +2,144 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { serverError } from "@/test/server-error";
+
 const push = vi.fn();
 const signOut = vi.fn();
+const updateTravelPreferences = vi.fn();
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("@/lib/auth-client", () => ({
   authClient: { signOut: (...args: unknown[]) => signOut(...args) },
 }));
+vi.mock("@/lib/communities-api", () => ({
+  communitiesApi: {
+    updateTravelPreferences: (...args: unknown[]) => updateTravelPreferences(...args),
+  },
+}));
 
 import Perfil from "./perfil";
+
+const COMMUNITY_ID = "11111111-1111-4111-8111-111111111111";
 
 beforeEach(() => {
   push.mockClear();
   signOut.mockReset();
+  updateTravelPreferences.mockReset();
+});
+
+describe("perfil: preferencias de viaje (US-026)", () => {
+  it("turns on Solo mujeres for a woman who already declared it and confirms it", async () => {
+    updateTravelPreferences.mockResolvedValue({
+      identifiesAsWoman: true,
+      womenOnly: true,
+      message: "Preferencia guardada.",
+    });
+    render(
+      <Perfil
+        name="Lucía"
+        email="lucia@alfa.pe"
+        preferences={{ communityId: COMMUNITY_ID, identifiesAsWoman: true, womenOnly: false }}
+      />,
+    );
+
+    await userEvent.setup().click(screen.getByRole("switch", { name: "Solo mujeres" }));
+
+    expect(await screen.findByText("Preferencia guardada.")).toBeInTheDocument();
+    expect(updateTravelPreferences).toHaveBeenCalledWith(COMMUNITY_ID, {
+      identifiesAsWoman: true,
+      womenOnly: true,
+    });
+    expect(screen.getByRole("switch", { name: "Solo mujeres" })).toBeChecked();
+  });
+
+  it("asks for the declaration before turning on Solo mujeres, and saves nothing", async () => {
+    render(
+      <Perfil
+        name="Lucía"
+        email="lucia@alfa.pe"
+        preferences={{ communityId: COMMUNITY_ID, identifiesAsWoman: false, womenOnly: false }}
+      />,
+    );
+
+    await userEvent.setup().click(screen.getByRole("switch", { name: "Solo mujeres" }));
+
+    expect(
+      screen.getByText('Para usar "Solo mujeres", confirma que te identificas como mujer.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "Solo mujeres" })).not.toBeChecked();
+    expect(updateTravelPreferences).not.toHaveBeenCalled();
+  });
+
+  it("saves the declaration, explaining that only matching uses it", async () => {
+    updateTravelPreferences.mockResolvedValue({
+      identifiesAsWoman: true,
+      womenOnly: false,
+      message: "Preferencia guardada.",
+    });
+    render(
+      <Perfil
+        name="Lucía"
+        email="lucia@alfa.pe"
+        preferences={{ communityId: COMMUNITY_ID, identifiesAsWoman: false, womenOnly: false }}
+      />,
+    );
+
+    expect(screen.getByText("Preferencia opcional")).toBeInTheDocument();
+    expect(screen.getByText("Solo se usa para emparejarte; nadie más la ve")).toBeInTheDocument();
+    await userEvent
+      .setup()
+      .click(screen.getByRole("checkbox", { name: "Me identifico como mujer" }));
+
+    expect(await screen.findByText("Preferencia guardada.")).toBeInTheDocument();
+    expect(updateTravelPreferences).toHaveBeenCalledWith(COMMUNITY_ID, {
+      identifiesAsWoman: true,
+      womenOnly: false,
+    });
+    expect(screen.getByRole("checkbox", { name: "Me identifico como mujer" })).toBeChecked();
+  });
+
+  it("turns Solo mujeres off too when the declaration is withdrawn", async () => {
+    updateTravelPreferences.mockResolvedValue({
+      identifiesAsWoman: false,
+      womenOnly: false,
+      message: "Preferencia guardada.",
+    });
+    render(
+      <Perfil
+        name="Lucía"
+        email="lucia@alfa.pe"
+        preferences={{ communityId: COMMUNITY_ID, identifiesAsWoman: true, womenOnly: true }}
+      />,
+    );
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole("checkbox", { name: "Me identifico como mujer" }));
+
+    expect(await screen.findByText("Preferencia guardada.")).toBeInTheDocument();
+    expect(updateTravelPreferences).toHaveBeenCalledWith(COMMUNITY_ID, {
+      identifiesAsWoman: false,
+      womenOnly: false,
+    });
+    expect(screen.getByRole("switch", { name: "Solo mujeres" })).not.toBeChecked();
+  });
+
+  it("shows why the preference could not be saved and keeps the previous one", async () => {
+    updateTravelPreferences.mockRejectedValue(serverError(403, "No perteneces a esta comunidad."));
+    render(
+      <Perfil
+        name="Lucía"
+        email="lucia@alfa.pe"
+        preferences={{ communityId: COMMUNITY_ID, identifiesAsWoman: true, womenOnly: false }}
+      />,
+    );
+
+    await userEvent.setup().click(screen.getByRole("switch", { name: "Solo mujeres" }));
+
+    expect(await screen.findByText("No perteneces a esta comunidad.")).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "Solo mujeres" })).not.toBeChecked();
+  });
 });
 
 describe("perfil", () => {

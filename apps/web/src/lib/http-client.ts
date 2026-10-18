@@ -10,7 +10,7 @@ import type { paths } from "./api-schema";
 
 const serverBaseURL = env.NEXT_PUBLIC_SERVER_URL;
 
-type HttpMethod = "get" | "post" | "patch" | "delete";
+type HttpMethod = "get" | "post" | "put" | "patch" | "delete";
 type SuccessStatus = 200 | 201 | 202 | 203 | 204;
 
 type PathsWithMethod<M extends HttpMethod> = {
@@ -35,7 +35,7 @@ type JsonRequestBody<P extends keyof paths, M extends HttpMethod> = paths[P][M] 
   ? Body
   : undefined;
 
-export type TypedHttpClient = Omit<AxiosInstance, "get" | "post" | "patch" | "delete"> & {
+export type TypedHttpClient = Omit<AxiosInstance, HttpMethod> & {
   get<P extends PathsWithMethod<"get">>(
     url: P,
     config?: AxiosRequestConfig,
@@ -45,6 +45,11 @@ export type TypedHttpClient = Omit<AxiosInstance, "get" | "post" | "patch" | "de
     data?: JsonRequestBody<P, "post">,
     config?: AxiosRequestConfig,
   ): Promise<AxiosResponse<JsonResponse<P, "post">>>;
+  put<P extends PathsWithMethod<"put">>(
+    url: P,
+    data?: JsonRequestBody<P, "put">,
+    config?: AxiosRequestConfig,
+  ): Promise<AxiosResponse<JsonResponse<P, "put">>>;
   patch<P extends PathsWithMethod<"patch">>(
     url: P,
     data?: JsonRequestBody<P, "patch">,
