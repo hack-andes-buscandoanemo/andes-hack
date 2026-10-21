@@ -261,6 +261,7 @@ Contexto único de dominio en `AGENTS.md` / `CLAUDE.md` (más `GLOSSARY.md` cuan
 - Trip progress is stored per accepted booking and Lima trip date in `seat_booking_day`; recurring bookings stay accepted across occurrences. Apply migrations `0009_conscious_hex.sql` and `0010_preserve_trip_day_history.sql` before deploying this feature. Account deletion retains anonymized completed occurrences. Completed daily trips feed public community statistics; no-shows affect attendance only.
 - `incident_report` is created by a trip driver or accepted passenger; only community admins can list or review it, and the reporter identity is never returned. Public stats expose the total, suppress counts from 1 to 9, and keep the zero count visible.
 - The public impact panel is backed by `GET /public/communities/{slug}/stats`; it returns aggregates only and suppresses small groups.
+- `/me/commute-memory` (`apps/server/src/commute-memory.ts`) remembers only the search time window in Atomic Memory when the person asks; it is off unless `ATOMICMEMORY_API_URL` and `ATOMICMEMORY_API_KEY` are set, and the subject comes from the session (`docs/decisiones/0005-horario-recordado-con-atomic-memory.md`).
 
 ## Project Structure
 

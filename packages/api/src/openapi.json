@@ -3661,6 +3661,56 @@
             ]
           }
         ]
+      },
+      "CommuteMemoryResponse": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "window": {
+            "$ref": "#/components/schemas/CommuteWindow"
+          }
+        },
+        "required": [
+          "enabled",
+          "window"
+        ]
+      },
+      "CommuteWindow": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "windowStart": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "windowEnd": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          }
+        },
+        "required": [
+          "windowStart",
+          "windowEnd"
+        ]
+      },
+      "RememberCommuteResponse": {
+        "type": "object",
+        "properties": {
+          "window": {
+            "$ref": "#/components/schemas/CommuteWindow"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "window",
+          "message"
+        ]
       }
     },
     "parameters": {}
@@ -3818,6 +3868,16 @@
           },
           "404": {
             "description": "La cuenta ya no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "No se confirmó el borrado del horario externo; la cuenta sigue activa para reintentar",
             "content": {
               "application/json": {
                 "schema": {
@@ -6317,6 +6377,166 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DataSourcesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/commute-memory": {
+      "get": {
+        "tags": [
+          "Búsqueda"
+        ],
+        "responses": {
+          "200": {
+            "description": "El horario que la persona pidió recordar, o null",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommuteMemoryResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No hay sesión iniciada (`unauthorized`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Atomic Memory no respondió (`commute_memory_unavailable`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Búsqueda"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommuteWindow"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Horario recordado; reemplaza al anterior",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RememberCommuteResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No hay sesión iniciada (`unauthorized`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "El horario no es válido (`validation_error`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "No se guardó: Atomic Memory no respondió (`commute_memory_unavailable`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Atomic Memory no está configurado (`commute_memory_disabled`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Búsqueda"
+        ],
+        "responses": {
+          "200": {
+            "description": "Horario olvidado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No hay sesión iniciada (`unauthorized`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "No se borró: Atomic Memory no respondió (`commute_memory_unavailable`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Atomic Memory no está configurado (`commute_memory_disabled`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }

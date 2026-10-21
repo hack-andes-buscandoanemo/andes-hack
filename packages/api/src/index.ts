@@ -242,6 +242,9 @@ export const deleteMeRoute = createRoute({
       description: "Cuenta eliminada y datos personales borrados",
       content: { "application/json": { schema: DeleteMeResponseSchema } },
     },
+    502: apiErrorResponse(
+      "No se confirmó el borrado del horario externo; la cuenta sigue activa para reintentar",
+    ),
     404: apiErrorResponse("La cuenta ya no existe"),
   },
 });
@@ -2267,6 +2270,78 @@ export const dataSourcesRoute = createRoute({
   },
 });
 
+// The departure window a person asked Te Jalo to remember for their next searches. Only the
+// times: no places, so it says nothing about where the person lives.
+export const CommuteWindowSchema = z
+  .object({ windowStart: clockTime, windowEnd: clockTime })
+  .refine((data) => data.windowStart < data.windowEnd, {
+    message: "La hora de inicio debe ser anterior a la hora de fin.",
+    path: ["windowEnd"],
+  })
+  .openapi("CommuteWindow");
+
+export const CommuteMemoryResponseSchema = z
+  .object({
+    // False when the server has no Atomic Memory configured: the option is not offered.
+    enabled: z.boolean(),
+    window: CommuteWindowSchema.nullable(),
+  })
+  .openapi("CommuteMemoryResponse");
+
+export const RememberCommuteResponseSchema = z
+  .object({ window: CommuteWindowSchema, message: z.string() })
+  .openapi("RememberCommuteResponse");
+
+export const getCommuteMemoryRoute = createRoute({
+  method: "get",
+  path: "/me/commute-memory",
+  tags: ["Búsqueda"],
+  responses: {
+    200: {
+      description: "El horario que la persona pidió recordar, o null",
+      content: { "application/json": { schema: CommuteMemoryResponseSchema } },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    502: apiErrorResponse("Atomic Memory no respondió (`commute_memory_unavailable`)"),
+  },
+});
+
+export const rememberCommuteRoute = createRoute({
+  method: "put",
+  path: "/me/commute-memory",
+  tags: ["Búsqueda"],
+  request: {
+    body: { content: { "application/json": { schema: CommuteWindowSchema } } },
+  },
+  responses: {
+    200: {
+      description: "Horario recordado; reemplaza al anterior",
+      content: { "application/json": { schema: RememberCommuteResponseSchema } },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    422: apiErrorResponse("El horario no es válido (`validation_error`)"),
+    502: apiErrorResponse(
+      "No se guardó: Atomic Memory no respondió (`commute_memory_unavailable`)",
+    ),
+    503: apiErrorResponse("Atomic Memory no está configurado (`commute_memory_disabled`)"),
+  },
+});
+
+export const forgetCommuteRoute = createRoute({
+  method: "delete",
+  path: "/me/commute-memory",
+  tags: ["Búsqueda"],
+  responses: {
+    200: {
+      description: "Horario olvidado",
+      content: { "application/json": { schema: z.object({ message: z.string() }) } },
+    },
+    401: apiErrorResponse("No hay sesión iniciada (`unauthorized`)"),
+    502: apiErrorResponse("No se borró: Atomic Memory no respondió (`commute_memory_unavailable`)"),
+    503: apiErrorResponse("Atomic Memory no está configurado (`commute_memory_disabled`)"),
+  },
+});
+
 export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   healthRoute,
   listCommunitiesRoute,
@@ -2320,6 +2395,9 @@ export const registeredOpenApiRoutes: readonly RouteConfig[] = [
   revokeShareLinkRoute,
   sharedTripRoute,
   dataSourcesRoute,
+  getCommuteMemoryRoute,
+  rememberCommuteRoute,
+  forgetCommuteRoute,
 ];
 
 export function createOpenApiDocument(routes: readonly RouteConfig[] = registeredOpenApiRoutes) {

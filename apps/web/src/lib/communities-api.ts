@@ -28,6 +28,9 @@ export type MyTripsResponse = components["schemas"]["MyTripsResponse"];
 export type RequestSeatRequest = components["schemas"]["RequestSeatRequest"];
 export type RequestSeatResponse = components["schemas"]["RequestSeatResponse"];
 export type MyImpact = components["schemas"]["MyImpact"];
+export type CommuteWindow = components["schemas"]["CommuteWindow"];
+export type CommuteMemoryResponse = components["schemas"]["CommuteMemoryResponse"];
+export type RememberCommuteResponse = components["schemas"]["RememberCommuteResponse"];
 export type CancelBookingResponse = components["schemas"]["CancelBookingResponse"];
 export type CancelOfferResponse = components["schemas"]["CancelOfferResponse"];
 export type RunMatchingRequest = components["schemas"]["RunMatchingRequest"];
@@ -240,6 +243,19 @@ export const communitiesApi = {
     const response = await httpClient.get(
       `/communities/${communityId}/me/impact` as "/communities/{id}/me/impact",
     );
+    return response.data;
+  },
+  // The window the person asked to remember (Atomic Memory, when the server has it set up).
+  async getCommuteMemory(): Promise<CommuteMemoryResponse> {
+    const response = await httpClient.get("/me/commute-memory");
+    return response.data;
+  },
+  async rememberCommute(window: CommuteWindow): Promise<RememberCommuteResponse> {
+    const response = await httpClient.put("/me/commute-memory", window);
+    return response.data;
+  },
+  async forgetCommute(): Promise<{ message: string }> {
+    const response = await httpClient.delete("/me/commute-memory");
     return response.data;
   },
   async cancelBooking(bookingId: string): Promise<CancelBookingResponse> {

@@ -26,6 +26,7 @@ vi.mock("@/lib/communities-api", () => ({
   communitiesApi: {
     updateTravelPreferences: (...args: unknown[]) => updateTravelPreferences(...args),
     getMyImpact: (...args: unknown[]) => getMyImpact(...args),
+    getCommuteMemory: async () => ({ enabled: false, window: null }),
     listVehicles: (...args: unknown[]) => listVehicles(...args),
     updateMembership: (...args: unknown[]) => updateMembership(...args),
     ...profilePhotoApi,

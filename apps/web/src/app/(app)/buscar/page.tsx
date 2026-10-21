@@ -3,7 +3,7 @@
 import { Search01Icon } from "@hugeicons/core-free-icons";
 import type { VoiceSearchResponse } from "@andes-hack/api";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import CommunityContext from "@/components/community-context";
 import EmptyState from "@/components/empty-state";
@@ -12,6 +12,7 @@ import PlacePicker from "@/components/place-picker";
 import SearchRouteMap from "@/components/search-route-map";
 import { Button } from "@/components/ui/button";
 import VoiceFab from "@/components/voice-fab";
+import { reasonOf } from "@/lib/api-error";
 import { dictateSearch } from "@/lib/voice-api";
 import {
   communitiesApi,
@@ -42,6 +43,7 @@ export default function SearchPage() {
   const [dayChoice, setDayChoice] = useState<DayChoice>("today");
   const [days, setDays] = useState<number[]>([]);
   const [otherDate, setOtherDate] = useState("");
+  const windowEdited = useRef(false);
   const [windowStart, setWindowStart] = useState("07:30");
   const [windowEnd, setWindowEnd] = useState("08:30");
   const [result, setResult] = useState<SearchTripsResponse | null>(null);
@@ -52,6 +54,10 @@ export default function SearchPage() {
   const [error, setError] = useState<string | null>(null);
   const [dateError, setDateError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Atomic Memory: offered only when the server has it set up, saved only when asked.
+  const [memoryEnabled, setMemoryEnabled] = useState(false);
+  const [memoryNote, setMemoryNote] = useState<string | null>(null);
+  const [remembering, setRemembering] = useState(false);
 
   const membership = memberships.find((item) => item.communityId === communityId) ?? null;
 
@@ -78,6 +84,47 @@ export default function SearchPage() {
       active = false;
     };
   }, []);
+
+  // The window the person asked to remember fills the schedule; the search never waits for it.
+  useEffect(() => {
+    let active = true;
+    communitiesApi
+      .getCommuteMemory()
+      .then(({ enabled, window: remembered }) => {
+        if (!active) return;
+        setMemoryEnabled(enabled);
+        if (!remembered || windowEdited.current) return;
+        setWindowStart(remembered.windowStart);
+        setWindowEnd(remembered.windowEnd);
+        setMemoryNote(
+          `Usamos tu horario recordado: ${clockLabel(remembered.windowStart)} a ${clockLabel(remembered.windowEnd)}`,
+        );
+      })
+      .catch((failure: unknown) => {
+        // Without it the form keeps its usual schedule; say so only when the server did.
+        if (active) setMemoryNote(reasonOf(failure, "") || null);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function rememberWindow() {
+    if (remembering) return;
+    if (windowStart >= windowEnd) {
+      setMemoryNote("La hora de inicio debe ser anterior a la hora de fin.");
+      return;
+    }
+    setRemembering(true);
+    try {
+      const saved = await communitiesApi.rememberCommute({ windowStart, windowEnd });
+      setMemoryNote(saved.message);
+    } catch (failure: unknown) {
+      setMemoryNote(reasonOf(failure, "No se guardó tu horario. Inténtalo de nuevo."));
+    } finally {
+      setRemembering(false);
+    }
+  }
 
   // The location is asked for as soon as the screen opens; a refusal leaves the box to write.
   useEffect(() => {
@@ -132,6 +179,8 @@ export default function SearchPage() {
         fields.windowEnd && fields.windowEnd > fields.windowStart
           ? fields.windowEnd
           : shiftClock(fields.windowStart, 60);
+      windowEdited.current = true;
+      setMemoryNote(null);
       setWindowStart(fields.windowStart);
       setWindowEnd(end);
       notes.push(`Horario: ${clockLabel(fields.windowStart)} a ${clockLabel(end)}`);
@@ -233,6 +282,8 @@ export default function SearchPage() {
   function widenWindow() {
     if (searching) return;
     const range = { start: shiftClock(windowStart, -15), end: shiftClock(windowEnd, 15) };
+    windowEdited.current = true;
+    setMemoryNote(null);
     setWindowStart(range.start);
     setWindowEnd(range.end);
     void handleSearch(range);
@@ -341,7 +392,11 @@ export default function SearchPage() {
                   className={selectClass}
                   aria-label="Desde"
                   value={windowStart}
-                  onChange={(event) => setWindowStart(event.target.value)}
+                  onChange={(event) => {
+                    windowEdited.current = true;
+                    setWindowStart(event.target.value);
+                    setMemoryNote(null);
+                  }}
                 >
                   {[...new Set([...TIME_SLOTS, windowStart])].sort().map((slot) => (
                     <option key={slot} value={slot}>
@@ -354,7 +409,11 @@ export default function SearchPage() {
                   className={selectClass}
                   aria-label="Hasta"
                   value={windowEnd}
-                  onChange={(event) => setWindowEnd(event.target.value)}
+                  onChange={(event) => {
+                    windowEdited.current = true;
+                    setWindowEnd(event.target.value);
+                    setMemoryNote(null);
+                  }}
                 >
                   {[...new Set([...TIME_SLOTS, windowEnd])].sort().map((slot) => (
                     <option key={slot} value={slot}>
@@ -364,6 +423,29 @@ export default function SearchPage() {
                 </select>
               </span>
             </div>
+            {memoryEnabled ? (
+              <div className="mt-2 flex flex-col items-start gap-1.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={remembering}
+                  aria-describedby="remember-window-note"
+                  onClick={() => void rememberWindow()}
+                >
+                  Recordar este horario
+                </Button>
+                <span id="remember-window-note" className="text-xs text-muted-foreground">
+                  Solo la hora, no tus lugares. Se guarda en Atomic Memory para tu cuenta y lo
+                  borras en Perfil.
+                </span>
+              </div>
+            ) : null}
+            {memoryNote ? (
+              <p role="status" className="mt-1.5 text-sm">
+                {memoryNote}
+              </p>
+            ) : null}
           </fieldset>
           {memberships.length > 1 ? (
             <label className={fieldLabel}>
