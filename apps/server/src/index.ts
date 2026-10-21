@@ -60,6 +60,11 @@ import { and, asc, desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
+import {
+  commuteMemoryFromEnv,
+  createCommuteMemoryRoutes,
+  type CommuteMemory,
+} from "./commute-memory";
 import { createDataSourcesRoutes } from "./data-sources";
 import { createIncidentReportRoutes } from "./incident-reports";
 import { clientIp } from "./lib/client-ip";
@@ -141,6 +146,8 @@ export type AppDeps = {
   // Keeps two admins from matching the same journey at once; Redis unless injected.
   journeyLock?: JourneyLock;
   profilePhotoStorage?: ProfilePhotoStorage;
+  // Atomic Memory for the remembered search window; from the environment unless injected.
+  commuteMemory?: CommuteMemory | null;
 };
 
 async function sha256Hex(value: string): Promise<string> {
@@ -193,6 +200,8 @@ export function createApp(deps: AppDeps = {}) {
   const emailSender = deps.sendEmail ?? defaultSendEmail;
   const getNow = deps.now ?? (() => new Date());
   const findRoute = deps.findRoute ?? osrmRoute;
+  const commuteMemory =
+    deps.commuteMemory !== undefined ? deps.commuteMemory : commuteMemoryFromEnv(env);
   const getProfilePhotoStorage = async (): Promise<ProfilePhotoStorage> => {
     if (deps.profilePhotoStorage) return deps.profilePhotoStorage;
     if (
@@ -234,7 +243,7 @@ export function createApp(deps: AppDeps = {}) {
     "/*",
     cors({
       origin: env.CORS_ORIGIN,
-      allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+      allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
       allowHeaders: ["Content-Type", "Authorization", "x-community-id"],
       credentials: true,
     }),
@@ -371,6 +380,7 @@ export function createApp(deps: AppDeps = {}) {
   openApiApp.use("/bookings/:id/share-links", requireSession(deps.getSession));
   openApiApp.use("/share-links/:id", requireSession(deps.getSession));
   openApiApp.use("/me", requireSession(deps.getSession));
+  openApiApp.use("/me/commute-memory", requireSession(deps.getSession));
   const requirePhotoMember = requireOnboardedMember(
     (c) => c.req.header("x-community-id") ?? "",
     checkOnboarded,
@@ -679,6 +689,15 @@ export function createApp(deps: AppDeps = {}) {
     if (!account) {
       throw new ApiError(404, "No encontramos esta cuenta.", { code: "account_not_found" });
     }
+    // Keep the account available for retry until external memory erasure is confirmed.
+    await commuteMemory?.forget(userId).catch(() => {
+      logEvent("commute_memory.forget_on_delete_failed");
+      throw new ApiError(
+        502,
+        "No pudimos confirmar el borrado de tu horario en Atomic Memory. Tu cuenta sigue activa; inténtalo de nuevo.",
+        { code: "commute_memory_erasure_unconfirmed" },
+      );
+    });
     if (account.image && isProfilePhotoKey(account.image, userId)) {
       const storage = await getProfilePhotoStorage();
       await storage.deleteFile(account.image);
@@ -1573,6 +1592,7 @@ export function createApp(deps: AppDeps = {}) {
   openApiApp.route("/", createDataSourcesRoutes());
   openApiApp.route("/", createVoiceRoutes({ getSession: deps.getSession, now: deps.now }));
   openApiApp.route("/", createIncidentReportRoutes({ db: deps.db, now: deps.now }));
+  openApiApp.route("/", createCommuteMemoryRoutes({ memory: commuteMemory }));
 
   openApiApp.doc31("/openapi.json", OPENAPI_DOCUMENT_CONFIG);
   openApiApp.get("/docs", apiReference({ spec: { url: "/openapi.json" } }));

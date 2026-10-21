@@ -112,7 +112,7 @@ export const rateLimitMiddleware =
     requireTrustedIp = env.NODE_ENV === "production",
   ): MiddlewareHandler =>
   async (c, next) => {
-    const isWrite = ["POST", "PATCH", "DELETE"].includes(c.req.method);
+    const isWrite = ["POST", "PUT", "PATCH", "DELETE"].includes(c.req.method);
     const isSensitiveRead = c.req.method === "GET" && c.req.path.startsWith("/api/auth/");
     if (!isWrite && !isSensitiveRead) return next();
 

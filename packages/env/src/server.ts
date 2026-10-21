@@ -16,6 +16,10 @@ export const env = createEnv({
     // Voice search: Whisper turns the recording into text and a chat model fills the form.
     OPENAI_API_KEY: z.string().min(1).optional(),
     OPENAI_PARSE_MODEL: z.string().min(1).default("gpt-4o-mini"),
+    // Optional: remembers a person's usual search window in Atomic Memory when they ask to.
+    // Checked by the server itself, so a bad value only turns this feature off.
+    ATOMICMEMORY_API_URL: z.string().min(1).optional(),
+    ATOMICMEMORY_API_KEY: z.string().min(1).optional(),
     CORS_ORIGIN: z.url(),
     TEAM_EMAILS: z.string().default(""),
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),

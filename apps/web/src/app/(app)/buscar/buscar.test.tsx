@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -14,8 +14,10 @@ vi.mock("@/lib/geo", () => ({
 
 const getMe = vi.fn();
 const searchTrips = vi.fn();
+const commuteMemory = vi.fn();
 
 import { httpClient } from "@/lib/http-client";
+import { serverError } from "@/test/server-error";
 
 const originalAdapter = httpClient.defaults.adapter;
 
@@ -91,15 +93,18 @@ beforeEach(() => {
     const data =
       config.url === "/me"
         ? await getMe()
-        : config.url?.endsWith("/search")
-          ? await searchTrips(communityId, JSON.parse(config.data))
-          : (() => {
-              throw new Error(`Unexpected request: ${config.url}`);
-            })();
+        : config.url === "/me/commute-memory"
+          ? await commuteMemory(config.method, config.data ? JSON.parse(config.data) : undefined)
+          : config.url?.endsWith("/search")
+            ? await searchTrips(communityId, JSON.parse(config.data))
+            : (() => {
+                throw new Error(`Unexpected request: ${config.url}`);
+              })();
     return { data, status: 200, statusText: "OK", headers: {}, config };
   };
   getMe.mockReset().mockResolvedValue(ME);
   searchTrips.mockReset();
+  commuteMemory.mockReset().mockResolvedValue({ enabled: false, window: null });
 });
 
 afterEach(() => {
@@ -580,5 +585,119 @@ describe("search page /buscar (US-013)", () => {
 
     const count = await screen.findByText("1 coincidencia encontrada");
     expect(count.closest("[aria-live]")).toHaveAttribute("aria-live", "polite");
+  });
+});
+
+describe("remembered search window (Atomic Memory)", () => {
+  it("opens with the window the person asked to remember", async () => {
+    commuteMemory.mockResolvedValue({
+      enabled: true,
+      window: { windowStart: "06:45", windowEnd: "07:30" },
+    });
+
+    render(<BuscarPage />);
+
+    expect(
+      await screen.findByText("Usamos tu horario recordado: 6:45 a. m. a 7:30 a. m."),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Desde")).toHaveValue("06:45");
+    expect(screen.getByLabelText("Hasta")).toHaveValue("07:30");
+  });
+
+  it("keeps the person's edits when a slow memory recall arrives later", async () => {
+    const recall = Promise.withResolvers<{
+      enabled: boolean;
+      window: { windowStart: string; windowEnd: string };
+    }>();
+    commuteMemory.mockReturnValueOnce(recall.promise);
+    const user = userEvent.setup();
+    render(<BuscarPage />);
+    await screen.findByText("Comunidad Alfa");
+    await user.selectOptions(screen.getByLabelText("Desde"), "06:00");
+    await user.selectOptions(screen.getByLabelText("Hasta"), "07:00");
+    await act(async () => {
+      recall.resolve({ enabled: true, window: { windowStart: "06:45", windowEnd: "07:30" } });
+      await recall.promise;
+    });
+    expect(screen.getByLabelText("Desde")).toHaveValue("06:00");
+    expect(screen.getByLabelText("Hasta")).toHaveValue("07:00");
+    expect(screen.queryByText(/Usamos tu horario recordado/)).toBeNull();
+  });
+
+  it("stops saying the remembered window is in use once the person changes it", async () => {
+    commuteMemory.mockResolvedValue({
+      enabled: true,
+      window: { windowStart: "06:45", windowEnd: "07:30" },
+    });
+    const user = userEvent.setup();
+    render(<BuscarPage />);
+    await screen.findByText("Usamos tu horario recordado: 6:45 a. m. a 7:30 a. m.");
+
+    await user.selectOptions(screen.getByLabelText("Desde"), "07:00");
+
+    expect(screen.queryByText(/Usamos tu horario recordado/)).toBeNull();
+  });
+
+  it("remembers the chosen window only when the person asks", async () => {
+    commuteMemory.mockImplementation(async (method: string, body?: unknown) =>
+      method === "put"
+        ? { window: body, message: "Recordaremos tu horario: 7:00 a. m. a 7:45 a. m." }
+        : { enabled: true, window: null },
+    );
+    const user = userEvent.setup();
+    render(<BuscarPage />);
+    const remember = await screen.findByRole("button", { name: "Recordar este horario" });
+    expect(commuteMemory).not.toHaveBeenCalledWith("put", expect.anything());
+
+    await user.selectOptions(screen.getByLabelText("Desde"), "07:00");
+    await user.selectOptions(screen.getByLabelText("Hasta"), "07:45");
+    await user.click(remember);
+
+    expect(commuteMemory).toHaveBeenCalledWith("put", {
+      windowStart: "07:00",
+      windowEnd: "07:45",
+    });
+    expect(
+      await screen.findByText("Recordaremos tu horario: 7:00 a. m. a 7:45 a. m."),
+    ).toBeInTheDocument();
+  });
+
+  it("says plainly when the window was not saved", async () => {
+    commuteMemory.mockImplementation(async (method: string) => {
+      if (method !== "put") return { enabled: true, window: null };
+      throw serverError(
+        502,
+        "No pudimos confirmar que se guardó tu horario: Atomic Memory no respondió. Inténtalo de nuevo.",
+      );
+    });
+    const user = userEvent.setup();
+    render(<BuscarPage />);
+
+    await user.click(await screen.findByRole("button", { name: "Recordar este horario" }));
+
+    expect(
+      await screen.findByText(
+        "No pudimos confirmar que se guardó tu horario: Atomic Memory no respondió. Inténtalo de nuevo.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps the usual form when the server has no Atomic Memory", async () => {
+    render(<BuscarPage />);
+
+    await screen.findByText("Comunidad Alfa");
+    expect(screen.queryByRole("button", { name: "Recordar este horario" })).toBeNull();
+    expect(screen.getByLabelText("Desde")).toHaveValue("07:30");
+    expect(screen.getByLabelText("Hasta")).toHaveValue("08:30");
+  });
+
+  it("still searches when Atomic Memory cannot be read", async () => {
+    commuteMemory.mockRejectedValue(new Error("Bad Gateway"));
+    searchTrips.mockResolvedValue({ matches: [], reason: "outside_time_window" });
+
+    await searchFromSanBorja();
+
+    expect(await screen.findByText("0 coincidencias encontradas")).toBeInTheDocument();
+    expect(screen.getByLabelText("Desde")).toHaveValue("07:30");
   });
 });

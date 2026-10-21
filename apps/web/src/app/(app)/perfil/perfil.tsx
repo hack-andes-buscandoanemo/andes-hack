@@ -14,6 +14,7 @@ import type { ProfileMembership } from "@/lib/app-access";
 import { authClient } from "@/lib/auth-client";
 import { communitiesApi } from "@/lib/communities-api";
 
+import CommuteMemory from "./commute-memory";
 import EditProfile, { type EditableProfile } from "./edit-profile";
 import HelpCenter from "./help-center";
 import MyImpact from "./my-impact";
@@ -231,6 +232,7 @@ export default function Perfil({
         <HelpCenter />
       </section>
       {preferences ? <TravelPreferences {...preferences} /> : null}
+      <CommuteMemory />
       {membership ? <MyImpact communityId={membership.communityId} /> : null}
       {membership ? (
         <EditProfile

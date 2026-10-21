@@ -357,6 +357,24 @@ it("uses the authenticated user id for a write limit", async () => {
   expect(await response.json()).toMatchObject({ details: { code: "rate_limited" } });
 });
 
+it("rate limits PUT writes like the other writes", async () => {
+  const app = new Hono();
+  app.onError(errorHandler);
+  app.use(
+    "/write",
+    requireSession(async () => ({ user: { id: "member-1" } }) as never),
+  );
+  app.use(
+    "/write",
+    rateLimitMiddleware(async () => ({ success: false, reset: Date.now() + 60_000 })),
+  );
+  app.put("/write", (c) => c.json({ saved: true }, 200));
+
+  const response = await app.request("/write", { method: "PUT" });
+
+  expect(response.status).toBe(429);
+});
+
 it("allows configured CORS methods only for the configured origin", async () => {
   const allowed = await app.request("/health", {
     method: "OPTIONS",
@@ -376,6 +394,8 @@ it("allows configured CORS methods only for the configured origin", async () => 
   expect(allowed.headers.get("Access-Control-Allow-Origin")).toBe(env.CORS_ORIGIN);
   expect(allowed.headers.get("Access-Control-Allow-Methods")).toContain("PATCH");
   expect(allowed.headers.get("Access-Control-Allow-Methods")).toContain("DELETE");
+  // PUT /communities/{id}/preferences and PUT /me/commute-memory are called from the browser.
+  expect(allowed.headers.get("Access-Control-Allow-Methods")).toContain("PUT");
   expect(denied.headers.get("Access-Control-Allow-Origin")).toBeNull();
 });
 
